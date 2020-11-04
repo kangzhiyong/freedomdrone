@@ -1,6 +1,6 @@
 //
-//  MyDrone.cpp
-//  MyDrone
+//  drone.cpp
+//  Drone
 //
 //  Created by kangzhiyong on 2020/2/25.
 //
@@ -10,55 +10,55 @@ using namespace std;
 
 #include "drone.hpp"
 
-MyDrone::MyDrone(MavlinkConnection *conn)
+Drone::Drone(MavlinkConnection *conn)
 {
     m_conn = conn;
     
-    _update_property[STATE] = &MyDrone::_update_state;
-    _update_property[GLOBAL_POSITION] = &MyDrone::_update_global_position;
-    _update_property[LOCAL_POSITION] = &MyDrone::_update_local_position;
-    _update_property[GLOBAL_HOME] = &MyDrone::_update_global_home;
-    _update_property[LOCAL_VELOCITY] = &MyDrone::_update_local_velocity;
-    _update_property[RAW_GYROSCOPE] = &MyDrone::_update_gyro_raw;
-    _update_property[RAW_ACCELEROMETER] = &MyDrone::_update_acceleration_raw;
-    _update_property[BAROMETER] = &MyDrone::_update_barometer;
-    _update_property[ATTITUDE] = &MyDrone::_update_attitude;
+    _update_property[STATE] = &Drone::_update_state;
+    _update_property[GLOBAL_POSITION] = &Drone::_update_global_position;
+    _update_property[LOCAL_POSITION] = &Drone::_update_local_position;
+    _update_property[GLOBAL_HOME] = &Drone::_update_global_home;
+    _update_property[LOCAL_VELOCITY] = &Drone::_update_local_velocity;
+    _update_property[RAW_GYROSCOPE] = &Drone::_update_gyro_raw;
+    _update_property[RAW_ACCELEROMETER] = &Drone::_update_acceleration_raw;
+    _update_property[BAROMETER] = &Drone::_update_barometer;
+    _update_property[ATTITUDE] = &Drone::_update_attitude;
 
     // set the internal callbacks list to an empty map
     _callbacks.clear();
     
     if (m_conn != nullptr) {
-        m_conn->set_notify_callback(&MyDrone::on_message_receive);
+        m_conn->set_notify_callback(&Drone::on_message_receive);
         m_conn->set_drone(this);
     }
 }
 
-MyDrone::MyDrone()
+Drone::Drone()
 {
-    _update_property[STATE] = &MyDrone::_update_state;
-    _update_property[GLOBAL_POSITION] = &MyDrone::_update_global_position;
-    _update_property[LOCAL_POSITION] = &MyDrone::_update_local_position;
-    _update_property[GLOBAL_HOME] = &MyDrone::_update_global_home;
-    _update_property[LOCAL_VELOCITY] = &MyDrone::_update_local_velocity;
-    _update_property[RAW_GYROSCOPE] = &MyDrone::_update_gyro_raw;
-    _update_property[RAW_ACCELEROMETER] = &MyDrone::_update_acceleration_raw;
-    _update_property[BAROMETER] = &MyDrone::_update_barometer;
-    _update_property[ATTITUDE] = &MyDrone::_update_attitude;
+    _update_property[STATE] = &Drone::_update_state;
+    _update_property[GLOBAL_POSITION] = &Drone::_update_global_position;
+    _update_property[LOCAL_POSITION] = &Drone::_update_local_position;
+    _update_property[GLOBAL_HOME] = &Drone::_update_global_home;
+    _update_property[LOCAL_VELOCITY] = &Drone::_update_local_velocity;
+    _update_property[RAW_GYROSCOPE] = &Drone::_update_gyro_raw;
+    _update_property[RAW_ACCELEROMETER] = &Drone::_update_acceleration_raw;
+    _update_property[BAROMETER] = &Drone::_update_barometer;
+    _update_property[ATTITUDE] = &Drone::_update_attitude;
 
     // set the internal callbacks list to an empty map
     _callbacks.clear();
 }
 
-void MyDrone::set_connection(MavlinkConnection* conn)
+void Drone::set_connection(MavlinkConnection* conn)
 {
     m_conn = conn;
     if (m_conn != nullptr) {
-        m_conn->set_notify_callback(&MyDrone::on_message_receive);
+        m_conn->set_notify_callback(&Drone::on_message_receive);
         m_conn->set_drone(this);
     }
 }
 
-void MyDrone::on_message_receive(message_ids msg_name, void *msg1)
+void Drone::on_message_receive(message_ids msg_name, void *msg1)
 {
     MessageBase msg = *((MessageBase *)msg1);
     //Sorts incoming messages, updates the drone state variables and runs callbacks
@@ -84,17 +84,17 @@ void MyDrone::on_message_receive(message_ids msg_name, void *msg1)
     notify_callbacks(msg_name);  // pass it along to these listeners
 }
 
-point3D MyDrone::global_position()
+point3D Drone::global_position()
 {
     return {_longitude, _latitude, _altitude};
 }
 
-time_t MyDrone::global_position_time()
+time_t Drone::global_position_time()
 {
     return _global_position_time;
 }
 
-void MyDrone::_update_global_position(void *msg)
+void Drone::_update_global_position(void *msg)
 {
     GlobalFrameMessage gfm = *(GlobalFrameMessage *)msg;
     _longitude = gfm.longitude();
@@ -107,17 +107,17 @@ void MyDrone::_update_global_position(void *msg)
     _global_position_time = gfm.getTime();
 }
 
-point3D MyDrone::global_home()
+point3D Drone::global_home()
 {
     return {_home_longitude, _home_latitude, _home_altitude};
 }
 
-time_t MyDrone::home_position_time()
+time_t Drone::home_position_time()
 {
     return _home_position_time;
 }
 
-void MyDrone::_update_global_home(void *msg)
+void Drone::_update_global_home(void *msg)
 {
     GlobalFrameMessage gfm = *(GlobalFrameMessage *)msg;
     _home_longitude = gfm.longitude();
@@ -130,17 +130,17 @@ void MyDrone::_update_global_home(void *msg)
     _home_position_time = gfm.getTime();
 }
 
-point3D MyDrone::local_position()
+point3D Drone::local_position()
 {
     return {_north, _east, _down};
 }
 
-time_t MyDrone::local_position_time()
+time_t Drone::local_position_time()
 {
     return _local_position_time;
 }
 
-void MyDrone::_update_local_position(void *msg)
+void Drone::_update_local_position(void *msg)
 {
     LocalFrameMessage lfm = *(LocalFrameMessage *)msg;
     _north = lfm.north();
@@ -153,24 +153,24 @@ void MyDrone::_update_local_position(void *msg)
     _local_position_time = lfm.getTime();
 }
 
-void MyDrone::_update_local_position(point3D p)
+void Drone::_update_local_position(point3D p)
 {
     _north = p[0];
     _east = p[1];
     _down = p[2];
 }
 
-point3D MyDrone::local_velocity()
+point3D Drone::local_velocity()
 {
     return {_velocity_north, _velocity_east, _velocity_down};
 }
 
-time_t MyDrone::local_velocity_time()
+time_t Drone::local_velocity_time()
 {
     return _local_velocity_time;
 }
 
-void MyDrone::_update_local_velocity(void *msg)
+void Drone::_update_local_velocity(void *msg)
 {
     LocalFrameMessage lfm = *(LocalFrameMessage *)msg;
     _velocity_north = lfm.north();
@@ -183,17 +183,17 @@ void MyDrone::_update_local_velocity(void *msg)
     _local_velocity_time = lfm.getTime();
 }
 
-bool MyDrone::armed()
+bool Drone::armed()
 {
     return _armed;
 }
 
-bool MyDrone::guided()
+bool Drone::guided()
 {
     return _guided;
 }
 
-bool MyDrone::connected()
+bool Drone::connected()
 {
     if (m_conn != nullptr) {
         return m_conn->open();
@@ -201,17 +201,17 @@ bool MyDrone::connected()
     return false;
 }
 
-time_t MyDrone::state_time()
+time_t Drone::state_time()
 {
     return _state_time;
 }
 
-int MyDrone::status()
+int Drone::status()
 {
     return _status;
 }
 
-void MyDrone::_update_state(void *msg)
+void Drone::_update_state(void *msg)
 {
     StateMessage sm = *((StateMessage *)msg);
     _armed = sm.armed();
@@ -225,17 +225,17 @@ void MyDrone::_update_state(void *msg)
 }
 
 //Roll, pitch, yaw euler angles in radians
-point3D MyDrone::attitude()
+point3D Drone::attitude()
 {
     return {_roll, _pitch, _yaw};
 }
 
-time_t MyDrone::attitude_time()
+time_t Drone::attitude_time()
 {
     return _attitude_time;
 }
 
-void MyDrone::_update_attitude(void *msg)
+void Drone::_update_attitude(void *msg)
 {
     FrameMessage fm = *(FrameMessage *)msg;
     _roll = fm.roll();
@@ -248,17 +248,17 @@ void MyDrone::_update_attitude(void *msg)
     _attitude_time = fm.getTime();
 }
 
-point3D MyDrone::acceleration_raw()
+point3D Drone::acceleration_raw()
 {
     return {_acceleration_x, _acceleration_y, _acceleration_z};
 }
 
-time_t MyDrone::acceleration_time()
+time_t Drone::acceleration_time()
 {
     return _acceleration_time;
 }
 
-void MyDrone::_update_acceleration_raw(void *msg)
+void Drone::_update_acceleration_raw(void *msg)
 {
     BodyFrameMessage bfm = *(BodyFrameMessage *)msg;
     _acceleration_x = bfm.x();
@@ -272,17 +272,17 @@ void MyDrone::_update_acceleration_raw(void *msg)
 }
 
 //Angular velocites in radians/second
-point3D MyDrone::gyro_raw()
+point3D Drone::gyro_raw()
 {
     return {_gyro_x, _gyro_y, _gyro_z};
 }
 
-time_t MyDrone::gyro_time()
+time_t Drone::gyro_time()
 {
     return _gyro_time;
 }
 
-void MyDrone::_update_gyro_raw(void *msg)
+void Drone::_update_gyro_raw(void *msg)
 {
     BodyFrameMessage bfm = *(BodyFrameMessage *)msg;
     _gyro_x = bfm.x();
@@ -295,17 +295,17 @@ void MyDrone::_update_gyro_raw(void *msg)
     _gyro_time = bfm.getTime();
 }
 
-float MyDrone::barometer()
+float Drone::barometer()
 {
     return _baro_altitude;
 }
 
-time_t MyDrone::barometer_time()
+time_t Drone::barometer_time()
 {
     return _baro_time;
 }
 
-void MyDrone::_update_barometer(void *msg)
+void Drone::_update_barometer(void *msg)
 {
     BodyFrameMessage bfm = *(BodyFrameMessage *)msg;
     _baro_altitude = bfm.z();
@@ -315,7 +315,7 @@ void MyDrone::_update_barometer(void *msg)
 
 // Handling of internal messages for callbacks
 
-void MyDrone::register_callback(message_ids name, user_callback fn)
+void Drone::register_callback(message_ids name, user_callback fn)
 {
     /*
     Add the function, `fn`, as a callback for the message type, `name`.
@@ -348,7 +348,7 @@ void MyDrone::register_callback(message_ids name, user_callback fn)
     }
 }
 
-void MyDrone::remove_callback(message_ids name, user_callback fn)
+void Drone::remove_callback(message_ids name, user_callback fn)
 {
     /*
     Remove the function, `fn`, as a callback for the message type, `name`
@@ -376,7 +376,7 @@ void MyDrone::remove_callback(message_ids name, user_callback fn)
     }
 }
 
-void MyDrone::notify_callbacks(message_ids name)
+void Drone::notify_callbacks(message_ids name)
 {
     //Passes the message to the appropriate listeners
     user_callback_t::iterator iter;
@@ -401,7 +401,7 @@ void MyDrone::notify_callbacks(message_ids name)
 
 // Command method wrappers
 
-void MyDrone::arm()
+void Drone::arm()
 {
     // Send an arm command to the drone
     try {
@@ -413,7 +413,7 @@ void MyDrone::arm()
     }
 }
 
-void MyDrone::disarm()
+void Drone::disarm()
 {
     // Send a disarm command to the drone
     try {
@@ -425,7 +425,7 @@ void MyDrone::disarm()
     }
 }
 
-void MyDrone::take_control()
+void Drone::take_control()
 {
     /*
     Send a command to the drone to switch to guided (autonomous) mode.
@@ -441,7 +441,7 @@ void MyDrone::take_control()
     }
 }
 
-void MyDrone::release_control()
+void Drone::release_control()
 {
     /*
     Send a command to the drone to switch to manual mode.
@@ -457,7 +457,7 @@ void MyDrone::release_control()
     }
 }
 
-void MyDrone::cmd_position( float north, float east, float altitude, float heading)
+void Drone::cmd_position( float north, float east, float altitude, float heading)
 {
     /*
     Command the local position and drone heading.
@@ -479,7 +479,7 @@ void MyDrone::cmd_position( float north, float east, float altitude, float headi
     }
 }
 
-void MyDrone::takeoff(float target_altitude)
+void Drone::takeoff(float target_altitude)
 {
     // Command the drone to takeoff to the target_alt (in meters)
     try {
@@ -491,7 +491,7 @@ void MyDrone::takeoff(float target_altitude)
     }
 }
 
-void MyDrone::land()
+void Drone::land()
 {
     // Command the drone to land at its current position
     try {
@@ -503,7 +503,7 @@ void MyDrone::land()
     }
 }
 
-void MyDrone::cmd_attitude( float roll, float pitch, float yaw, float thrust)
+void Drone::cmd_attitude( float roll, float pitch, float yaw, float thrust)
 {
     /*
     Command the drone through attitude command
@@ -523,7 +523,7 @@ void MyDrone::cmd_attitude( float roll, float pitch, float yaw, float thrust)
     }
 }
 
-void MyDrone::cmd_attitude_rate( float roll_rate, float pitch_rate, float yaw_rate, float thrust)
+void Drone::cmd_attitude_rate( float roll_rate, float pitch_rate, float yaw_rate, float thrust)
 {
     /*
     Command the drone orientation rates.
@@ -543,7 +543,7 @@ void MyDrone::cmd_attitude_rate( float roll_rate, float pitch_rate, float yaw_ra
     }
 }
 
-void MyDrone::cmd_moment( float roll_moment, float pitch_moment, float yaw_moment, float thrust)
+void Drone::cmd_moment( float roll_moment, float pitch_moment, float yaw_moment, float thrust)
 {
     /*
     Command the drone moments.
@@ -563,7 +563,7 @@ void MyDrone::cmd_moment( float roll_moment, float pitch_moment, float yaw_momen
     }
 }
 
-void MyDrone::cmd_velocity( float velocity_north, float velocity_east, float velocity_down, float heading)
+void Drone::cmd_velocity( float velocity_north, float velocity_east, float velocity_down, float heading)
 {
     /*
     Command the drone velocity.
@@ -583,7 +583,7 @@ void MyDrone::cmd_velocity( float velocity_north, float velocity_east, float vel
     }
 }
 
-void MyDrone::set_home_position( float longitude, float latitude, float altitude)
+void Drone::set_home_position( float longitude, float latitude, float altitude)
 {
     // Set the drone's home position to these coordinates
     try {
@@ -595,13 +595,13 @@ void MyDrone::set_home_position( float longitude, float latitude, float altitude
     }
 }
 
-void MyDrone::set_home_as_current_position()
+void Drone::set_home_as_current_position()
 {
     // Set the drone's home position to its current position
     set_home_position(_longitude, _latitude, _altitude);
 }
 
-void MyDrone::start()
+void Drone::start()
 {
     // Starts the connection to the drone
     if (m_conn != nullptr) {
@@ -609,7 +609,7 @@ void MyDrone::start()
     }
 }
 
-void MyDrone::stop()
+void Drone::stop()
 {
     // Stops the connection to the drone
     if (m_conn != nullptr) {

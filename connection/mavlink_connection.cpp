@@ -1,6 +1,6 @@
 //
 //  mavlink_connection.cpp
-//  MyDrone
+//  Drone
 //
 //  Created by kangzhiyong on 2020/2/26.
 //

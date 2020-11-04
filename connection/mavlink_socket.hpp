@@ -1,6 +1,6 @@
 //
 //  mavlink_socket_hpp.hpp
-//  MyDrone
+//  Drone
 //
 //  Created by kangzhiyong on 2020/3/1.
 //  Copyright © 2020 kangzhiyong. All rights reserved.

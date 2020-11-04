@@ -1,6 +1,6 @@
 //
 //  mavlink_connection.hpp
-//  MyDrone
+//  Drone
 //
 //  Created by kangzhiyong on 2020/2/26.
 //
@@ -20,7 +20,7 @@ using namespace std;
 #include "message_ids.hpp"
 #include "message_types.hpp"
 
-class MyDrone;
+class Drone;
 /*
 Implementation of the required communication to a drone executed
 over the Mavlink protocol. Specifically designed with the PX4 autopilot in mind,
@@ -37,7 +37,7 @@ Example:
 class MavlinkConnection
 {
 public:
-    typedef void (MyDrone::*notify_message_callback)(message_ids, void *);
+    typedef void (Drone::*notify_message_callback)(message_ids, void *);
     MavlinkConnection(std::string sock_type, std::string dest_ip, unsigned short dest_port, bool threaded = false, bool PX4 = false, float send_rate = 5, time_t timeout = 5);
     
     void notify_message_listeners(message_ids name, void *msg);
@@ -81,7 +81,7 @@ public:
     void body_rate_target(float p, float q, float r, time_t t=0);
     void set_sub_mode(int sub_mode);
     void set_notify_callback(notify_message_callback);
-    void set_drone(MyDrone *drone)
+    void set_drone(Drone *drone)
     {
         _drone = drone;
     }
@@ -105,7 +105,7 @@ private:
     time_t _timeout{5};
     mutex msg_queue_mutex;
     bool _threaded{false};
-    MyDrone *_drone;
+    Drone *_drone;
     notify_message_callback _notify_message_callback;
 };
 #endif /* mavlink_connection_hpp */

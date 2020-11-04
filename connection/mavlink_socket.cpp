@@ -1,6 +1,6 @@
 //
 //  mavlink_udp.cpp
-//  MyDrone
+//  Drone
 //
 //  Created by kangzhiyong on 2020/3/1.
 //  Copyright © 2020 kangzhiyong. All rights reserved.

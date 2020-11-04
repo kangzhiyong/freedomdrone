@@ -1,12 +1,12 @@
 //
-//  MyDrone.hpp
-//  MyDrone
+//  drone.hpp
+//  Drone
 //
 //  Created by kangzhiyong on 2020/2/25.
 //
 
-#ifndef MyDrone_hpp
-#define MyDrone_hpp
+#ifndef drone_hpp
+#define drone_hpp
 
 #include <map>
 #include <vector>
@@ -15,7 +15,7 @@ using namespace std;
 #include "mavlink_connection.hpp"
 #include "free_point.hpp"
 
-class MyDrone
+class Drone
 {
 private:
     time_t _message_time{0};
@@ -91,8 +91,8 @@ private:
     float _baro_time{0.0};
     float _baro_frequency{0.0};
 
-    typedef void (MyDrone::*update)(void *data);
-    typedef void (MyDrone::*user_callback)();
+    typedef void (Drone::*update)(void *data);
+    typedef void (Drone::*user_callback)();
     typedef map<message_ids, update> update_property_t;
     typedef map<message_ids,  vector<user_callback>> user_callback_t;
     
@@ -100,8 +100,8 @@ private:
     user_callback_t _callbacks;
     MavlinkConnection *m_conn;
 public:
-    MyDrone();
-    MyDrone(MavlinkConnection *conn);
+    Drone();
+    Drone(MavlinkConnection *conn);
     void on_message_receive(message_ids msg_name, void *msg);
     point3D global_position();
     time_t global_position_time();
@@ -166,4 +166,4 @@ public:
     }
     void set_connection(MavlinkConnection* conn);
 };
-#endif /* MyDrone_hpp */
+#endif /* drone_hpp */
