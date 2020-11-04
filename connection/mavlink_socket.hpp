@@ -48,10 +48,10 @@ class mavsocket
 public:
     mavsocket(int type, int protocol);
     ~mavsocket();
-    int recv(void* buffer, int bufferLen) { return 0; }
+    virtual int recv(void* buffer, int bufferLen) = 0;
     bool recv_msg(mavlink_message_t* msg);
     bool recv_match(void* msg, bool blocking = false, int timeout = 0);
-    void write(const void* buffer, int bufferLen) {}
+    virtual void write(const void* buffer, int bufferLen) = 0;
     int get_socket_fd();
 protected:
     int _socket{ -1 };

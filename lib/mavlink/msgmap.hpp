@@ -6,7 +6,6 @@
 #define ssize_t size_t
 #else
 #include <algorithm>
-#include <endian.h>
 #include <type_traits>
 #endif // WIN32
 

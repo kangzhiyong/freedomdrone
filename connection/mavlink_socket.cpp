@@ -14,6 +14,8 @@
 #include "mavlink_socket.hpp"
 #include "string_utils.hpp"
 #include <time.h>
+#include <iostream>
+using namespace std;
 
 static void fillAddr(const std::string& address, unsigned short port, sockaddr_in& addr)
 {
@@ -80,7 +82,7 @@ bool mavsocket::recv_msg(mavlink_message_t* msg)
             if (mavlink_parse_char(MAVLINK_COMM_0, buf[i], msg, &status))
             {
                 // Packet received
-  //              printf("Received packet: SYS: %d, COMP: %d, LEN: %d, MSG ID: %d\n", msg->sysid, msg->compid, msg->len, msg->msgid);
+                printf("Received packet: SYS: %d, COMP: %d, LEN: %d, MSG ID: %d\n", msg->sysid, msg->compid, msg->len, msg->msgid);
                 return true;
             }
         }
@@ -155,16 +157,6 @@ mavudp::mavudp(std::string dest_ip, unsigned short dest_port, bool input, bool b
         return;
     }
     printf("succe\r\n");
-
-#ifndef WIN32
-    int flags = fcntl(_socket, F_GETFD);
-    flags |= FD_CLOEXEC;
-    fcntl(_socket, F_SETFD, flags);
-
-    flags = fcntl(_socket, F_GETFL);
-    flags |= O_NONBLOCK;
-    fcntl(_socket, F_SETFL, flags);
-#endif // !WIN32
 
     last_addr = "";
     last_port = 0;
@@ -251,7 +243,7 @@ int mavtcp::recv(void* buffer, int bufferLen)
 {
     ssize_t rtn;
     if ((rtn = ::recv(_socket, (raw_type*)buffer, bufferLen, 0)) < 0) {
-        printf("Received failed (recv())");
+        cout << "Received failed (recv()):" << strerror(errno) << endl;
     }
 
     return (int)rtn;
