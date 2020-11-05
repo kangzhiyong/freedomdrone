@@ -7,11 +7,16 @@
 
 #include <stdio.h>
 #include "freedomdrone.h"
+#include "breadth_first_search.hpp"
 
 int main()
 {
-    MavlinkConnection conn("TCP", "127.0.0.1", 5760, false, false);
-    BackyardFlyer drone(&conn);
-    drone.start_drone();
+//    MavlinkConnection conn("TCP", "127.0.0.1", 5760, false, false);
+//    BackyardFlyer drone(&conn);
+//    drone.start_drone();
+    
+    BreadthFirstSearch bfs;
+    bfs.breadth_first();
+    bfs.visualize_path();
     return 0;
 }

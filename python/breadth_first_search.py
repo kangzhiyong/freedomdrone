@@ -140,4 +140,4 @@ def breadth_first(grid, start, goal):
 
 path = breadth_first(grid, start, goal)
 print(path)
-visualize_path(grid, path, start)
+print(visualize_path(grid, path, start))

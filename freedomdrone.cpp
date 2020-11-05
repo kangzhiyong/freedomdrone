@@ -121,7 +121,8 @@ void BackyardFlyer::local_position_callback()
     }
     else if (flight_state == WAYPOINT)
     {
-        if (norm(target_position - local_position()) < 1.0)
+        point3D lp = local_position();
+        if (norm(target_position - lp) < 1.0)
         {
             if (all_waypoints.size() > 0)
             {
