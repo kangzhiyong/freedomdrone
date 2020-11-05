@@ -81,15 +81,27 @@ public:
         }
         return a;
     }
+
+    point<coordinate_type, dimensions> operator-(point<coordinate_type, dimensions>& p)
+    {
+        size_t n = min(dimensions, p.coords_.size());
+        std::array<coordinate_type, dimensions> a;
+        for (size_t i = 0; i < n; ++i)
+        {
+            a[i] = get(i) - p[i];
+        }
+        return a;
+    }
+
 //    void operator=(point<coordinate_type, dimensions> &p)
 //    {
 //        size_t n = std::min(dimensions, p.coords_.size());
 //        std::copy_n(p.coords_.begin(), n, coords_.begin());
 //    }
     
-    void print()
+    void print(std::string prefix)
     {
-        std::cout << "(x, y, z, ...): ( ";
+        std::cout << prefix << " (x, y, z, ...): ( ";
         for (size_t i = 0; i < dimensions; ++i)
         {
             std::cout << get(i) << " ";

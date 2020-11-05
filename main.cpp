@@ -11,7 +11,7 @@
 int main()
 {
     MavlinkConnection conn("TCP", "127.0.0.1", 5760, false, false);
-    UpAndDownFlyer drone(&conn);
+    BackyardFlyer drone(&conn);
     drone.start_drone();
     return 0;
 }

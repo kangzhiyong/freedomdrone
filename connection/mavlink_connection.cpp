@@ -576,7 +576,7 @@ void MavlinkConnection::cmd_position(float n, float e, float d, float heading)
 {
     // when using the simualtor, d is actually interpreted as altitude
     // therefore need to do a sign change on d
-    if (_using_px4)
+    if (!_using_px4)
     {
         d = -1.0 * d;
     }
