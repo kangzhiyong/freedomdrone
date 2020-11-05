@@ -111,14 +111,13 @@ void MavlinkConnection::dispatch_loop()
  */
 void MavlinkConnection::dispatch_message(mavlink_message_t msg)
 {
-    MsgMap msgMap(msg);
-
     // http://mavlink.org/messages/common/#GLOBAL_POSITION_INT
     if (msg.msgid == MAVLINK_MSG_ID_GLOBAL_POSITION_INT)
-    {
-        mavlink::common::msg::GLOBAL_POSITION_INT gpi_msg{};
-        gpi_msg.deserialize(msgMap);
-        
+    {        
+        mavlink_global_position_int_t gpi_msg;
+        memset(&gpi_msg, 0, sizeof(mavlink_global_position_int_t));
+        mavlink_msg_global_position_int_decode(&msg, &gpi_msg);
+
         uint32_t timestamp = gpi_msg.time_boot_ms / 1000.0;
         // parse out the gps position and trigger that callback
         GlobalFrameMessage gps(timestamp, float(gpi_msg.lat) / 1e7, float(gpi_msg.lon) / 1e7, float(gpi_msg.alt) / 1000);
@@ -131,9 +130,10 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
     // http://mavlink.org/messages/common/#HEARTBEAT
     else if (msg.msgid == MAVLINK_MSG_ID_HEARTBEAT)
     {
-        mavlink::common::msg::HEARTBEAT hrt_msg{};
-        hrt_msg.deserialize(msgMap);
-        
+        mavlink_heartbeat_t hrt_msg;
+        memset(&hrt_msg, 0, sizeof(mavlink_heartbeat_t));
+        mavlink_msg_heartbeat_decode(&msg, &hrt_msg);
+
         uint32_t timestamp = 0.0;
         uint8_t motors_armed = (hrt_msg.base_mode & MAV_MODE_FLAG_SAFETY_ARMED) != 0;
 
@@ -154,8 +154,9 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
     // http://mavlink.org/messages/common#LOCAL_POSITION_NED
     else if (msg.msgid == MAVLINK_MSG_ID_LOCAL_POSITION_NED)
     {
-        mavlink::common::msg::LOCAL_POSITION_NED lpn_msg{};
-        lpn_msg.deserialize(msgMap);
+        mavlink_local_position_ned_t lpn_msg;
+        memset(&lpn_msg, 0, sizeof(mavlink_local_position_ned_t));
+        mavlink_msg_local_position_ned_decode(&msg, &lpn_msg);
 
         uint32_t timestamp = lpn_msg.time_boot_ms / 1000.0;
         // parse out the local positin and trigger that callback
@@ -169,8 +170,8 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
     // http://mavlink.org/messages/common#HOME_POSITION
     else if (msg.msgid == MAVLINK_MSG_ID_HOME_POSITION)
     {
-        mavlink::common::msg::HOME_POSITION hp_msg{};
-        hp_msg.deserialize(msgMap);
+        mavlink_home_position_t hp_msg;
+        mavlink_msg_home_position_decode(&msg, &hp_msg);
 
         uint32_t timestamp = 0.0;
         GlobalFrameMessage home(timestamp, float(hp_msg.latitude) / 1e7, float(hp_msg.longitude) / 1e7, float(hp_msg.altitude) / 1000);
@@ -179,8 +180,9 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
     // http://mavlink.org/messages/common/#SCALED_IMU
     else if (msg.msgid == MAVLINK_MSG_ID_SCALED_IMU)
     {
-        mavlink::common::msg::SCALED_IMU si_msg{};
-        si_msg.deserialize(msgMap);
+        mavlink_scaled_imu_t si_msg;
+        memset(&si_msg, 0, sizeof(mavlink_scaled_imu_t));
+        mavlink_msg_scaled_imu_decode(&msg, &si_msg);
 
         uint32_t timestamp = si_msg.time_boot_ms / 1000.0;
         // break out the message into its respective messages for here
@@ -193,8 +195,9 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
     // http://mavlink.org/messages/common#SCALED_PRESSURE
     else if (msg.msgid == MAVLINK_MSG_ID_SCALED_PRESSURE)
     {
-        mavlink::common::msg::SCALED_PRESSURE sp_msg{};
-        sp_msg.deserialize(msgMap);
+        mavlink_scaled_pressure_t sp_msg;
+        memset(&sp_msg, 0, sizeof(mavlink_scaled_pressure_t));
+        mavlink_msg_scaled_pressure_decode(&msg, &sp_msg);
 
         uint32_t timestamp = sp_msg.time_boot_ms / 1000.0;
         BodyFrameMessage pressure(timestamp, 0, 0, sp_msg.press_abs);  // unit is [hectopascal]
@@ -203,8 +206,9 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
     // http://mavlink.org/messages/common#DISTANCE_SENSOR
     else if (msg.msgid == MAVLINK_MSG_ID_DISTANCE_SENSOR)
     {
-        mavlink::common::msg::DISTANCE_SENSOR ds_msg{};
-        ds_msg.deserialize(msgMap);
+        mavlink_distance_sensor_t ds_msg;
+        memset(&ds_msg, 0, sizeof(mavlink_distance_sensor_t));
+        mavlink_msg_distance_sensor_decode(&msg, &ds_msg);
 
         uint32_t timestamp = ds_msg.time_boot_ms / 1000.0;
         float direction = 0;
@@ -220,8 +224,9 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
     // http://mavlink.org/messages/common#ATTITUDE_QUATERNION
     else if (msg.msgid == MAVLINK_MSG_ID_ATTITUDE_QUATERNION)
     {
-        mavlink::common::msg::ATTITUDE_QUATERNION aq_msg{};
-        aq_msg.deserialize(msgMap);
+        mavlink_attitude_quaternion_t aq_msg;
+        memset(&aq_msg, 0, sizeof(mavlink_attitude_quaternion_t));
+        mavlink_msg_attitude_quaternion_decode(&msg, &aq_msg);
 
         uint32_t timestamp = aq_msg.time_boot_ms / 1000.0;
         // TODO: check if mask notifies us to ignore a field
@@ -235,8 +240,9 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
     // DEBUG
     else if (msg.msgid == MAVLINK_MSG_ID_STATUSTEXT)
     {
-        mavlink::common::msg::STATUSTEXT st_msg{};
-        st_msg.deserialize(msgMap);
+        mavlink_statustext_t st_msg;
+        memset(&st_msg, 0, sizeof(mavlink_statustext_t));
+        mavlink_msg_statustext_decode(&msg, &st_msg);
     }
 }
 

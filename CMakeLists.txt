@@ -31,5 +31,4 @@ add_executable (freedomdrone
         ${HEADERS})
 
 target_link_libraries(freedomdrone
-        pthread
         )

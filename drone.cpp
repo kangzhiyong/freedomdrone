@@ -485,6 +485,7 @@ void Drone::takeoff(float target_altitude)
     try {
         if (m_conn != nullptr) {
             m_conn->takeoff(local_position()[0], local_position()[1], target_altitude);
+            printf("takeof local_position: %f, %f, %f\r\n", local_position()[0], local_position()[1], target_altitude);
         }
     } catch (...) {
         perror("takeoff failed: ");

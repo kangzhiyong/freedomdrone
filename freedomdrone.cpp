@@ -45,7 +45,7 @@ void UpAndDownFlyer::state_callback()
     {
         takeoff_transition();
     }
-    else if (flight_phase == DISARMING && armed())
+    else if (flight_phase == DISARMING && !armed())
     {
         manual_transition();
     }
@@ -74,7 +74,7 @@ void UpAndDownFlyer::arming_transition()
     cout << "arming transition\r\n" << endl;
     take_control();
     arm();
-    set_home_position(global_position()[0], global_position()[2], global_position()[3]);
+    set_home_position(global_position()[0], global_position()[1], global_position()[2]);
     flight_phase = ARMING;
 }
 
