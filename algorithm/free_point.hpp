@@ -99,7 +99,7 @@ public:
 //        std::copy_n(p.coords_.begin(), n, coords_.begin());
 //    }
     
-    void print(std::string prefix)
+    void print(std::string prefix="")
     {
         std::cout << prefix << " (x, y, z, ...): ( ";
         for (size_t i = 0; i < dimensions; ++i)
@@ -129,5 +129,6 @@ std::ostream& operator<<(std::ostream& out, const point<coordinate_type, dimensi
 typedef point<float, 2> point2D;
 typedef point<float, 3> point3D;
 typedef point<float, 4> point4D;
+typedef point<double, 3> point3DD;
 
 #endif /* my_point_hpp */
