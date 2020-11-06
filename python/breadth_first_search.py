@@ -126,6 +126,7 @@ def breadth_first(grid, start, goal):
              
     # Now, if you found a path, retrace your steps through 
     # the branch dictionary to find out how you got there!
+    print(branch)
     path = []
     if found:
         # retrace steps

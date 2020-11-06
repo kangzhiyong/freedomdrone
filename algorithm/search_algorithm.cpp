@@ -14,9 +14,9 @@ using namespace std;
 GirdCellCoord start(0, 0);
 GirdCellCoord goal(4, 4);
 int grid[ROW][COL] = {  {0, 1, 0, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 0},
                         {0, 1, 0, 0, 0, 0},
-                        {0, 1, 0, 1, 0, 0},
-                        {0, 0, 0, 1, 1, 0 },
+                        {0, 0, 0, 1, 1, 0},
                         {0, 0, 0, 1, 0, 0}};
 
 map<Direction, GirdCellCoord> actions{  {LEFT, GirdCellCoord(0, -1) } ,
@@ -207,15 +207,13 @@ void SearchAlgorithm::depth_first()
     // TODO : Replace the None values for
     // "statck" and "visited" with data structure objects
     // and add the start position to each
+    vector<GirdCellCoord> visited;
+    map<GirdCellCoord, BranchNode, MyCompare> branch;
+    bool found = false;
+    GirdCellCoord current_node;    
     stack<GirdCellCoord> s;
     s.push(start);
-    vector<GirdCellCoord> visited;
-    visited.push_back(start);
-
-    map<GirdCellCoord, BranchNode, MyCompare> branch;
-
-    bool found = false;
-    GirdCellCoord current_node;
+ 
     // Run loop while queue is not empty
     while (!s.empty())
     {
@@ -245,25 +243,11 @@ void SearchAlgorithm::depth_first()
                     Direction a = valid[i];
                     da = actions[a];
                     next_node = GirdCellCoord(current_node.getX() + da.getX(), current_node.getY() + da.getY());
-                    s.push(next_node);
-                    branch[next_node] = BranchNode(current_node, a);
-                }
-            }
-            vector<Direction> valid;
-            GirdCellCoord da, next_node;
-            valid_actions(current_node, valid);
-            for (int i = 0; i < valid.size(); i++)
-            {
-                // delta of performing the action
-                Direction a = valid[i];
-                da = actions[a];
-                next_node = GirdCellCoord(current_node.getX() + da.getX(), current_node.getY() + da.getY());
-
-                if (std::find(visited.begin(), visited.end(), next_node) == visited.end())
-                {
-                    visited.push_back(next_node);
-                    s.push(next_node);
-                    branch[next_node] = BranchNode(current_node, a);
+                    if (std::find(visited.begin(), visited.end(), next_node) == visited.end())
+                    {
+                        s.push(next_node);
+                        branch[next_node] = BranchNode(current_node, a);
+                    }
                 }
             }
         }
@@ -275,6 +259,79 @@ void SearchAlgorithm::depth_first()
     {
         // retrace steps
         GirdCellCoord n = goal;
+        while (branch[n].getCurrentNode() != start)
+        {
+            path.push_back(branch[n].getCurrentDirection());
+            n = branch[n].getCurrentNode();
+        }
+        path.push_back(branch[n].getCurrentDirection());
+    }
+}
+
+float heuristic(GirdCellCoord p, GirdCellCoord g)
+{
+    return (p - g).getCost();
+}
+
+void SearchAlgorithm::a_star()
+{
+    float path_cost, current_cost = 0;
+    vector<GirdCellCoord> visited;
+    map<GirdCellCoord, BranchNode, MyCompare> branch;
+    bool found = false;
+    GirdCellCoord current_node;   
+    priority_queue<GirdCellCoord> q;
+    q.push((0, start));
+    visited.push_back(start);
+    while (!q.empty())
+    {
+        current_node = q.top();
+        q.pop();
+        if (current_node == start)
+        {
+            current_cost = 0;
+        }
+        else
+        {
+            current_cost = branch[current_node].getCost();
+        }
+
+        if (current_node == goal)
+        {
+            cout << "Found a path" << endl;
+            found = true;
+            break;
+        }
+        else
+        {
+            float branch_cost, queue_cost = 0;
+            vector<Direction> valid;
+            GirdCellCoord da, next_node;
+            valid_actions(current_node, valid);
+            for (int i = 0; i < valid.size(); i++)
+            {
+                // delta of performing the action
+                Direction a = valid[i];
+                da = actions[a];
+                next_node = GirdCellCoord(current_node.getX() + da.getX(), current_node.getY() + da.getY());
+                branch_cost = current_cost + da.getCost();
+                next_node.queue_cost = branch_cost + heuristic(next_node, goal);
+
+                if (std::find(visited.begin(), visited.end(), next_node) == visited.end())
+                {
+                    visited.push_back(next_node);
+                    q.push(next_node);
+                    branch[next_node] = BranchNode( branch_cost, current_node, a);
+                }
+            }
+        }
+    }
+    path.clear();
+    if (found)
+    {
+        // retrace steps
+        GirdCellCoord n = goal;
+        path_cost = branch[n].getCost();
         while (branch[n].getCurrentNode() != start)
         {
             path.push_back(branch[n].getCurrentDirection());

@@ -22,6 +22,7 @@ class GirdCellCoord
 public:
     int x{ 0 };
     int y{ 0 };
+    float queue_cost{ 0 };//起点到该点的cost+该点到终点的预估最小值(c=h+g)
 
     GirdCellCoord(){}
     GirdCellCoord(int _x, int _y)
@@ -29,6 +30,7 @@ public:
         x = _x;
         y = _y;
     }
+
     int getX()
     {
         return x;
@@ -38,6 +40,11 @@ public:
         return y;
     }
     
+    float getCost()
+    {
+        return sqrt(pow(x, 2) + pow(y, 2));
+    }
+
     void setX(int _x)
     {
         x = _x;
@@ -47,12 +54,20 @@ public:
     {
         y = _y;
     }
-    
+
     GirdCellCoord operator+(GirdCellCoord& p)
     {
         GirdCellCoord a(0, 0);
         a.setX(getX() + p.getX());
         a.setY(getY() + p.getY());
+        return a;
+    }
+
+    GirdCellCoord operator-(GirdCellCoord& p)
+    {
+        GirdCellCoord a(0, 0);
+        a.setX(getX() - p.getX());
+        a.setY(getY() - p.getY());
         return a;
     }
 
@@ -71,6 +86,11 @@ public:
     {
         return x != p.x || y != p.y;
     }
+
+    bool operator<(const GirdCellCoord& a) const
+    {
+        return queue_cost > a.queue_cost;
+    }
 };
 
 struct MyCompare{  //Function Object
@@ -88,6 +108,12 @@ public:
         current_node = c;
         current_direction = d;
     }
+    BranchNode(float _cost, GirdCellCoord c, Direction d)
+    {
+        cost = _cost;
+        current_node = c;
+        current_direction = d;
+    }
     GirdCellCoord getCurrentNode()
     {
         return current_node;
@@ -96,7 +122,12 @@ public:
     {
         return current_direction;
     }
+    float getCost()
+    {
+        return cost;
+    }
 protected:
+    float cost{ 0 };
     GirdCellCoord current_node;
     Direction current_direction;
 };
@@ -121,4 +152,7 @@ public:
 
     // Depth-first search (DFS)
     void depth_first();
+
+    // A-Star search
+    void a_star();
 };

@@ -23,5 +23,8 @@ int main()
     dfs.depth_first();
     dfs.visualize_path();
 
+    SearchAlgorithm astar;
+    astar.a_star();
+    astar.visualize_path();
     return 0;
 }
