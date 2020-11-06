@@ -9,7 +9,7 @@
 #include <iostream>
 using namespace std;
 
-#include "breadth_first_search.hpp"
+#include "search_algorithm.hpp"
 
 GirdCellCoord start(0, 0);
 GirdCellCoord goal(4, 4);
@@ -24,7 +24,7 @@ map<Direction, GirdCellCoord> actions{  {LEFT, GirdCellCoord(0, -1) } ,
                                         { UP, GirdCellCoord(-1, 0) } ,
                                         { DOWN, GirdCellCoord(1, 0) } };
 
-string BreadthFirstSearch::str_d(Direction d)
+string SearchAlgorithm::str_d(Direction d)
 {
     if (d == LEFT)
     {
@@ -46,7 +46,7 @@ string BreadthFirstSearch::str_d(Direction d)
 
 // Define a function that returns a list of valid actions
 // through the grid from the current node
-void BreadthFirstSearch::valid_actions(GirdCellCoord current_node, vector<Direction> &valid)
+void SearchAlgorithm::valid_actions(GirdCellCoord current_node, vector<Direction> &valid)
 {
     // Returns a list of valid actions given a grid and current node.
     // First define a list of all possible actions
@@ -76,7 +76,7 @@ void BreadthFirstSearch::valid_actions(GirdCellCoord current_node, vector<Direct
 }
 
 // Define a function to visualize the path
-void BreadthFirstSearch::visualize_path()
+void SearchAlgorithm::visualize_path()
 {
     /*
     Given a grid, pathand start position
@@ -129,7 +129,7 @@ void BreadthFirstSearch::visualize_path()
 }
     
 // breadth first search function
-void BreadthFirstSearch::breadth_first()
+void SearchAlgorithm::breadth_first()
 {
     // TODO : Replace the None values for
     // "queue" and "visited" with data structure objects
@@ -181,6 +181,88 @@ void BreadthFirstSearch::breadth_first()
                 {
                     visited.push_back(next_node);
                     q.push(next_node);
+                    branch[next_node] = BranchNode(current_node, a);
+                }
+            }
+        }
+    }
+    // Now, if you found a path, retrace your steps through
+    // the branch dictionary to find out how you got there!
+    path.clear();
+    if (found)
+    {
+        // retrace steps
+        GirdCellCoord n = goal;
+        while (branch[n].getCurrentNode() != start)
+        {
+            path.push_back(branch[n].getCurrentDirection());
+            n = branch[n].getCurrentNode();
+        }
+        path.push_back(branch[n].getCurrentDirection());
+    }
+}
+
+void SearchAlgorithm::depth_first()
+{
+    // TODO : Replace the None values for
+    // "statck" and "visited" with data structure objects
+    // and add the start position to each
+    stack<GirdCellCoord> s;
+    s.push(start);
+    vector<GirdCellCoord> visited;
+    visited.push_back(start);
+
+    map<GirdCellCoord, BranchNode, MyCompare> branch;
+
+    bool found = false;
+    GirdCellCoord current_node;
+    // Run loop while queue is not empty
+    while (!s.empty())
+    {
+        // TODO : Remove the first element from the stack
+        current_node = s.top();
+        s.pop();
+
+        // TODO : Check if the current
+        // node corresponds to the goal state
+        if (current_node == goal)
+        {
+            printf("Found a path.\r\n");
+            found = true;
+            break;
+        }
+        else
+        {
+            if (std::find(visited.begin(), visited.end(), current_node) == visited.end())
+            {
+                visited.push_back(current_node);
+                vector<Direction> valid;
+                GirdCellCoord da, next_node;
+                valid_actions(current_node, valid);
+                for (int i = 0; i < valid.size(); i++)
+                {
+                    // delta of performing the action
+                    Direction a = valid[i];
+                    da = actions[a];
+                    next_node = GirdCellCoord(current_node.getX() + da.getX(), current_node.getY() + da.getY());
+                    s.push(next_node);
+                    branch[next_node] = BranchNode(current_node, a);
+                }
+            }
+            vector<Direction> valid;
+            GirdCellCoord da, next_node;
+            valid_actions(current_node, valid);
+            for (int i = 0; i < valid.size(); i++)
+            {
+                // delta of performing the action
+                Direction a = valid[i];
+                da = actions[a];
+                next_node = GirdCellCoord(current_node.getX() + da.getX(), current_node.getY() + da.getY());
+
+                if (std::find(visited.begin(), visited.end(), next_node) == visited.end())
+                {
+                    visited.push_back(next_node);
+                    s.push(next_node);
                     branch[next_node] = BranchNode(current_node, a);
                 }
             }

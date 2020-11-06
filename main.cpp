@@ -7,7 +7,7 @@
 
 #include <stdio.h>
 #include "freedomdrone.h"
-#include "breadth_first_search.hpp"
+#include "search_algorithm.hpp"
 
 int main()
 {
@@ -15,8 +15,13 @@ int main()
 //    BackyardFlyer drone(&conn);
 //    drone.start_drone();
     
-    BreadthFirstSearch bfs;
+    SearchAlgorithm bfs;
     bfs.breadth_first();
     bfs.visualize_path();
+
+    SearchAlgorithm dfs;
+    dfs.depth_first();
+    dfs.visualize_path();
+
     return 0;
 }

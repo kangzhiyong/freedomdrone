@@ -3,6 +3,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <stack>
 using namespace std;
 
 #define ROW 5
@@ -100,12 +101,12 @@ protected:
     Direction current_direction;
 };
 
-class BreadthFirstSearch
+class SearchAlgorithm
 {
 protected:
     vector<Direction> path;
 public:
-    BreadthFirstSearch(){}
+    SearchAlgorithm(){}
     string str_d(Direction d);
 
     // Define a function that returns a list of valid actions
@@ -117,4 +118,7 @@ public:
         
     // breadth first search function
     void breadth_first();
+
+    // Depth-first search (DFS)
+    void depth_first();
 };
