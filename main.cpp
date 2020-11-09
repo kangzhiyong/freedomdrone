@@ -9,6 +9,8 @@
 #include "freedomdrone.h"
 #include "search_algorithm.hpp"
 #include "free_utils.hpp"
+#include "free_data.hpp"
+#include "matplotlibcpp.h"
 
 int main()
 {
@@ -36,5 +38,9 @@ int main()
 
     gc = local_to_global(lNEDS, gh);
     gc.print();
+
+    FreeData<double> data("../../../data/colliders.csv", ",");
+    vector<int> grid;
+    data.createGrid(5, 5, grid);
     return 0;
 }

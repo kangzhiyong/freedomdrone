@@ -3,6 +3,7 @@
 #
 cmake_minimum_required (VERSION 3.8)
 set(CMAKE_CXX_STANDARD 11)
+SET(CMAKE_BUILD_TYPE "Release")
 
 project (freedomdrone)
 
@@ -11,7 +12,14 @@ include_directories(./connection)
 include_directories(./messaging)
 include_directories(./logging)
 include_directories(./lib)
+include_directories(./lib/matplotlib-cpp)
 include_directories(.)
+
+include_directories(${PYTHONHOME}/include)
+include_directories(${PYTHONHOME}/Lib/site-packages/numpy/core/include)
+link_directories(${PYTHONHOME}/libs)
+
+add_definitions(-DMATPLOTLIBCPP_PYTHON_HEADER=Python.h)
 
 FILE(GLOB SOURCES
         connection/*.cpp

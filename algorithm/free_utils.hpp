@@ -281,31 +281,6 @@ static void from_latlon(double latitude, double longitude, int force_zone_number
 template<typename coordinate_type>
 coordinate_type global_to_local(coordinate_type global_position, coordinate_type global_home)
 {
-    //if (coord == origin) {
-    //    // Short circuit to prevent NaNs in calculation
-    //    return { 0, 0, 0 };
-    //}
-
-    //float lat_rad = coord[1] * M_DEG_TO_RAD;
-    //float lon_rad = coord[0] * M_DEG_TO_RAD;
-
-    //float ref_lon_rad = origin[0] * M_DEG_TO_RAD;
-    //float ref_lat_rad = origin[1] * M_DEG_TO_RAD;
-
-    //float sin_lat = sin(lat_rad);
-    //float cos_lat = cos(lat_rad);
-    //float cos_d_lon = cos(lon_rad - ref_lon_rad);
-
-    //float ref_sin_lat = sin(ref_lat_rad);
-    //float ref_cos_lat = cos(ref_lat_rad);
-
-    //float c = acos(ref_sin_lat * sin_lat + ref_cos_lat * cos_lat * cos_d_lon);
-    //float k = (fabs(c) < epsilon) ? 1.0 : (c / sin(c));
-
-    //float x = k * (ref_cos_lat * sin_lat - ref_sin_lat * cos_lat * cos_d_lon) * CONSTANTS_RADIUS_OF_EARTH;
-    //float y = k * cos_lat * sin(lon_rad - ref_lon_rad) * CONSTANTS_RADIUS_OF_EARTH;
-    //float z = -(coord[2] - origin[2]);
-    //return { x, y, z };
     /*
         Convert a global position(lon, lat, up) to a local position(north, east, down) relative to the home position.
         Returns:
@@ -322,32 +297,6 @@ coordinate_type global_to_local(coordinate_type global_position, coordinate_type
 
 template<typename coordinate_type>
 coordinate_type local_to_global(coordinate_type local_position, coordinate_type global_home) {
-    /*float x_rad = local[0] / CONSTANTS_RADIUS_OF_EARTH;
-    float y_rad = local[1] / CONSTANTS_RADIUS_OF_EARTH;
-    float c = sqrt(x_rad * x_rad + y_rad * y_rad);
-    float sin_c = sin(c);
-    float cos_c = cos(c);
-
-    float ref_lon_rad = origin[0] * M_DEG_TO_RAD;
-    float ref_lat_rad = origin[1] * M_DEG_TO_RAD;
-
-    float ref_sin_lat = sin(ref_lat_rad);
-    float ref_cos_lat = cos(ref_lat_rad);
-
-    float lat_rad;
-    float lon_rad;
-
-    if (fabs(c) > epsilon) {
-        lat_rad = asin(cos_c * ref_sin_lat + (x_rad * sin_c * ref_cos_lat) / c);
-        lon_rad = (ref_lon_rad + atan2(y_rad * sin_c, c * ref_cos_lat * cos_c - x_rad * ref_sin_lat * sin_c));
-
-    }
-    else {
-        lat_rad = ref_lat_rad;
-        lon_rad = ref_lon_rad;
-    }
-
-    return { lon_rad * (float)M_RAD_TO_DEG, lat_rad * (float)M_RAD_TO_DEG, -local[2] + origin[2] };*/
     /*
         Convert a local position(north, east, down) relative to the home position to a global position(lon, lat, up)
         Returns:
@@ -360,4 +309,19 @@ coordinate_type local_to_global(coordinate_type local_position, coordinate_type 
     to_latlon(east_home + local_position[1], north_home + local_position[0], zone_number, zone_letter, false, lat, lon);
 
     return { lon, lat, -(local_position[2] - global_home[2]) };
+}
+
+template<typename coordinate_type>
+static int clip(coordinate_type data, int d_min, int d_max)
+{
+    coordinate_type tmp = data;
+    if (data < 0)
+    {
+        tmp = 0;
+    }
+    else if (data > d_max)
+    {
+        tmp = d_max;
+    }
+    return int(tmp);
 }
