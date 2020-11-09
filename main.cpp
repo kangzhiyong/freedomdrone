@@ -11,6 +11,7 @@
 #include "free_utils.hpp"
 #include "free_data.hpp"
 #include "matplotlibcpp.h"
+namespace plt = matplotlibcpp;
 
 int main()
 {
@@ -42,5 +43,8 @@ int main()
     FreeData<double> data("../../../data/colliders.csv", ",");
     vector<int> grid;
     data.createGrid(5, 5, grid);
+    
+    plt::plot({1,3,2,4});
+    plt::show();
     return 0;
 }
