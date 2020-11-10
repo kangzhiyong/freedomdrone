@@ -7,7 +7,9 @@ set(CMAKE_BUILD_TYPE "Release")
 
 project (freedomdrone)
 
-find_package(PythonLibs REQUIRED)
+set(PYTHON_INCLUDE_DIR "C:\\Users\\lenovo\\AppData\\Local\\Programs\\Python\\Python36\\include")
+set(PYTHON_NUMPY_INCLUDE_DIR "C:\\Users\\lenovo\\AppData\\Local\\Programs\\Python\\Python36\\lib\\site-packages\\numpy\\core\\include")
+set(PYTHON_LIBRARIES "C:\\Users\\lenovo\\AppData\\Local\\Programs\\Python\\Python36\\libs")
 
 include_directories(${PYTHON_INCLUDE_DIR})
 include_directories(${PYTHON_NUMPY_INCLUDE_DIR})
@@ -18,6 +20,8 @@ include_directories(./logging)
 include_directories(./lib)
 include_directories(./lib/matplotlib-cpp)
 include_directories(.)
+
+link_directories(${PYTHON_LIBRARIES})
 
 FILE(GLOB SOURCES
         connection/*.cpp
@@ -38,5 +42,4 @@ add_executable (freedomdrone
         ${HEADERS})
 
 target_link_libraries(freedomdrone
-        ${PYTHON_LIBRARIES}
         )

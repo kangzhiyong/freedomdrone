@@ -174,13 +174,13 @@ public:
         return m_dLon;
     }
 
-    void createGrid(coordinate_type drone_altitude, coordinate_type safety_distance, vector<int> &grid)
+    void createGrid(coordinate_type drone_altitude, coordinate_type safety_distance, vector<int> &grid, int &north_size, int &east_size)
     {
         coordinate_type north, east, alt, d_north, d_east, d_alt = 0;
         int oNorthMin, oNorthMax, oEastMin, oEastMax = 0;
         vector<int>::iterator iColStart;
-        int north_size = std::ceil(m_dNorthMax - m_dNorthMin);
-        int east_size = std::ceil(m_dEastMax - m_dEastMin);
+        north_size = std::ceil(m_dNorthMax - m_dNorthMin);
+        east_size = std::ceil(m_dEastMax - m_dEastMin);
         grid.resize(north_size * east_size);
         std::for_each(grid.begin(), grid.end(), [](int& n) { n=0; });
         for (size_t i = 0; i < m_qvNorths.size(); i++)
