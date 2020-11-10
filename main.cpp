@@ -39,12 +39,16 @@ int main()
 
     gc = local_to_global(lNEDS, gh);
     gc.print();  */
-
-    FreeData<double> data("../../../data/colliders.csv", ",");
+    
+    string path = "../../data/colliders.csv";
+#ifdef WIN32
+    path = "../../../data/colliders.csv";
+#endif
+    FreeData<double> data(path, ",");
     vector<int> grid;
     int nrows, ncols = 0;
-    int drone_alt = 10, safe_distance = 3;
-    data.createGrid(drone_alt, safe_distance, grid, nrows, ncols);
+    int drone_altitude = 5, safe_distance = 3;
+    data.createGrid(drone_altitude, safe_distance, grid, nrows, ncols);
     vector<float> z(ncols * nrows);
     for (size_t i = 0; i < ncols; i++)
     {
@@ -56,54 +60,105 @@ int main()
     }
     const float* zptr = &(z[0]);
 
-    /*int ncols = 500, nrows = 300;
-    std::vector<float> z(ncols * nrows);
-    for (int j = 0; j < nrows; ++j) {
-        for (int i = 0; i < ncols; ++i) {
-            z.at(ncols * j + i) = std::sin(std::hypot(i - ncols / 2, j - nrows / 2));
-        }
-    }
+    int colors = 1;
+//
+//    plt::imshow(zptr, nrows, ncols, colors);
+//    plt::xlabel("EAST");
+//    plt::ylabel("NORTH");
+//    plt::show();
 
-    const float* zptr = &(z[0]);*/
-
-    const int colors = 1;
-
+    // For the purposes of the visual the east coordinate lay along
+    // the x-axis and the north coordinates long the y-axis.
     plt::imshow(zptr, nrows, ncols, colors);
+    GirdCellCoord start_ne(25, 100), goal_ne(750, 370);
+//    vector<int> ne_x, ne_y;
+//    ne_x.push_back(start_ne.getX());
+//    ne_x.push_back(goal_ne.getX());
+//    ne_y.push_back(start_ne.getY());
+//    ne_y.push_back(goal_ne.getY());
+    
+//    plt::plot(start_ne.getY(), start_ne.getX(), "x");
+//    plt::plot(goal_ne.getY(), goal_ne.getX(), "x");
+    
+    SearchAlgorithm astar(start_ne, goal_ne);
+    astar.a_star();
+    vector< point<int, 2> > path_points = astar.get_path_points();
+    vector<int> pp_x, pp_y;
+    for (size_t i = 0; i < path_points.size(); i++) {
+        pp_x.push_back(path_points[i][0]);
+        pp_y.push_back(path_points[i][1]);
+    }
+    plt::plot(pp_x, pp_y, "g");
     plt::xlabel("EAST");
     plt::ylabel("NORTH");
     plt::show();
-    //// Show plots
-    //plt::save("imshow.png");
-    //std::cout << "Result saved to 'imshow.png'.\n";
-
-
-    //plt::plot({1,3,2,4});
-    //plt::show();
-
-    //int n = 5000;
-    //std::vector<double> x(n), y(n), z(n), w(n, 2);
-    //for (int i = 0; i < n; ++i) {
-    //    x.at(i) = i * i;
-    //    y.at(i) = sin(2 * M_PI * i / 360.0);
-    //    z.at(i) = log(i);
-    //}
-
-    //// Set the size of output image to 1200x780 pixels
-    //plt::figure_size(1200, 780);
-    //// Plot line from given x and y data. Color is selected automatically.
-    //plt::plot(x, y);
-    //// Plot a red dashed line from given x and y data.
-    //plt::plot(x, w, "r--");
-    //// Plot a line whose name will show up as "log(x)" in the legend.
-    //plt::named_plot("log(x)", x, z);
-    //// Set x-axis to interval [0,1000000]
-    //plt::xlim(0, 1000 * 1000);
-    //// Add graph title
-    //plt::title("Sample figure");
-    //// Enable legend.
-    //plt::legend();
-    //// Save the image (file format is determined by the extension)
-    //plt::save("./basic.png");
-
+    
+    plt::imshow(zptr, nrows, ncols, colors);
+    vector< point<int, 2>> path_points_prune;
+    prune_path_by_collinearity(path_points, path_points_prune);
+    
+//    plt::plot(start_ne.getY(), start_ne.getX(), "x");
+//    plt::plot(goal_ne.getY(), goal_ne.getX(), "x");
+    
+    pp_x.clear();
+    pp_y.clear();
+    for (size_t i = 0; i < path_points_prune.size(); i++) {
+        pp_x.push_back(path_points_prune[i][0]);
+        pp_y.push_back(path_points_prune[i][1]);
+    }
+    plt::plot(pp_x, pp_y, "g");
+    plt::xlabel("EAST");
+    plt::ylabel("NORTH");
+    plt::show();
+    
+//    point2D p0({0, 0}), p1({7, 5});
+//    vector<float> line_x({0, 7});
+//    vector<float> line_y({0, 5});
+//    vector<point2D> cells;
+//    bresenham({line_x[0], line_y[0]}, {line_x[1], line_y[1]}, cells);
+//    plt::plot(line_x, line_y);
+//
+//    for (size_t i = 0; i < cells.size(); i++) {
+//        point2D p = cells[i];
+//        line_x.clear();
+//        line_y.clear();
+//        line_x.push_back(p[0]);
+//        line_x.push_back(p[0] + 1);
+//        line_y.push_back(p[1]);
+//        line_y.push_back(p[1]);
+//        plt::plot(line_x, line_y, "k");
+//
+//        line_x.clear();
+//        line_y.clear();
+//        line_x.push_back(p[0]);
+//        line_x.push_back(p[0] + 1);
+//        line_y.push_back(p[1] + 1);
+//        line_y.push_back(p[1] + 1);
+//        plt::plot(line_x, line_y, "k");
+//
+//        line_x.clear();
+//        line_y.clear();
+//        line_x.push_back(p[0]);
+//        line_x.push_back(p[0]);
+//        line_y.push_back(p[1]);
+//        line_y.push_back(p[1] + 1);
+//        plt::plot(line_x, line_y, "k");
+//
+//        line_x.clear();
+//        line_y.clear();
+//        line_x.push_back(p[0] + 1);
+//        line_x.push_back(p[0] + 1);
+//        line_y.push_back(p[1]);
+//        line_y.push_back(p[1] + 1);
+//        plt::plot(line_x, line_y, "k");
+//    }
+//
+//    plt::grid(true);
+//    plt::axis("equal");
+//    plt::xlabel("X");
+//    plt::ylabel("Y");
+//    plt::title("Python package Bresenham algorithm");
+//    plt::show();
+    
     return 0;
 }

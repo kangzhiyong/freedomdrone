@@ -11,8 +11,6 @@ using namespace std;
 
 #include "search_algorithm.hpp"
 
-GirdCellCoord start(0, 0);
-GirdCellCoord goal(4, 4);
 int grid[ROW][COL] = {  {0, 1, 0, 0, 0, 0},
                         {0, 0, 0, 0, 0, 0},
                         {0, 1, 0, 0, 0, 0},
@@ -54,24 +52,28 @@ void SearchAlgorithm::valid_actions(GirdCellCoord current_node, vector<Direction
     int n = ROW - 1, m = COL - 1;
     int x = current_node.getX(), y = current_node.getY();
     vector<Direction>::iterator it;
+    valid.push_back(UP);
+    valid.push_back(DOWN);
+    valid.push_back(LEFT);
+    valid.push_back(RIGHT);
     
     // check if the node is off the grid or it's an obstacle
     // If it is either, remove the action that takes you there
-    if ((x - 1) >= 0 && grid[x - 1][y] != 1)
+    if ((x - 1) < 0 || grid[x - 1][y] == 1)
     {
-        valid.push_back(UP);
+        valid.erase(find(valid.begin(), valid.end(), UP));
     }
-    if ((x + 1) <= n && grid[x + 1][y] != 1)
+    if ((x + 1) > n && grid[x + 1][y] == 1)
     {
-        valid.push_back(DOWN);
+        valid.erase(find(valid.begin(), valid.end(), DOWN));
     }
-    if ((y - 1) >= 0 && grid[x][y - 1] != 1)
+    if ((y - 1) < 0 && grid[x][y - 1] == 1)
     {
-        valid.push_back(LEFT);
+        valid.erase(find(valid.begin(), valid.end(), LEFT));
     }
-    if ((y + 1) <= m && grid[x][y + 1] != 1)
+    if ((y + 1) > m && grid[x][y + 1] == 1)
     {
-        valid.push_back(RIGHT);
+        valid.erase(find(valid.begin(), valid.end(), RIGHT));
     }
 }
 
@@ -332,11 +334,14 @@ void SearchAlgorithm::a_star()
         // retrace steps
         GirdCellCoord n = goal;
         path_cost = branch[n].getCost();
+        path_points.push_back({goal.getX(), goal.getY()});
         while (branch[n].getCurrentNode() != start)
         {
+            path_points.push_back({branch[n].getCurrentNode().getX(), branch[n].getCurrentNode().getY()});
             path.push_back(branch[n].getCurrentDirection());
             n = branch[n].getCurrentNode();
         }
+        path_points.push_back({branch[n].getCurrentNode().getX(), branch[n].getCurrentNode().getY()});
         path.push_back(branch[n].getCurrentDirection());
     }
 }

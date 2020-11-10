@@ -6,6 +6,8 @@
 #include <stack>
 using namespace std;
 
+#include "free_point.hpp"
+
 #define ROW 5
 #define COL 6
 
@@ -135,9 +137,17 @@ protected:
 class SearchAlgorithm
 {
 protected:
+    GirdCellCoord start;
+    GirdCellCoord goal;
     vector<Direction> path;
+    vector<point<int, 2> > path_points;
 public:
     SearchAlgorithm(){}
+    SearchAlgorithm(GirdCellCoord s, GirdCellCoord g)
+    {
+        start = s;
+        goal = g;
+    }
     string str_d(Direction d);
 
     // Define a function that returns a list of valid actions
@@ -155,4 +165,8 @@ public:
 
     // A-Star search
     void a_star();
+    vector< point<int, 2> > get_path_points()
+    {
+        return path_points;
+    }
 };
