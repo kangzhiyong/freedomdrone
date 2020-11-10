@@ -26,17 +26,14 @@ def create_grid(data, drone_altitude, safety_distance):
     # minimum and maximum north coordinates
     north_min = np.floor(np.min(data[:, 0] - data[:, 3]))
     north_max = np.ceil(np.max(data[:, 0] + data[:, 3]))
-    print("north:", north_min, north_max)
 
     # minimum and maximum east coordinates
     east_min = np.floor(np.min(data[:, 1] - data[:, 4]))
     east_max = np.ceil(np.max(data[:, 1] + data[:, 4]))
-    print("east:", east_min, east_max)
     # given the minimum and maximum coordinates we can
     # calculate the size of the grid.
     north_size = int(np.ceil(north_max - north_min))
     east_size = int(np.ceil(east_max - east_min))
-    print("size: ", north_size, east_size)
     # Initialize an empty grid
     grid = np.zeros((north_size, east_size))
 

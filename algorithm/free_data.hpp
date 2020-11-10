@@ -181,7 +181,8 @@ public:
         vector<int>::iterator iColStart;
         north_size = std::ceil(m_dNorthMax - m_dNorthMin);
         east_size = std::ceil(m_dEastMax - m_dEastMin);
-        grid.resize(north_size * east_size);
+        grid.resize(east_size * north_size);
+
         std::for_each(grid.begin(), grid.end(), [](int& n) { n=0; });
         for (size_t i = 0; i < m_qvNorths.size(); i++)
         {
@@ -199,13 +200,14 @@ public:
                 oEastMax = clip(east + d_east + safety_distance - m_dEastMin, 0, east_size - 1);
                 for (size_t m = oNorthMin; m <= oNorthMax; m++)
                 {
-                    //for (size_t n = oEastMin; n <= oEastMax; n++)
-                    //{
-                    //    grid[m * east_size + n] = 1;
-                    //}
                     iColStart = grid.begin() + m * east_size;
                     std::for_each(iColStart + oEastMin, iColStart + oEastMax, [](int& n) { n = 1; });
                 }
+                //for (size_t m = oEastMin; m <= oEastMax; m++)
+                //{
+                //    iColStart = grid.begin() + m * north_size;
+                //    std::for_each(iColStart + oNorthMin, iColStart + oNorthMax, [](int& n) { n = 1; });
+                //}
             }
         }
     }

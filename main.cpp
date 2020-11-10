@@ -19,7 +19,7 @@ int main()
 //    BackyardFlyer drone(&conn);
 //    drone.start_drone();
     
-    SearchAlgorithm bfs;
+    /*SearchAlgorithm bfs;
     bfs.breadth_first();
     bfs.visualize_path();
 
@@ -38,22 +38,43 @@ int main()
     lNED.print("LNED: ");
 
     gc = local_to_global(lNEDS, gh);
-    gc.print();
+    gc.print();  */
 
     FreeData<double> data("../../../data/colliders.csv", ",");
     vector<int> grid;
     int nrows, ncols = 0;
-    data.createGrid(5, 5, grid, nrows, ncols);
+    int drone_alt = 10, safe_distance = 3;
+    data.createGrid(drone_alt, safe_distance, grid, nrows, ncols);
+    vector<float> z(ncols * nrows);
+    for (size_t i = 0; i < ncols; i++)
+    {
+        for (size_t j = 0; j < nrows; j++)
+        {
+            z[nrows * (ncols - i - 1) + j] = grid[nrows * i + j];
+        }
+        cout << endl;
+    }
+    const float* zptr = &(z[0]);
 
-    const float* zptr = (float *)&(grid[0]);
+    /*int ncols = 500, nrows = 300;
+    std::vector<float> z(ncols * nrows);
+    for (int j = 0; j < nrows; ++j) {
+        for (int i = 0; i < ncols; ++i) {
+            z.at(ncols * j + i) = std::sin(std::hypot(i - ncols / 2, j - nrows / 2));
+        }
+    }
+
+    const float* zptr = &(z[0]);*/
+
     const int colors = 1;
 
-    plt::title("My matrix");
     plt::imshow(zptr, nrows, ncols, colors);
-
-    // Show plots
-    plt::save("imshow.png");
-    std::cout << "Result saved to 'imshow.png'.\n";
+    plt::xlabel("EAST");
+    plt::ylabel("NORTH");
+    plt::show();
+    //// Show plots
+    //plt::save("imshow.png");
+    //std::cout << "Result saved to 'imshow.png'.\n";
 
 
     //plt::plot({1,3,2,4});
