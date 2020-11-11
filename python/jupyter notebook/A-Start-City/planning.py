@@ -81,6 +81,7 @@ def a_star(grid, h, start, goal):
             found = True
             break
         else:
+            xx = valid_actions(grid, current_node)
             for action in valid_actions(grid, current_node):
                 # get the tuple representation
                 da = action.delta
@@ -92,7 +93,6 @@ def a_star(grid, h, start, goal):
                     visited.add(next_node)               
                     branch[next_node] = (branch_cost, current_node, action)
                     queue.put((queue_cost, next_node))
-             
     if found:
         # retrace steps
         n = goal

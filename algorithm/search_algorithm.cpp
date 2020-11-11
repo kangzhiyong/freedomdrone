@@ -7,9 +7,11 @@
 
 #include <stdio.h>
 #include <iostream>
+#include <set>
 using namespace std;
 
 #include "search_algorithm.hpp"
+#include "free_utils.hpp"
 
 //int grid[ROW][COL] = {  {0, 1, 0, 0, 0, 0},
 //                        {0, 0, 0, 0, 0, 0},
@@ -55,28 +57,24 @@ void SearchAlgorithm::valid_actions(GirdCellCoord current_node, vector<Direction
     int n = g_east_size - 1, m = g_north_size - 1;
     int x = current_node.getX(), y = current_node.getY();
     vector<Direction>::iterator it;
-    valid.push_back(UP);
-    valid.push_back(DOWN);
-    valid.push_back(LEFT);
-    valid.push_back(RIGHT);
     
     // check if the node is off the grid or it's an obstacle
     // If it is either, remove the action that takes you there
-    if ((x - 1) < 0 || grid[(x - 1) * g_north_size + y] == 1)
+    if ((x - 1) >= 0 && grid[(x - 1) * g_north_size + y] != 1)
     {
-        valid.erase(find(valid.begin(), valid.end(), UP));
+        valid.push_back(UP);
     }
-    if ((x + 1) > n || grid[(x + 1) * g_north_size + y] == 1)
+    if ((x + 1) <= n && grid[(x + 1) * g_north_size + y] != 1)
     {
-        valid.erase(find(valid.begin(), valid.end(), DOWN));
+        valid.push_back(DOWN);
     }
-    if ((y - 1) < 0 || grid[x * g_north_size + (y - 1)] == 1)
+    if ((y - 1) >= 0 && grid[x * g_north_size + (y - 1)] != 1)
     {
-        valid.erase(find(valid.begin(), valid.end(), LEFT));
+        valid.push_back(LEFT);
     }
-    if ((y + 1) > m || grid[x * g_north_size + (y + 1)] == 1)
+    if ((y + 1) <= m && grid[x * g_north_size + (y + 1)] != 1)
     {
-        valid.erase(find(valid.begin(), valid.end(), RIGHT));
+        valid.push_back(RIGHT);
     }
 }
 
@@ -278,16 +276,21 @@ float heuristic(GirdCellCoord p, GirdCellCoord g)
     return (p - g).getCost();
 }
 
+int heuristic_func(GirdCellCoord p, GirdCellCoord g)
+{
+    return abs(p.getX() - g.getX()) + abs(p.getY() - g.getY());
+}
 void SearchAlgorithm::a_star()
 {
-    float path_cost, current_cost = 0;
-    vector<GirdCellCoord> visited;
+    int path_cost, current_cost = 0;
+    set<GirdCellCoord, MyCompare> visited;
     map<GirdCellCoord, BranchNode, MyCompare> branch;
     bool found = false;
     GirdCellCoord current_node;   
     priority_queue<GirdCellCoord> q;
     q.push((0, start));
-    visited.push_back(start);
+    visited.insert(start);
+
     while (!q.empty())
     {
         current_node = q.top();
@@ -308,7 +311,7 @@ void SearchAlgorithm::a_star()
         }
         else
         {
-            float branch_cost, queue_cost = 0;
+            int branch_cost, queue_cost = 0;
             vector<Direction> valid;
             GirdCellCoord da, next_node;
             valid_actions(current_node, valid);
@@ -319,16 +322,14 @@ void SearchAlgorithm::a_star()
                 da = actions[a];
                 next_node = GirdCellCoord(current_node.getX() + da.getX(), current_node.getY() + da.getY());
                 branch_cost = current_cost + da.getCost();
-                next_node.queue_cost = branch_cost + heuristic(next_node, goal);
-                if (std::find(visited.begin(), visited.end(), next_node) == visited.end())
+                next_node.queue_cost = branch_cost + heuristic_func(next_node, goal);
+                if ( visited.find(next_node) == visited.end())
                 {
-                    visited.push_back(next_node);
+                    visited.insert(next_node);
                     q.push(next_node);
                     branch[next_node] = BranchNode( branch_cost, current_node, a);
                 }
-                cout << next_node.queue_cost << " ";
             }
-            cout << endl;
         }
     }
     path.clear();
@@ -347,4 +348,128 @@ void SearchAlgorithm::a_star()
         path_points.push_back({branch[n].getCurrentNode().getX(), branch[n].getCurrentNode().getY()});
         path.push_back(branch[n].getCurrentDirection());
     }
+}
+
+//Implementation of Bresenham's line drawing algorithm
+//See en.wikipedia.org/wiki/Bresenham's_line_algorithm
+bool SearchAlgorithm::bresenham(point<int, 2> p0, point<int, 2> p1)
+{
+    /*
+    Yield integer coordinates on the line from (x0, y0) to (x1, y1).
+    Input coordinates should be integers.
+    The result will contain both the start and the end point.
+     */
+    int dx = p1[0] - p0[0];
+    int dy = p1[1] - p0[1];
+    
+    int xsign = dx > 0 ? 1 : -1;
+    int ysign = dy > 0 ? 1 : -1;
+    
+    dx = abs(dx);
+    dy = abs(dy);
+    
+    int xx, xy, yx, yy;
+    if (dx > dy) {
+        xx = xsign;
+        xy = 0;
+        yx = 0;
+        yy = ysign;
+    }
+    else
+    {
+        int tmp = dx;
+        dx = dy;
+        dy = tmp;
+        xx = 0;
+        xy = ysign;
+        yx = xsign;
+        yy = 0;
+    }
+    
+    int D = 2 * dy - dx;
+    int y = 0;
+    for (int x = 0; x < (dx + 1); x++) {
+        if (grid[(p0[0] + x*xx + y*yx) * g_north_size + p0[1] + x*xy + y*yy] == 1) {
+            return false;
+        }
+        if (D >= 0) {
+            y += 1;
+            D -= 2 * dx;
+        }
+        D += 2 * dy;
+    }
+    return true;
+}
+
+bool SearchAlgorithm::collinearity(point<int, 2> p1, point<int, 2> p2, point<int, 2> p3)
+{
+    // TODO: Calculate the determinant of the matrix using integer arithmetic
+    // TODO: Set collinear to True if the determinant is equal to zero
+    return (p1[0]*(p2[1] - p3[1]) + p2[0]*(p3[1] - p1[1]) + p3[0]*(p1[1] - p2[1])) == 0;
+}
+
+void SearchAlgorithm::prune_path_by_collinearity(vector<point<int, 2>> path, vector<point<int, 2>> &pruned_path)
+{
+    pruned_path = path;
+    int i = 2;
+    while (i < pruned_path.size())
+    {
+        point<int, 2> p1 = pruned_path[i - 2];
+        point<int, 2> p2 = pruned_path[i - 1];
+        point<int, 2> p3 = pruned_path[i];
+        
+        /*
+        # If the 3 points are in a line remove
+        # the 2nd point.
+        # The 3rd point now becomes and 2nd point
+        # and the check is redone with a new third point
+        # on the next iteration.
+        */
+        if (collinearity(p1, p2, p3))
+        {
+            /*
+            # Something subtle here but we can mutate
+            # `pruned_path` freely because the length
+            # of the list is check on every iteration.
+             */
+            pruned_path.erase(std::find(pruned_path.begin(), pruned_path.end(), p2));
+        }
+        else
+        {
+            i += 1;
+        }
+    }
+}
+
+void SearchAlgorithm::prune_path_by_bresenham(vector<point<int, 2>> path, vector<point<int, 2>> &pruned_path)
+{
+    pruned_path = path;
+    int i = 1;
+    while (i < pruned_path.size())
+    {
+        point<int, 2> p1 = pruned_path[i - 1];
+        point<int, 2> p2 = pruned_path[i];
+        
+        /*
+        # If the 3 points are in a line remove
+        # the 2nd point.
+        # The 3rd point now becomes and 2nd point
+        # and the check is redone with a new third point
+        # on the next iteration.
+        */
+        if (bresenham(p1, p2))
+        {
+            /*
+            # Something subtle here but we can mutate
+            # `pruned_path` freely because the length
+            # of the list is check on every iteration.
+             */
+            pruned_path.erase(std::find(pruned_path.begin(), pruned_path.end(), p2));
+        }
+        else
+        {
+            i += 1;
+        }
+    }
+    pruned_path.push_back({start.getX(), start.getY()});
 }

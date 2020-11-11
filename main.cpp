@@ -65,67 +65,51 @@ int main()
     data.createGrid(drone_altitude, safe_distance, grid, nrows, ncols);
     g_east_size = ncols;
     g_north_size = nrows;
-    vector<float> z(ncols * nrows);
-    for (size_t i = 0; i < ncols; i++)
-    {
-        for (size_t j = 0; j < nrows; j++)
-        {
-            z[nrows * (ncols - i - 1) + j] = grid[nrows * i + j];
-        }
-        cout << endl;
-    }
-    const float* zptr = &(z[0]);
 
-    int colors = 1;
-
-    //plt::imshow(zptr, nrows, ncols, colors);
-    //plt::xlabel("EAST");
-    //plt::ylabel("NORTH");
-    //plt::show();
+    const float* zptr = (float *)&(grid[0]);
 
     // For the purposes of the visual the east coordinate lay along
     // the x-axis and the north coordinates long the y-axis.
-    plt::imshow(zptr, nrows, ncols, colors);
+    int colors = 1;
+//    plt::imshow(zptr, nrows, ncols, colors, {{"cmap", "Greys"}, {"origin", "lower"}});
+    
     GirdCellCoord start_ne(25, 100), goal_ne(750, 370);
-//    vector<int> ne_x, ne_y;
-//    ne_x.push_back(start_ne.getX());
-//    ne_x.push_back(goal_ne.getX());
-//    ne_y.push_back(start_ne.getY());
-//    ne_y.push_back(goal_ne.getY());
     
-    plt::plot(start_ne.getY(), start_ne.getX(), "x");
-    plt::plot(goal_ne.getY(), goal_ne.getX(), "x");
-    
-    /*SearchAlgorithm astar(start_ne, goal_ne, z);
+//    plt::plot({(double)start_ne.getY()}, {(double)start_ne.getX()}, "X");
+//    plt::plot({(double)goal_ne.getY()}, {(double)goal_ne.getX()}, "X");
+
+    SearchAlgorithm astar(start_ne, goal_ne, grid);
     astar.a_star();
+
     vector< point<int, 2> > path_points = astar.get_path_points();
     vector<int> pp_x, pp_y;
-    for (size_t i = 0; i < path_points.size(); i++) {
-        pp_x.push_back(path_points[i][0]);
-        pp_y.push_back(path_points[i][1]);
-    }
-    plt::plot(pp_x, pp_y, "g");
-    plt::xlabel("EAST");
-    plt::ylabel("NORTH");
-    plt::show();*/
+//    for (size_t i = 0; i < path_points.size(); i++) {
+//        pp_x.push_back(path_points[i][0]);
+//        pp_y.push_back(path_points[i][1]);
+//    }
+//    plt::plot(pp_y, pp_x, "g");
+//    plt::xlabel("EAST");
+//    plt::ylabel("NORTH");
+//    plt::show();
     
-    /*plt::imshow(zptr, nrows, ncols, colors);
+    plt::imshow(zptr, nrows, ncols, colors, {{"cmap", "Greys"}, {"origin", "lower"}});
     vector< point<int, 2>> path_points_prune;
-    prune_path_by_collinearity(path_points, path_points_prune);*/
+//    prune_path_by_collinearity(path_points, path_points_prune);
+    astar.prune_path_by_bresenham(path_points, path_points_prune);
+    plt::plot({(double)start_ne.getY()}, {(double)start_ne.getX()}, "X");
+    plt::plot({(double)goal_ne.getY()}, {(double)goal_ne.getX()}, "X");
     
-//    plt::plot(start_ne.getY(), start_ne.getX(), "x");
-//    plt::plot(goal_ne.getY(), goal_ne.getX(), "x");
-    
-    /*pp_x.clear();
+    pp_x.clear();
     pp_y.clear();
     for (size_t i = 0; i < path_points_prune.size(); i++) {
         pp_x.push_back(path_points_prune[i][0]);
         pp_y.push_back(path_points_prune[i][1]);
     }
-    plt::plot(pp_x, pp_y, "g");
+    plt::scatter(pp_y, pp_x);
+    plt::plot(pp_y, pp_x, "deeppink");
     plt::xlabel("EAST");
     plt::ylabel("NORTH");
-    plt::show();*/
+    plt::show();
     
     return 0;
 }

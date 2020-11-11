@@ -22,11 +22,11 @@ grid = create_grid(data, drone_altitude, safe_distance)
 
 # equivalent to
 # plt.imshow(np.flip(grid, 0))
-plt.imshow(grid, origin='lower') 
+# plt.imshow(grid, origin='lower') 
 
-plt.xlabel('EAST')
-plt.ylabel('NORTH')
-plt.show()
+# plt.xlabel('EAST')
+# plt.ylabel('NORTH')
+# plt.show()
 
 start_ne = (25,  100)
 goal_ne = (750., 370.)
@@ -34,8 +34,13 @@ goal_ne = (750., 370.)
 def heuristic_func(position, goal_position):
     return np.abs(position[0] - goal_position[0]) + np.abs(position[1] - goal_position[1])
 
+import time
+t1 = time.time()
+
 path, cost = a_star(grid, heuristic_func, start_ne, goal_ne)
 print(len(path), cost)
+t_3D = time.time() - t1
+print(t_3D)
 
 plt.imshow(grid, cmap='Greys', origin='lower')
 

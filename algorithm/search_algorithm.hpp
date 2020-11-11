@@ -24,10 +24,10 @@ class GirdCellCoord
 public:
     int x{ 0 };
     int y{ 0 };
-    float queue_cost{ 0 };//起点到该点的cost+该点到终点的预估最小值(c=h+g)
+    int queue_cost{ 0 };//起点到该点的cost+该点到终点的预估最小值(c=h+g)
 
     GirdCellCoord(){}
-    GirdCellCoord(int _x, int _y, float cost)
+    GirdCellCoord(int _x, int _y, int cost)
     {
         x = _x;
         y = _y;
@@ -110,7 +110,7 @@ public:
         current_node = c;
         current_direction = d;
     }
-    BranchNode(float _cost, GirdCellCoord c, Direction d)
+    BranchNode(int _cost, GirdCellCoord c, Direction d)
     {
         cost = _cost;
         current_node = c;
@@ -129,7 +129,7 @@ public:
         return cost;
     }
 protected:
-    float cost{ 0 };
+    int cost{ 0 };
     GirdCellCoord current_node;
     Direction current_direction;
 };
@@ -141,11 +141,11 @@ protected:
     GirdCellCoord goal;
     vector<Direction> path;
     vector<point<int, 2> > path_points;
-    vector<float> grid;
+    vector<int> grid;
     map<Direction, GirdCellCoord> actions;
 public:
     SearchAlgorithm(){}
-    SearchAlgorithm(GirdCellCoord s, GirdCellCoord g, vector<float> _grid)
+    SearchAlgorithm(GirdCellCoord s, GirdCellCoord g, vector<int> _grid)
     {
         start = s;
         goal = g;
@@ -176,6 +176,10 @@ public:
     {
         return path_points;
     }
+    bool bresenham(point<int, 2> p0, point<int, 2> p1);
+    bool collinearity(point<int, 2> p1, point<int, 2> p2, point<int, 2> p3);
+    void prune_path_by_collinearity(vector<point<int, 2>> path, vector<point<int, 2>> &pruned_path);
+    void prune_path_by_bresenham(vector<point<int, 2>> path, vector<point<int, 2>> &pruned_path);
 };
 
 extern int g_north_size;
