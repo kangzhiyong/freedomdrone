@@ -8,8 +8,8 @@ using namespace std;
 
 #include "free_point.hpp"
 
-#define ROW 5
-#define COL 6
+//#define ROW 5
+//#define COL 6
 
 enum Direction
 {
@@ -27,6 +27,12 @@ public:
     float queue_cost{ 0 };//起点到该点的cost+该点到终点的预估最小值(c=h+g)
 
     GirdCellCoord(){}
+    GirdCellCoord(int _x, int _y, float cost)
+    {
+        x = _x;
+        y = _y;
+        queue_cost = cost;
+    }
     GirdCellCoord(int _x, int _y)
     {
         x = _x;
@@ -95,12 +101,6 @@ public:
     }
 };
 
-struct MyCompare{  //Function Object
-    bool operator()(const GirdCellCoord &p1, const GirdCellCoord &p2) const{
-        return (p1.x * COL + p1.y) < (p2.x * COL + p2.y);
-    }
-};
-
 class BranchNode
 {
 public:
@@ -141,14 +141,21 @@ protected:
     GirdCellCoord goal;
     vector<Direction> path;
     vector<point<int, 2> > path_points;
+    vector<float> grid;
+    map<Direction, GirdCellCoord> actions;
 public:
     SearchAlgorithm(){}
-    SearchAlgorithm(GirdCellCoord s, GirdCellCoord g)
+    SearchAlgorithm(GirdCellCoord s, GirdCellCoord g, vector<float> _grid)
     {
         start = s;
         goal = g;
+        grid = _grid;
+        actions.insert({ LEFT, GirdCellCoord(0, -1) });
+        actions.insert({ RIGHT, GirdCellCoord(0, 1) });
+        actions.insert({ UP, GirdCellCoord(-1, 0) });
+        actions.insert({ DOWN, GirdCellCoord(1, 0) });
     }
-    string str_d(Direction d);
+    char str_d(Direction d);
 
     // Define a function that returns a list of valid actions
     // through the grid from the current node
@@ -168,5 +175,14 @@ public:
     vector< point<int, 2> > get_path_points()
     {
         return path_points;
+    }
+};
+
+extern int g_north_size;
+extern int g_east_size;
+
+struct MyCompare {  //Function Object
+    bool operator()(const GirdCellCoord& p1, const GirdCellCoord& p2) const {
+        return (p1.x * g_north_size + p1.y) < (p2.x * g_north_size + p2.y);
     }
 };

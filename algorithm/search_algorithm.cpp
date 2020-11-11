@@ -11,34 +11,37 @@ using namespace std;
 
 #include "search_algorithm.hpp"
 
-int grid[ROW][COL] = {  {0, 1, 0, 0, 0, 0},
-                        {0, 0, 0, 0, 0, 0},
-                        {0, 1, 0, 0, 0, 0},
-                        {0, 0, 0, 1, 1, 0},
-                        {0, 0, 0, 1, 0, 0}};
+//int grid[ROW][COL] = {  {0, 1, 0, 0, 0, 0},
+//                        {0, 0, 0, 0, 0, 0},
+//                        {0, 1, 0, 0, 0, 0},
+//                        {0, 0, 0, 1, 1, 0},
+//                        {0, 0, 0, 1, 0, 0}};
+//
+//map<Direction, GirdCellCoord> actions{  {LEFT, GirdCellCoord(0, -1) } ,
+//                                        { RIGHT, GirdCellCoord(0, 1) } ,
+//                                        { UP, GirdCellCoord(-1, 0) } ,
+//                                        { DOWN, GirdCellCoord(1, 0) } };
 
-map<Direction, GirdCellCoord> actions{  {LEFT, GirdCellCoord(0, -1) } ,
-                                        { RIGHT, GirdCellCoord(0, 1) } ,
-                                        { UP, GirdCellCoord(-1, 0) } ,
-                                        { DOWN, GirdCellCoord(1, 0) } };
+int g_north_size = 0;
+int g_east_size = 0;
 
-string SearchAlgorithm::str_d(Direction d)
+char SearchAlgorithm::str_d(Direction d)
 {
     if (d == LEFT)
     {
-        return "<";
+        return '<';
     }
     else if (d == RIGHT)
     {
-        return ">";
+        return '>';
     }
     else if (d == UP)
     {
-        return "^";
+        return '^';
     }
     else if (d == DOWN)
     {
-        return "v";
+        return 'v';
     }
 }
 
@@ -49,7 +52,7 @@ void SearchAlgorithm::valid_actions(GirdCellCoord current_node, vector<Direction
     // Returns a list of valid actions given a grid and current node.
     // First define a list of all possible actions
 
-    int n = ROW - 1, m = COL - 1;
+    int n = g_east_size - 1, m = g_north_size - 1;
     int x = current_node.getX(), y = current_node.getY();
     vector<Direction>::iterator it;
     valid.push_back(UP);
@@ -59,19 +62,19 @@ void SearchAlgorithm::valid_actions(GirdCellCoord current_node, vector<Direction
     
     // check if the node is off the grid or it's an obstacle
     // If it is either, remove the action that takes you there
-    if ((x - 1) < 0 || grid[x - 1][y] == 1)
+    if ((x - 1) < 0 || grid[(x - 1) * g_north_size + y] == 1)
     {
         valid.erase(find(valid.begin(), valid.end(), UP));
     }
-    if ((x + 1) > n && grid[x + 1][y] == 1)
+    if ((x + 1) > n || grid[(x + 1) * g_north_size + y] == 1)
     {
         valid.erase(find(valid.begin(), valid.end(), DOWN));
     }
-    if ((y - 1) < 0 && grid[x][y - 1] == 1)
+    if ((y - 1) < 0 || grid[x * g_north_size + (y - 1)] == 1)
     {
         valid.erase(find(valid.begin(), valid.end(), LEFT));
     }
-    if ((y + 1) > m && grid[x][y + 1] == 1)
+    if ((y + 1) > m || grid[x * g_north_size + (y + 1)] == 1)
     {
         valid.erase(find(valid.begin(), valid.end(), RIGHT));
     }
@@ -90,18 +93,18 @@ void SearchAlgorithm::visualize_path()
     ' '->empty
     */
     // Define a grid of string characters for visualization
-    string sgrid[ROW][COL];
-    for (int i = 0; i < ROW; i++)
+    char *sgrid = new char(g_east_size * g_north_size);
+    for (int i = 0; i < g_east_size; i++)
     {
-        for (int j = 0; j < COL; j++)
+        for (int j = 0; j < g_north_size; j++)
         {
-            if (grid[i][j] == 1)
+            if (grid[i * g_north_size + j] == 1)
             {
-                sgrid[i][j] = "O";
+                sgrid[i * g_north_size + j] = 'O';
             }
             else
             {
-                sgrid[i][j] = " ";
+                sgrid[i * g_north_size + j] = ' ';
             }
         }
     }
@@ -114,17 +117,17 @@ void SearchAlgorithm::visualize_path()
     {
         d = path[i];
         da = actions[d];
-        sgrid[pos.getX()][pos.getY()] = str_d(d);
+        sgrid[pos.getX() * g_north_size + pos.getY()] = str_d(d);
         pos += da;
     }
 
-    sgrid[goal.getX()][goal.getY()] = "G";
-    sgrid[start.getX()][start.getY()] = "S";
+    sgrid[goal.getX() * g_north_size + goal.getY()] = 'G';
+    sgrid[start.getX() * g_north_size + start.getY()] = 'S';
     
-    for (int i = 0; i < ROW; i++) {
+    for (int i = 0; i < g_east_size; i++) {
         cout << "[ ";
-        for (int j = 0; j < COL; j++) {
-            cout << " " << sgrid[i][j];
+        for (int j = 0; j < g_north_size; j++) {
+            cout << " " << sgrid[i * g_north_size + j];
         }
         cout << " ]" << endl;
     }
@@ -297,7 +300,6 @@ void SearchAlgorithm::a_star()
         {
             current_cost = branch[current_node].getCost();
         }
-
         if (current_node == goal)
         {
             cout << "Found a path" << endl;
@@ -318,14 +320,15 @@ void SearchAlgorithm::a_star()
                 next_node = GirdCellCoord(current_node.getX() + da.getX(), current_node.getY() + da.getY());
                 branch_cost = current_cost + da.getCost();
                 next_node.queue_cost = branch_cost + heuristic(next_node, goal);
-
                 if (std::find(visited.begin(), visited.end(), next_node) == visited.end())
                 {
                     visited.push_back(next_node);
                     q.push(next_node);
                     branch[next_node] = BranchNode( branch_cost, current_node, a);
                 }
+                cout << next_node.queue_cost << " ";
             }
+            cout << endl;
         }
     }
     path.clear();

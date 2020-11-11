@@ -14,12 +14,13 @@ elseif (WIN32)
     message(STATUS "windows")
     set(PYTHON_INCLUDE_DIR "C:\\Users\\lenovo\\AppData\\Local\\Programs\\Python\\Python36\\include")
     set(PYTHON_NUMPY_INCLUDE_DIR "C:\\Users\\lenovo\\AppData\\Local\\Programs\\Python\\Python36\\lib\\site-packages\\numpy\\core\\include")
-    set(PYTHON_LIBRARIES "C:\\Users\\lenovo\\AppData\\Local\\Programs\\Python\\Python36\\libs")
+    set(PYTHON_LIBRARIES "C:\\Users\\lenovo\\AppData\\Local\\Programs\\Python\\Python36\\libs\\")
 elseif (APPLE)
     message(STATUS "mac os")
     set(PYTHON_INCLUDE_DIR "/Applications/anaconda3/envs/fcnd/include/python3.6m")
     set(PYTHON_NUMPY_INCLUDE_DIR "/Applications/anaconda3/envs/fcnd/lib/python3.6/site-packages/numpy/core/include")
     set(PYTHON_LIBRARIES "/Applications/anaconda3/envs/fcnd/lib")
+    set(PYTHON_LIBCFCLASS  -lpython3.6m)
 else ()
     MESSAGE(STATUS "other platform")
 endif ()
@@ -55,5 +56,5 @@ add_executable (freedomdrone
         ${HEADERS})
 
 target_link_libraries(freedomdrone
-        -lpython3.6m
+        ${PYTHON_LIBCFCLASS}
         )

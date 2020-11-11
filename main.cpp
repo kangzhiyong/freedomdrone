@@ -15,6 +15,20 @@ namespace plt = matplotlibcpp;
 
 int main()
 {
+    //priority_queue<GirdCellCoord> q;
+    //q.push(GirdCellCoord(1, 2, 13));
+    //q.push(GirdCellCoord(1, 2, 4));
+    //q.push(GirdCellCoord(1, 2, 1));
+    //q.push(GirdCellCoord(1, 2, 6));
+    //q.push(GirdCellCoord(1, 2, 10));
+    //cout << q.size() << endl;
+    //int n = q.size();
+    //while(!q.empty())
+    //{
+    //    cout << q.top().queue_cost << endl;
+    //    q.pop();
+    //}
+    //return 0;
 //    MavlinkConnection conn("TCP", "127.0.0.1", 5760, false, false);
 //    BackyardFlyer drone(&conn);
 //    drone.start_drone();
@@ -49,6 +63,8 @@ int main()
     int nrows, ncols = 0;
     int drone_altitude = 5, safe_distance = 3;
     data.createGrid(drone_altitude, safe_distance, grid, nrows, ncols);
+    g_east_size = ncols;
+    g_north_size = nrows;
     vector<float> z(ncols * nrows);
     for (size_t i = 0; i < ncols; i++)
     {
@@ -61,11 +77,11 @@ int main()
     const float* zptr = &(z[0]);
 
     int colors = 1;
-//
-//    plt::imshow(zptr, nrows, ncols, colors);
-//    plt::xlabel("EAST");
-//    plt::ylabel("NORTH");
-//    plt::show();
+
+    //plt::imshow(zptr, nrows, ncols, colors);
+    //plt::xlabel("EAST");
+    //plt::ylabel("NORTH");
+    //plt::show();
 
     // For the purposes of the visual the east coordinate lay along
     // the x-axis and the north coordinates long the y-axis.
@@ -77,10 +93,10 @@ int main()
 //    ne_y.push_back(start_ne.getY());
 //    ne_y.push_back(goal_ne.getY());
     
-//    plt::plot(start_ne.getY(), start_ne.getX(), "x");
-//    plt::plot(goal_ne.getY(), goal_ne.getX(), "x");
+    plt::plot(start_ne.getY(), start_ne.getX(), "x");
+    plt::plot(goal_ne.getY(), goal_ne.getX(), "x");
     
-    SearchAlgorithm astar(start_ne, goal_ne);
+    /*SearchAlgorithm astar(start_ne, goal_ne, z);
     astar.a_star();
     vector< point<int, 2> > path_points = astar.get_path_points();
     vector<int> pp_x, pp_y;
@@ -91,16 +107,16 @@ int main()
     plt::plot(pp_x, pp_y, "g");
     plt::xlabel("EAST");
     plt::ylabel("NORTH");
-    plt::show();
+    plt::show();*/
     
-    plt::imshow(zptr, nrows, ncols, colors);
+    /*plt::imshow(zptr, nrows, ncols, colors);
     vector< point<int, 2>> path_points_prune;
-    prune_path_by_collinearity(path_points, path_points_prune);
+    prune_path_by_collinearity(path_points, path_points_prune);*/
     
 //    plt::plot(start_ne.getY(), start_ne.getX(), "x");
 //    plt::plot(goal_ne.getY(), goal_ne.getX(), "x");
     
-    pp_x.clear();
+    /*pp_x.clear();
     pp_y.clear();
     for (size_t i = 0; i < path_points_prune.size(); i++) {
         pp_x.push_back(path_points_prune[i][0]);
@@ -109,56 +125,7 @@ int main()
     plt::plot(pp_x, pp_y, "g");
     plt::xlabel("EAST");
     plt::ylabel("NORTH");
-    plt::show();
-    
-//    point2D p0({0, 0}), p1({7, 5});
-//    vector<float> line_x({0, 7});
-//    vector<float> line_y({0, 5});
-//    vector<point2D> cells;
-//    bresenham({line_x[0], line_y[0]}, {line_x[1], line_y[1]}, cells);
-//    plt::plot(line_x, line_y);
-//
-//    for (size_t i = 0; i < cells.size(); i++) {
-//        point2D p = cells[i];
-//        line_x.clear();
-//        line_y.clear();
-//        line_x.push_back(p[0]);
-//        line_x.push_back(p[0] + 1);
-//        line_y.push_back(p[1]);
-//        line_y.push_back(p[1]);
-//        plt::plot(line_x, line_y, "k");
-//
-//        line_x.clear();
-//        line_y.clear();
-//        line_x.push_back(p[0]);
-//        line_x.push_back(p[0] + 1);
-//        line_y.push_back(p[1] + 1);
-//        line_y.push_back(p[1] + 1);
-//        plt::plot(line_x, line_y, "k");
-//
-//        line_x.clear();
-//        line_y.clear();
-//        line_x.push_back(p[0]);
-//        line_x.push_back(p[0]);
-//        line_y.push_back(p[1]);
-//        line_y.push_back(p[1] + 1);
-//        plt::plot(line_x, line_y, "k");
-//
-//        line_x.clear();
-//        line_y.clear();
-//        line_x.push_back(p[0] + 1);
-//        line_x.push_back(p[0] + 1);
-//        line_y.push_back(p[1]);
-//        line_y.push_back(p[1] + 1);
-//        plt::plot(line_x, line_y, "k");
-//    }
-//
-//    plt::grid(true);
-//    plt::axis("equal");
-//    plt::xlabel("X");
-//    plt::ylabel("Y");
-//    plt::title("Python package Bresenham algorithm");
-//    plt::show();
+    plt::show();*/
     
     return 0;
 }
