@@ -4,6 +4,8 @@
 #include <fstream>
 using namespace std;
 
+#include "qt_free_polygon.hpp"
+
 #include "free_polygon.hpp"
 #include "free_utils.hpp"
 
@@ -284,7 +286,12 @@ public:
             oNorthMax = clip(north + d_north - m_dNorthMin, 0, g_north_size - 1);
             oEastMin = clip(east - d_east - m_dEastMin, 0, g_east_size - 1);
             oEastMax = clip(east + d_east - m_dEastMin, 0, g_east_size - 1);
-            m_qvPolygons.push_back(FreePolygon<int>({oNorthMin, oEastMin}, {oNorthMax, oEastMax}, alt + d_alt));
+            QPolygonF p;
+            p.append(QPointF(oNorthMin, oEastMin));
+            p.append(QPointF(oNorthMin, oEastMax));
+            p.append(QPointF(oNorthMax, oEastMax));
+            p.append(QPointF(oNorthMax, oEastMin));
+            m_qvPolygons.push_back({p, alt + d_alt});
         }
     }
     
@@ -296,7 +303,7 @@ public:
         for (int i = 0; i < num; i++) {
             bool in_collision = false;
             for (int j = 0; j < m_qvPolygons.size(); j++) {
-                if (m_qvPolygons[j].contains({xs[i], ys[i]}) && zs[i] <= m_qvPolygons[j].getHeight()) {
+                if (m_qvPolygons[j].contains(QPointF(xs[i], ys[i])) && zs[i] <= m_qvPolygons[j].getHeight()) {
                     in_collision = true;
                     break;
                 }
@@ -322,5 +329,5 @@ private:
     VCoordType m_qvDNorths;
     VCoordType m_qvDEasts;
     VCoordType m_qvDAlts;
-    vector<FreePolygon<int>> m_qvPolygons;
+    vector<QTFreePolygon<int>> m_qvPolygons;
 };

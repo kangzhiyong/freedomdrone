@@ -4,6 +4,9 @@
 cmake_minimum_required (VERSION 3.8)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
 project (freedomdrone)
 
@@ -21,9 +24,14 @@ elseif (APPLE)
     set(PYTHON_NUMPY_INCLUDE_DIR "/Applications/anaconda3/envs/fcnd/lib/python3.6/site-packages/numpy/core/include")
     set(PYTHON_LIBRARIES "/Applications/anaconda3/envs/fcnd/lib")
     set(PYTHON_LIBCFCLASS  -lpython3.6m)
+
+    set(CMAKE_PREFIX_PATH "/usr/local/Cellar/qt/5.14.1/lib/cmake/Qt5")
+
 else ()
     MESSAGE(STATUS "other platform")
 endif ()
+
+find_package(Qt5 COMPONENTS Core Gui Qml Quick REQUIRED Positioning)
 
 include_directories(${PYTHON_INCLUDE_DIR})
 include_directories(${PYTHON_NUMPY_INCLUDE_DIR})
@@ -57,4 +65,5 @@ add_executable (freedomdrone
 
 target_link_libraries(freedomdrone
         ${PYTHON_LIBCFCLASS}
+        Qt5::Core Qt5::Gui Qt5::Qml Qt5::Quick Qt5::Positioning
         )

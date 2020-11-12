@@ -11,20 +11,20 @@ using namespace std;
 
 #define K0  0.9996
 
-#define E  0.00669438
-#define E2  (E * E)
-#define E3  (E2 * E)
-#define E_P2  (E / (1.0 - E))
+#define EX  0.00669438
+#define E2  (EX * EX)
+#define E3  (E2 * EX)
+#define E_P2  (EX / (1.0 - EX))
 
-#define SQRT_E  (sqrt(1 - E))
+#define SQRT_E  (sqrt(1 - EX))
 #define _E  ((1 - SQRT_E) / (1 + SQRT_E))
 #define _E2  (_E * _E)
 #define _E3  (_E2 * _E)
 #define _E4  (_E3 * _E)
 #define _E5  (_E4 * _E)
 
-#define M1  ((1 - E / 4 - 3 * E2 / 64 - 5 * E3 / 256))
-#define M2  ((3 * E / 8 + 3 * E2 / 32 + 45 * E3 / 1024))
+#define M1  ((1 - EX / 4 - 3 * E2 / 64 - 5 * E3 / 256))
+#define M2  ((3 * EX / 8 + 3 * E2 / 32 + 45 * E3 / 1024))
 #define M3  ((15 * E2 / 256 + 45 * E3 / 1024))
 #define M4  ((35 * E3 / 3072))
 
@@ -33,7 +33,7 @@ using namespace std;
 #define P4  ((151. / 96 * _E3 - 417. / 128 * _E5))
 #define P5  ((1097. / 512 * _E4))
 
-#define R  6378137
+#define WS  6378137
 
 #define M_DEG_TO_RAD (M_PI / 180.0)
 #define M_RAD_TO_DEG (180.0 / M_PI)
@@ -173,7 +173,7 @@ static void to_latlon(double easting, double northing, int zone_number, char zon
     }
 
     double m = y / K0;
-    double mu = m / (R * M1);
+    double mu = m / (WS * M1);
 
     double p_rad = (mu +
         P2 * sin(2 * mu) +
@@ -190,11 +190,11 @@ static void to_latlon(double easting, double northing, int zone_number, char zon
     double p_tan2 = p_tan * p_tan;
     double p_tan4 = p_tan2 * p_tan2;
 
-    double ep_sin = 1 - E * p_sin2;
-    double ep_sin_sqrt = sqrt(1 - E * p_sin2);
+    double ep_sin = 1 - EX * p_sin2;
+    double ep_sin_sqrt = sqrt(1 - EX * p_sin2);
 
-    double n = R / ep_sin_sqrt;
-    double r = (1 - E) / ep_sin;
+    double n = WS / ep_sin_sqrt;
+    double r = (1 - EX) / ep_sin;
 
     double c = _E * (p_cos, 2);
     double c2 = c * c;
@@ -254,7 +254,7 @@ static void from_latlon(double latitude, double longitude, int force_zone_number
     double central_lon = zone_number_to_central_longitude(zone_number);
     double central_lon_rad = central_lon * M_DEG_TO_RAD;
 
-    double n = R / sqrt(1 - E * pow(lat_sin, 2));
+    double n = WS / sqrt(1 - EX * pow(lat_sin, 2));
     double c = E_P2 * (lat_cos, 2);
 
     double a = lat_cos * (lon_rad - central_lon_rad);
@@ -264,7 +264,7 @@ static void from_latlon(double latitude, double longitude, int force_zone_number
     double a5 = a4 * a;
     double a6 = a5 * a;
 
-    double m = R * (M1 * lat_rad -
+    double m = WS * (M1 * lat_rad -
                     M2 * sin(2 * lat_rad) +
                     M3 * sin(4 * lat_rad) -
                     M4 * sin(6 * lat_rad));
