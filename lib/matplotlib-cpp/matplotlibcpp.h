@@ -72,6 +72,7 @@ struct _interpreter {
     PyObject *s_python_function_ion;
     PyObject *s_python_function_ginput;
     PyObject *s_python_function_ylim;
+    PyObject *s_python_function_zlim;
     PyObject *s_python_function_title;
     PyObject *s_python_function_axis;
     PyObject *s_python_function_axvline;
@@ -235,6 +236,7 @@ private:
         s_python_function_subplot2grid = safe_import(pymod, "subplot2grid");
         s_python_function_legend = safe_import(pymod, "legend");
         s_python_function_ylim = safe_import(pymod, "ylim");
+        //s_python_function_zlim = safe_import(pymod, "zlim");
         s_python_function_title = safe_import(pymod, "title");
         s_python_function_axis = safe_import(pymod, "axis");
         s_python_function_axvline = safe_import(pymod, "axvline");
@@ -638,6 +640,79 @@ void plot3(const std::vector<Numeric> &x,
   Py_DECREF(args);
   Py_DECREF(kwargs);
   if (res) Py_DECREF(res);
+}
+
+inline void voxels(const float* ptr, const int x, const int y, const int z,  const std::map<std::string, std::string>& keywords = {})
+{
+    detail::_interpreter::get();
+
+    // Same as with plot_surface: We lazily load the modules here the first time 
+    // this function is called because I'm not sure that we can assume "matplotlib 
+    // installed" implies "mpl_toolkits installed" on all platforms, and we don't 
+    // want to require it for people who don't need 3d plots.
+    static PyObject* mpl_toolkitsmod = nullptr, * axis3dmod = nullptr;
+    if (!mpl_toolkitsmod) {
+        detail::_interpreter::get();
+
+        PyObject* mpl_toolkits = PyString_FromString("mpl_toolkits");
+        PyObject* axis3d = PyString_FromString("mpl_toolkits.mplot3d");
+        if (!mpl_toolkits || !axis3d) { throw std::runtime_error("couldnt create string"); }
+
+        mpl_toolkitsmod = PyImport_Import(mpl_toolkits);
+        Py_DECREF(mpl_toolkits);
+        if (!mpl_toolkitsmod) { throw std::runtime_error("Error loading module mpl_toolkits!"); }
+
+        axis3dmod = PyImport_Import(axis3d);
+        Py_DECREF(axis3d);
+        if (!axis3dmod) { throw std::runtime_error("Error loading module mpl_toolkits.mplot3d!"); }
+    }
+
+    // construct args
+    npy_intp dims[3] = { x, y, z };
+    PyObject* args = PyTuple_New(1);
+    PyTuple_SetItem(args, 0, PyArray_SimpleNewFromData(3, dims, NPY_FLOAT, (void *)ptr));
+
+    // Build up the kw args.
+    PyObject* kwargs = PyDict_New();
+
+    for (std::map<std::string, std::string>::const_iterator it = keywords.begin();
+        it != keywords.end(); ++it) {
+        PyDict_SetItemString(kwargs, it->first.c_str(),
+            PyString_FromString(it->second.c_str()));
+    }
+
+    PyObject* fig =
+        PyObject_CallObject(detail::_interpreter::get().s_python_function_figure,
+            detail::_interpreter::get().s_python_empty_tuple);
+    if (!fig) throw std::runtime_error("Call to figure() failed.");
+
+    PyObject* gca_kwargs = PyDict_New();
+    PyDict_SetItemString(gca_kwargs, "projection", PyString_FromString("3d"));
+
+    PyObject* gca = PyObject_GetAttrString(fig, "gca");
+    if (!gca) throw std::runtime_error("No gca");
+    Py_INCREF(gca);
+    PyObject* axis = PyObject_Call(
+        gca, detail::_interpreter::get().s_python_empty_tuple, gca_kwargs);
+
+    if (!axis) throw std::runtime_error("No axis");
+    Py_INCREF(axis);
+
+    Py_DECREF(gca);
+    Py_DECREF(gca_kwargs);
+
+    PyObject* voxels = PyObject_GetAttrString(axis, "voxels");
+    if (!voxels) throw std::runtime_error("No 3D line plot");
+
+    Py_INCREF(voxels);
+    PyObject* res = PyObject_Call(voxels, args, kwargs);
+    if (!res) throw std::runtime_error("Failed 3D line plot");
+    Py_DECREF(voxels);
+
+    Py_DECREF(axis);
+    Py_DECREF(args);
+    Py_DECREF(kwargs);
+    if (res) Py_DECREF(res);
 }
 
 template<typename Numeric>
@@ -1638,6 +1713,25 @@ inline void legend(const std::map<std::string, std::string>& keywords)
 }
 
 template<typename Numeric>
+void zlim(Numeric left, Numeric right)
+{
+    detail::_interpreter::get();
+
+    PyObject* list = PyList_New(2);
+    PyList_SetItem(list, 0, PyFloat_FromDouble(left));
+    PyList_SetItem(list, 1, PyFloat_FromDouble(right));
+
+    PyObject* args = PyTuple_New(1);
+    PyTuple_SetItem(args, 0, list);
+    cout << "xxx" << endl;
+    PyObject* res = PyObject_CallObject(detail::_interpreter::get().s_python_function_zlim, args);
+    if (!res) throw std::runtime_error("Call to zlim() failed.");
+
+    Py_DECREF(args);
+    Py_DECREF(res);
+}
+
+template<typename Numeric>
 void ylim(Numeric left, Numeric right)
 {
     detail::_interpreter::get();
@@ -1710,6 +1804,25 @@ inline double* ylim()
     arr[1] = PyFloat_AsDouble(right);
 
     if(!res) throw std::runtime_error("Call to ylim() failed.");
+
+    Py_DECREF(res);
+    return arr;
+}
+
+inline double* zlim()
+{
+    detail::_interpreter::get();
+
+    PyObject* args = PyTuple_New(0);
+    PyObject* res = PyObject_CallObject(detail::_interpreter::get().s_python_function_zlim, args);
+    PyObject* left = PyTuple_GetItem(res, 0);
+    PyObject* right = PyTuple_GetItem(res, 1);
+
+    double* arr = new double[2];
+    arr[0] = PyFloat_AsDouble(left);
+    arr[1] = PyFloat_AsDouble(right);
+
+    if (!res) throw std::runtime_error("Call to zlim() failed.");
 
     Py_DECREF(res);
     return arr;

@@ -174,14 +174,14 @@ public:
         return m_dLon;
     }
 
-    void createGrid(coordinate_type drone_altitude, coordinate_type safety_distance, vector<int> &grid, int &north_size, int &east_size)
+    void createGrid(coordinate_type drone_altitude, coordinate_type safety_distance, vector<int> &grid)
     {
         coordinate_type north, east, alt, d_north, d_east, d_alt = 0;
         int oNorthMin, oNorthMax, oEastMin, oEastMax = 0;
         vector<int>::iterator iColStart;
-        north_size = std::ceil(m_dNorthMax - m_dNorthMin);
-        east_size = std::ceil(m_dEastMax - m_dEastMin);
-        grid.resize(east_size * north_size);
+        g_north_size = std::ceil(m_dNorthMax - m_dNorthMin);
+        g_east_size = std::ceil(m_dEastMax - m_dEastMin);
+        grid.resize(g_east_size * g_north_size);
 
         std::for_each(grid.begin(), grid.end(), [](int& n) { n=0; });
         for (size_t i = 0; i < m_qvNorths.size(); i++)
@@ -194,20 +194,76 @@ public:
             d_alt = m_qvDAlts[i];
             if ((alt + d_alt + safety_distance) > drone_altitude)
             {
-                oNorthMin = clip(north - d_north - safety_distance - m_dNorthMin, 0, north_size - 1);
-                oNorthMax = clip(north + d_north + safety_distance - m_dNorthMin, 0, north_size - 1);
-                oEastMin = clip(east - d_east - safety_distance - m_dEastMin, 0, east_size - 1);
-                oEastMax = clip(east + d_east + safety_distance - m_dEastMin, 0, east_size - 1);
+                oNorthMin = clip(north - d_north - safety_distance - m_dNorthMin, 0, g_north_size - 1);
+                oNorthMax = clip(north + d_north + safety_distance - m_dNorthMin, 0, g_north_size - 1);
+                oEastMin = clip(east - d_east - safety_distance - m_dEastMin, 0, g_east_size - 1);
+                oEastMax = clip(east + d_east + safety_distance - m_dEastMin, 0, g_east_size - 1);
                 for (size_t m = oNorthMin; m <= oNorthMax; m++)
                 {
-                    iColStart = grid.begin() + m * east_size;
+                    iColStart = grid.begin() + m * g_east_size;
                     std::for_each(iColStart + oEastMin, iColStart + oEastMax, [](int& n) { n = 1; });
                 }
-                //for (size_t m = oEastMin; m <= oEastMax; m++)
-                //{
-                //    iColStart = grid.begin() + m * north_size;
-                //    std::for_each(iColStart + oNorthMin, iColStart + oNorthMax, [](int& n) { n = 1; });
-                //}
+            }
+        }
+    }
+
+    /*
+    Returns a grid representation of a 3D configuration space
+    based on given obstacle data.
+    
+    The `voxel_size` argument sets the resolution of the voxel map. 
+    */
+    void create_voxmap(int voxel_size, vector<int>& voxmap)
+    {
+        // given the minimumand maximum coordinates we can
+        // calculate the size of the grid.
+        g_north_size = floor(ceil(m_dNorthMax - m_dNorthMin) / voxel_size);
+        g_east_size = floor(ceil(m_dEastMax - m_dEastMin) / voxel_size);
+        g_alt_size = floor(m_dAltMax / voxel_size);
+        voxmap.resize(g_north_size * g_east_size * g_alt_size);
+        std::for_each(voxmap.begin(), voxmap.end(), [](int& n) { n = 0; });
+
+        vector<vector<vector<int>>> _voxmap(g_north_size, vector<vector<int>>(g_east_size, vector<int>(g_alt_size, 0)));
+        vector<int>::iterator iYStart, iXStart;
+        int north, east, alt, d_north, d_east, d_alt = 0;
+        int oNorthMin, oNorthMax, oEastMin, oEastMax, height = 0;
+
+        for (size_t i = 0; i < m_qvNorths.size(); i++)
+        {
+            north = m_qvNorths[i];
+            east = m_qvEasts[i];
+            alt = m_qvAlts[i];
+            d_north = m_qvDNorths[i];
+            d_east = m_qvDEasts[i];
+            d_alt = m_qvDAlts[i];
+            oNorthMin = floor((north - d_north - m_dNorthMin) / voxel_size);
+            oNorthMax = floor((north + d_north - m_dNorthMin) / voxel_size);
+            oEastMin = floor((east - d_east - m_dEastMin) / voxel_size);
+            oEastMax = floor((east + d_east - m_dEastMin) / voxel_size);
+            height = floor((alt + d_alt) / voxel_size);
+            for (size_t m = oNorthMin; m < oNorthMax; m++)
+            {
+                for (size_t n = oEastMin; n < oEastMax; n++)
+                {
+                    for (size_t p = 0; p < height; p++)
+                    {
+                        _voxmap[m][n][p] = 1;
+                    }
+                }
+            }
+        }
+        for (size_t m = 0; m < g_north_size; m++)
+        {
+            for (size_t n = 0; n < g_east_size; n++)
+            {
+                for (size_t p = 0; p < g_alt_size; p++)
+                {
+                    voxmap.push_back(_voxmap[m][n][p]);
+                    if (_voxmap[m][n][p])
+                    {
+                        cout << " " << _voxmap[m][n][p] << endl;
+                    }
+                }
             }
         }
     }

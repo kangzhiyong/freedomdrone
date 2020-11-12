@@ -26,6 +26,7 @@ using namespace std;
 
 int g_north_size = 0;
 int g_east_size = 0;
+int g_alt_size = 0;
 
 char SearchAlgorithm::str_d(Direction d)
 {

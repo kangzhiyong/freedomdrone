@@ -184,6 +184,7 @@ public:
 
 extern int g_north_size;
 extern int g_east_size;
+extern int g_alt_size;
 
 struct MyCompare {  //Function Object
     bool operator()(const GirdCellCoord& p1, const GirdCellCoord& p2) const {
