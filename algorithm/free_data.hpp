@@ -4,12 +4,16 @@
 #include <fstream>
 using namespace std;
 
+#include "free_polygon.hpp"
+#include "free_utils.hpp"
+
 template<typename coordinate_type>
 class FreeData
 {
 public:
     typedef vector<coordinate_type> VCoordType;
     typedef vector<string> VString;
+
     VString split(string str, string delimiter)
     {
         VString strList;
@@ -220,8 +224,8 @@ public:
         g_north_size = floor(ceil(m_dNorthMax - m_dNorthMin) / voxel_size);
         g_east_size = floor(ceil(m_dEastMax - m_dEastMin) / voxel_size);
         g_alt_size = floor(m_dAltMax / voxel_size);
-        voxmap.resize(g_north_size * g_east_size * g_alt_size);
-        std::for_each(voxmap.begin(), voxmap.end(), [](int& n) { n = 0; });
+//        voxmap.resize(g_north_size * g_east_size * g_alt_size);
+//        std::for_each(voxmap.begin(), voxmap.end(), [](int& n) { n = 0; });
 
         vector<vector<vector<int>>> _voxmap(g_north_size, vector<vector<int>>(g_east_size, vector<int>(g_alt_size, 0)));
         vector<int>::iterator iYStart, iXStart;
@@ -259,15 +263,49 @@ public:
                 for (size_t p = 0; p < g_alt_size; p++)
                 {
                     voxmap.push_back(_voxmap[m][n][p]);
-                    if (_voxmap[m][n][p])
-                    {
-                        cout << " " << _voxmap[m][n][p] << endl;
-                    }
                 }
             }
         }
     }
 
+    void extract_polygons()
+    {
+        coordinate_type north, east, alt, d_north, d_east, d_alt = 0;
+        int oNorthMin, oNorthMax, oEastMin, oEastMax = 0;
+        for (size_t i = 0; i < m_qvNorths.size(); i++)
+        {
+            north = m_qvNorths[i];
+            east = m_qvEasts[i];
+            alt = m_qvAlts[i];
+            d_north = m_qvDNorths[i];
+            d_east = m_qvDEasts[i];
+            d_alt = m_qvDAlts[i];
+            oNorthMin = clip(north - d_north - m_dNorthMin, 0, g_north_size - 1);
+            oNorthMax = clip(north + d_north - m_dNorthMin, 0, g_north_size - 1);
+            oEastMin = clip(east - d_east - m_dEastMin, 0, g_east_size - 1);
+            oEastMax = clip(east + d_east - m_dEastMin, 0, g_east_size - 1);
+            m_qvPolygons.push_back(FreePolygon<int>({oNorthMin, oEastMin}, {oNorthMax, oEastMax}, alt + d_alt));
+        }
+    }
+    
+    void sample(int num, vector<point<coordinate_type, 3>> &to_keep)
+    {
+        VCoordType xs = uniform(0, m_dNorthMax - m_dNorthMin, num);
+        VCoordType ys = uniform(0, m_dEastMax - m_dEastMin, num);
+        VCoordType zs = uniform(0, m_dAltMax - m_dAltMin, num);
+        for (int i = 0; i < num; i++) {
+            bool in_collision = false;
+            for (int j = 0; j < m_qvPolygons.size(); j++) {
+                if (m_qvPolygons[j].contains({xs[i], ys[i]}) && zs[i] <= m_qvPolygons[j].getHeight()) {
+                    in_collision = true;
+                    break;
+                }
+            }
+            if (!in_collision) {
+                to_keep.push_back({xs[i], ys[i], zs[i]});
+            }
+        }
+    }
 private:
     coordinate_type m_dLat{ 0 };
     coordinate_type m_dLon{ 0 };
@@ -284,4 +322,5 @@ private:
     VCoordType m_qvDNorths;
     VCoordType m_qvDEasts;
     VCoordType m_qvDAlts;
+    vector<FreePolygon<int>> m_qvPolygons;
 };

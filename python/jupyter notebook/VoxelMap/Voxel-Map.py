@@ -62,7 +62,7 @@ ax.voxels(voxmap, edgecolor='k')
 ax.set_xlim(voxmap.shape[0], 0)
 ax.set_ylim(0, voxmap.shape[1])
 # add a bit to z-axis height for visualization
-ax.set_zlim(0, voxmap.shape[2]+20)
+# ax.set_zlim(0, voxmap.shape[2]+20)
 
 plt.xlabel('North')
 plt.ylabel('East')

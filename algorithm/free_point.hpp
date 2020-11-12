@@ -130,5 +130,6 @@ typedef point<float, 2> point2D;
 typedef point<float, 3> point3D;
 typedef point<float, 4> point4D;
 typedef point<double, 3> point3DD;
+typedef point<int, 2> point2DI;
 
 #endif /* my_point_hpp */

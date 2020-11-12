@@ -330,3 +330,18 @@ static int clip(coordinate_type data, int d_min, int d_max)
     }
     return int(tmp);
 }
+
+template<typename coordinate_type>
+static vector<coordinate_type> uniform(coordinate_type min, coordinate_type max, int num)
+{
+    vector<coordinate_type> d;
+    std::mt19937 generator((std::random_device()()));
+    std::uniform_int_distribution<coordinate_type> distribution(min, max);
+    
+    auto dice= std::bind(distribution,generator);
+    for (int i = 0; i < num; i++)
+    {
+        d.push_back(dice());
+    }
+    return d;
+}
