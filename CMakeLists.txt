@@ -18,6 +18,7 @@ elseif (WIN32)
     set(PYTHON_INCLUDE_DIR "C:\\Users\\lenovo\\AppData\\Local\\Programs\\Python\\Python36\\include")
     set(PYTHON_NUMPY_INCLUDE_DIR "C:\\Users\\lenovo\\AppData\\Local\\Programs\\Python\\Python36\\lib\\site-packages\\numpy\\core\\include")
     set(PYTHON_LIBRARIES "C:\\Users\\lenovo\\AppData\\Local\\Programs\\Python\\Python36\\libs\\")
+    set(QT_LIBRARIES "C:\\Users\\lenovo\\.conda\\pkgs\\qt-5.9.6-vc14h62aca36_0\\Library\\lib")
 elseif (APPLE)
     message(STATUS "mac os")
     set(PYTHON_INCLUDE_DIR "/Applications/anaconda3/envs/fcnd/include/python3.6m")
@@ -44,6 +45,7 @@ include_directories(./lib/matplotlib-cpp)
 include_directories(.)
 
 link_directories(${PYTHON_LIBRARIES})
+link_directories(${QT_LIBRARIES})
 
 FILE(GLOB SOURCES
         connection/*.cpp
@@ -64,6 +66,9 @@ add_executable (freedomdrone
         ${HEADERS})
 
 target_link_libraries(freedomdrone
-        ${PYTHON_LIBCFCLASS}
-        Qt5::Core Qt5::Gui Qt5::Qml Qt5::Quick Qt5::Positioning
+        Python3
+        Qt5::Gui
+        Qt5Gui
+        QT5Core
+        QT5Positioning
         )
