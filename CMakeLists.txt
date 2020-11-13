@@ -32,7 +32,7 @@ else ()
     MESSAGE(STATUS "other platform")
 endif ()
 
-find_package(Qt5 COMPONENTS Core Gui Qml Quick REQUIRED Positioning)
+find_package(Qt5 COMPONENTS Gui Positioning)
 
 include_directories(${PYTHON_INCLUDE_DIR})
 include_directories(${PYTHON_NUMPY_INCLUDE_DIR})

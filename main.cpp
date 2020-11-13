@@ -111,7 +111,7 @@ int main()
 //        cout << e.what() << endl;
 //    }
 
-    data.extract_polygons();
+    data.extract_polygons(5);
     vector<point<int, 3>> to_keep;
     data.sample(100, to_keep);
     
@@ -121,7 +121,7 @@ int main()
         pp_y.push_back(to_keep[i][1]);
         pp_z.push_back(to_keep[i][2]);
     }
-    plt::scatter(pp_y, pp_x, 3, {{"c", "red"}});
+    plt::scatter(pp_y, pp_x, 30, {{"c", "red"}});
     
     plt::xlabel("EAST");
     plt::ylabel("NORTH");

@@ -14,6 +14,7 @@ template<typename coordinate_type>
 class QTFreePolygon
 {
 public:
+    QTFreePolygon() {}
     QTFreePolygon(QPolygonF _p, coordinate_type _h)
     {
         m_qPolygon = _p;
@@ -21,11 +22,15 @@ public:
     }
     bool contains(QPointF p)
     {
-        return m_qPolygon.contains(p);
+        return m_qPolygon.containsPoint(p, Qt::OddEvenFill);
     }
     coordinate_type getHeight()
     {
         return m_cHeight;
+    }
+    QPolygonF getPolygon()
+    {
+        return m_qPolygon;
     }
 private:
     coordinate_type m_cHeight;

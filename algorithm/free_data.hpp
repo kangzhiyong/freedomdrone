@@ -270,10 +270,11 @@ public:
         }
     }
 
-    void extract_polygons()
+    void extract_polygons(coordinate_type safety_distance)
     {
         coordinate_type north, east, alt, d_north, d_east, d_alt = 0;
-        int oNorthMin, oNorthMax, oEastMin, oEastMax = 0;
+        vector<coordinate_type> obstacle;
+
         for (size_t i = 0; i < m_qvNorths.size(); i++)
         {
             north = m_qvNorths[i];
@@ -282,35 +283,56 @@ public:
             d_north = m_qvDNorths[i];
             d_east = m_qvDEasts[i];
             d_alt = m_qvDAlts[i];
-            oNorthMin = clip(north - d_north - m_dNorthMin, 0, g_north_size - 1);
-            oNorthMax = clip(north + d_north - m_dNorthMin, 0, g_north_size - 1);
-            oEastMin = clip(east - d_east - m_dEastMin, 0, g_east_size - 1);
-            oEastMax = clip(east + d_east - m_dEastMin, 0, g_east_size - 1);
+            obstacle.push_back(north - d_north - safety_distance - m_dNorthMin);
+            obstacle.push_back(north + d_north + safety_distance - m_dNorthMin);
+            obstacle.push_back(east - d_east - safety_distance - m_dEastMin);
+            obstacle.push_back(east + d_east + safety_distance - m_dEastMin);
             QPolygonF p;
-            p.append(QPointF(oNorthMin, oEastMin));
-            p.append(QPointF(oNorthMin, oEastMax));
-            p.append(QPointF(oNorthMax, oEastMax));
-            p.append(QPointF(oNorthMax, oEastMin));
-            m_qvPolygons.push_back({p, alt + d_alt});
+            p.append(QPointF(obstacle[0], obstacle[2]));
+            p.append(QPointF(obstacle[0], obstacle[3]));
+            p.append(QPointF(obstacle[1], obstacle[3]));
+            p.append(QPointF(obstacle[1], obstacle[2]));
+            m_qvPolygons.push_back({p, alt + d_alt - m_dAltMin});
+            obstacle.clear();
         }
     }
     
+    bool collides(coordinate_type x, coordinate_type y, coordinate_type height)
+    {
+        QTFreePolygon<coordinate_type> polygon;
+        for (int j = 0; j < m_qvPolygons.size(); j++) {
+            polygon = m_qvPolygons[j];
+            if (polygon.contains(QPointF(x, y)) && polygon.getHeight() >= height) {
+                return true;
+            }
+        }
+        return false;
+    }
     void sample(int num, vector<point<coordinate_type, 3>> &to_keep)
     {
         VCoordType xs = uniform(0, m_dNorthMax - m_dNorthMin, num);
         VCoordType ys = uniform(0, m_dEastMax - m_dEastMin, num);
-        VCoordType zs = uniform(0, m_dAltMax - m_dAltMin, num);
+        VCoordType zs = uniform(0, 10, num);
         for (int i = 0; i < num; i++) {
             bool in_collision = false;
-            for (int j = 0; j < m_qvPolygons.size(); j++) {
-                if (m_qvPolygons[j].contains(QPointF(xs[i], ys[i])) && zs[i] <= m_qvPolygons[j].getHeight()) {
-                    in_collision = true;
-                    break;
-                }
-            }
-            if (!in_collision) {
+            
+            if (!collides(xs[i], ys[i], zs[i])) {
                 to_keep.push_back({xs[i], ys[i], zs[i]});
             }
+        }
+    }
+
+    void printPolygons()
+    {
+        QTFreePolygon<coordinate_type> polygon;
+        for (int j = 0; j < m_qvPolygons.size(); j++) {
+            polygon = m_qvPolygons[j];
+            for (size_t i = 0; i < polygon.getPolygon().size(); i++)
+            {
+                cout << "(" << polygon.getPolygon()[i].x() << "," << polygon.getPolygon()[i].y() << ")";
+            }
+            cout << endl;
+          
         }
     }
 private:
