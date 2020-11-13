@@ -8,6 +8,8 @@ using namespace std;
 
 #include "free_polygon.hpp"
 #include "free_utils.hpp"
+#include "free_KDTree.hpp"
+#include "free_graph.hpp"
 
 template<typename coordinate_type>
 class FreeData
@@ -308,8 +310,9 @@ public:
         }
         return false;
     }
-    void sample(int num, vector<point<coordinate_type, 3>> &to_keep)
+    void sample(int num)
     {
+        mvSamplePoints.clear();
         VCoordType xs = uniform(0, m_dNorthMax - m_dNorthMin, num);
         VCoordType ys = uniform(0, m_dEastMax - m_dEastMin, num);
         VCoordType zs = uniform(0, 10, num);
@@ -317,7 +320,7 @@ public:
             bool in_collision = false;
             
             if (!collides(xs[i], ys[i], zs[i])) {
-                to_keep.push_back({xs[i], ys[i], zs[i]});
+                mvSamplePoints.push_back({xs[i], ys[i], zs[i]});
             }
         }
     }
@@ -333,6 +336,42 @@ public:
             }
             cout << endl;
           
+        }
+    }
+
+    bool can_connect(point<coordinate_type, 3> p, point<coordinate_type, 3> p1, coordinate_type height)
+    {
+        QTFreePolygon<coordinate_type> polygon;
+        for (int j = 0; j < m_qvPolygons.size(); j++) {
+            polygon = m_qvPolygons[j];
+            
+            if (polygon.intersect(p, p1) && polygon.getHeight() >= height) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void create_graph(int k)
+    {
+        point<coordinate_type, 3> p, p1;
+        FreeKDTree<coordinate_type, 3> kdtree(mvSamplePoints.begin(), mvSamplePoints.end());
+        for (size_t i = 0; i < mvSamplePoints.size(); i++)
+        {
+            p = mvSamplePoints[i];
+            kdtree.nearest(p, k);
+            for (size_t j = 0; j < kdtree.m_vNbrNodes.size(); j++)
+            {
+                p1 = kdtree.m_vNbrNodes[j].point_;
+                if (p == p1)
+                {
+                    continue;
+                }
+                if (can_connect(p, p1))
+                {
+                    m_cGraph.add_edge(p, p1, {{"weight", "1"}})
+                }
+            }
         }
     }
 private:
@@ -352,4 +391,6 @@ private:
     VCoordType m_qvDEasts;
     VCoordType m_qvDAlts;
     vector<QTFreePolygon<int>> m_qvPolygons;
+    vector<point<coordinate_type, 3>> mvSamplePoints;
+    FreeGraph<coordinate_type, 3> m_cGraph;
 };

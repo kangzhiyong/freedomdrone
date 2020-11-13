@@ -113,15 +113,15 @@ int main()
 
     data.extract_polygons(5);
     vector<point<int, 3>> to_keep;
-    data.sample(100, to_keep);
+    data.sample(100);
     
-    vector<int> pp_x, pp_y, pp_z;
+    /*vector<int> pp_x, pp_y, pp_z;
     for (size_t i = 0; i < to_keep.size(); i++) {
         pp_x.push_back(to_keep[i][0]);
         pp_y.push_back(to_keep[i][1]);
         pp_z.push_back(to_keep[i][2]);
     }
-    plt::scatter(pp_y, pp_x, 30, {{"c", "red"}});
+    plt::scatter(pp_y, pp_x, 30, {{"c", "red"}});*/
     
     plt::xlabel("EAST");
     plt::ylabel("NORTH");
