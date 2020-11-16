@@ -9,6 +9,7 @@ using namespace std;
 #include "drone.hpp"
 #include "mavlink_connection.hpp"
 #include "free_point.hpp"
+#include "free_data.hpp"
 
 typedef void (*CallBackFunc)(void *userData, double lo, double la, double alt);
 
@@ -89,6 +90,7 @@ public:
     void disarming_transition();
     void manual_transition();
     void start_drone();
-    void send_waypoints();
+    void find_closest_node(vector<point3D> nodes, point3D p, point3D &p_min);
+    void send_waypoints(vector<MSGPACKPoint<float>> waypoints);
     void plan_path();
 };

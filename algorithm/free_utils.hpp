@@ -297,7 +297,7 @@ coordinate_type global_to_local(coordinate_type global_position, coordinate_type
     from_latlon(global_home[1], global_home[0], 0, east_home, north_home, zone_n, zone_l);
     from_latlon(global_position[1], global_position[0], 0, east, north, zone_n, zone_l);
 
-    return { north - north_home, east - east_home, -(global_position[2] - global_home[2]) };
+    return { static_cast<float>(north - north_home), static_cast<float>(east - east_home), -(global_position[2] - global_home[2]) };
 }
 
 template<typename coordinate_type>

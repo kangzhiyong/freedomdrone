@@ -85,6 +85,10 @@ public:
     {
         _drone = drone;
     }
+    mavsocket *getMaster()
+    {
+        return _master;
+    }
 private:
     mavsocket *_master;
     queue<mavlink_message_t> _out_msg_queue;

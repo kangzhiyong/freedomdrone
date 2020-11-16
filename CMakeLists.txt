@@ -28,13 +28,14 @@ elseif (APPLE)
     set(PYTHON_LIBCFCLASS  -lpython3.6m)
 
     set(CMAKE_PREFIX_PATH "/usr/local/Cellar/qt/5.14.1/lib/cmake/Qt5")
-
+    set(MSGPACK_INCLUDE_DIR "/usr/local/include")
 else ()
     MESSAGE(STATUS "other platform")
 endif ()
 
 find_package(Qt5 COMPONENTS Core Gui Qml Quick REQUIRED Positioning)
 
+include_directories(${MSGPACK_INCLUDE_DIR})
 include_directories(${PYTHON_INCLUDE_DIR})
 include_directories(${PYTHON_NUMPY_INCLUDE_DIR})
 include_directories(./algorithm)

@@ -1,8 +1,18 @@
 // freedomdrone.cpp: 定义应用程序的入口点。
 //
 
+#include <msgpack.hpp>
+#include <string>
+#include <iostream>
+#include <sstream>
+
 #include "freedomdrone.h"
 #include "free_utils.hpp"
+#include "search_algorithm.hpp"
+#include "matplotlibcpp.h"
+namespace plt = matplotlibcpp;
+
+//#include <msgpack.hpp>
 
 UpAndDownFlyer::UpAndDownFlyer(MavlinkConnection *conn): Drone(conn)
 {
@@ -357,8 +367,140 @@ void MotionPlanning::start_drone()
     start();
 }
 
-void MotionPlanning::send_waypoints()
+void MotionPlanning::find_closest_node(vector<point3D> nodes, point3D p, point3D &p_min)
+{
+    int i, index = 0;
+    float dist, min_dist = 0;
+    for (i = 0; i < nodes.size(); i++) {
+        dist = p.distance(nodes[i]);
+        if (i == 0 || dist < min_dist) {
+            min_dist = dist;
+            index = i;
+        }
+    }
+    if (i > 0) {
+        p_min = nodes[index];
+    }
+}
+
+void MotionPlanning::send_waypoints(vector<MSGPACKPoint<float>> waypoints)
 {
     cout << "Sending waypoints to simulator ..." << endl;
+    msgpack::type::tuple<vector<MSGPACKPoint<float>>> src(waypoints);
+    
+    // serialize the object into the buffer.
+    // any classes that implements write(const char*,size_t) can be a buffer.
+    std::stringstream buffer;
+    msgpack::pack(buffer, src);
+    cout << buffer.str() << endl;
+    getConnection()->getMaster()->write((void *)buffer.str().c_str(), buffer.str().size());
+}
 
+void MotionPlanning::plan_path()
+{
+    flight_state = PLANNING;
+    cout << "Searching for a path ..." << endl;
+    float target_altitude = 5;
+    float safety_distance = 5;
+    
+    target_position[2] = target_altitude;
+    string path = "../../data/colliders.csv";
+#ifdef WIN32
+    path = "../../../data/colliders.csv";
+#endif
+    FreeData<float> data(path, ",");
+    float lat0 = data.getLat();
+    float lon0 = data.getLon();
+    set_home_position(lon0, lat0, 0);
+    _update_local_position(global_to_local(global_position(), global_home()));
+    
+    data.extract_polygons(safety_distance);
+    data.sample(100);
+    data.create_graph(20);
+    point3D start = local_position();
+    point3D goal = global_to_local({-122.396428, 37.795128, target_altitude}, global_home());
+    
+    vector<FreeEdge<float, 3>> edges;
+    vector<point3D> nodes;
+    FreeGraph<float, 3> graph = data.getGraph();
+    graph.getAllNodesAndEdges(nodes, edges);
+    
+    point3D start_new, goal_new;
+    find_closest_node(nodes, start, start_new);
+    find_closest_node(nodes, goal, goal_new);
+    vector<float> grid;
+    data.createGrid(target_altitude, safety_distance, grid, g_north_size, g_east_size, g_alt_size);
+    
+    GirdCellType start_grid(start_new);
+    GirdCellType goal_grid(goal_new);
+    SearchAlgorithm a_start_graph(start_grid, goal_grid, grid);
+    a_start_graph.a_start_graph(graph);
+    
+    vector<point3D> path_points = a_start_graph.get_path_points();
+    if (path_points.size() > 0)
+    {
+        vector<point3D> path_points_prune;
+        a_start_graph.prune_path_by_bresenham(path_points, path_points_prune);
+        if (path_points_prune.size() > 0) {
+            vector<MSGPACKPoint<float>> waypoints;
+            for (int i = 0; i < path_points_prune.size(); i++) {
+                path_points_prune[i].print();
+                waypoints.push_back(MSGPACKPoint<float>(path_points_prune[i][0], path_points_prune[i][1], path_points_prune[i][2]));
+                send_waypoints(waypoints);
+            }
+        }
+    }
+    const float* zptr = (float *)&(grid[0]);
+    int colors = 1;
+    plt::plot({(double)start[1]}, {(double)start[0]}, "bX");
+    plt::plot({(double)goal[1]}, {(double)goal[0]}, "rX");
+    plt::plot({(double)start_new[1]}, {(double)start_new[0]}, "bX");
+    plt::plot({(double)goal_new[1]}, {(double)goal_new[0]}, "rX");
+    plt::imshow(zptr, g_north_size, g_east_size, colors, { {"cmap", "Greys"}, {"origin", "lower"} });
+
+    vector<float> pp_x, pp_y, pp_z;
+    FreeEdge<float, 3> edge;
+    for (int i = 0; i < edges.size(); i++) {
+        edge = edges[i];
+        pp_x.push_back(edge.getStart()[0]);
+        pp_x.push_back(edge.getEnd()[0]);
+        pp_y.push_back(edge.getStart()[1]);
+        pp_y.push_back(edge.getEnd()[1]);
+        plt::plot(pp_y, pp_x, "g");
+        pp_x.clear();
+        pp_y.clear();
+    }
+
+
+    vector<point3D> allNodes = data.getSamplePoints();
+    for (size_t i = 0; i < allNodes.size(); i++) {
+        pp_x.push_back(allNodes[i][0]);
+        pp_y.push_back(allNodes[i][1]);
+        plt::scatter(pp_y, pp_x, 30, { {"c", "red"} });
+        pp_x.clear();
+        pp_y.clear();
+    }
+
+    pp_x.clear();
+    pp_y.clear();
+    for (size_t i = 0; i < nodes.size(); i++) {
+        pp_x.push_back(nodes[i][0]);
+        pp_y.push_back(nodes[i][1]);
+        plt::scatter(pp_y, pp_x, 30, { {"c", "black"} });
+        pp_x.clear();
+        pp_y.clear();
+    }
+
+    pp_x.clear();
+    pp_y.clear();
+    for (size_t i = 0; i < path_points.size(); i++) {
+        pp_x.push_back(path_points[i][0]);
+        pp_y.push_back(path_points[i][1]);
+    }
+    plt::scatter(pp_y, pp_x, 30, { {"c", "pink"} });
+    plt::plot(pp_y, pp_x, "r");
+
+    plt::ylabel("EAST");
+    plt::xlabel("NORTH");
+    plt::show();
 }

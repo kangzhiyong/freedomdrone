@@ -182,16 +182,16 @@ public:
         return m_dLon;
     }
 
-    void createGrid(coordinate_type drone_altitude, coordinate_type safety_distance, vector<int> &grid)
+    void createGrid(coordinate_type drone_altitude, coordinate_type safety_distance, vector<float> &grid, int &north_size, int &east_size, int &alt_size)
     {
         coordinate_type north, east, alt, d_north, d_east, d_alt = 0;
         int oNorthMin, oNorthMax, oEastMin, oEastMax = 0;
-        vector<int>::iterator iColStart;
-        g_north_size = std::ceil(m_dNorthMax - m_dNorthMin);
-        g_east_size = std::ceil(m_dEastMax - m_dEastMin);
-        grid.resize(g_east_size * g_north_size);
+        vector<float>::iterator iColStart;
+        north_size = std::ceil(m_dNorthMax - m_dNorthMin);
+        east_size = std::ceil(m_dEastMax - m_dEastMin);
+        grid.resize(east_size * north_size);
 
-        std::for_each(grid.begin(), grid.end(), [](int& n) { n=0; });
+        std::for_each(grid.begin(), grid.end(), [](float& n) { n=0; });
         for (size_t i = 0; i < m_qvNorths.size(); i++)
         {
             north = m_qvNorths[i];
@@ -202,14 +202,14 @@ public:
             d_alt = m_qvDAlts[i];
             if ((alt + d_alt + safety_distance) > drone_altitude)
             {
-                oNorthMin = clip(north - d_north - safety_distance - m_dNorthMin, 0, g_north_size - 1);
-                oNorthMax = clip(north + d_north + safety_distance - m_dNorthMin, 0, g_north_size - 1);
-                oEastMin = clip(east - d_east - safety_distance - m_dEastMin, 0, g_east_size - 1);
-                oEastMax = clip(east + d_east + safety_distance - m_dEastMin, 0, g_east_size - 1);
+                oNorthMin = clip(north - d_north - safety_distance - m_dNorthMin, 0, north_size - 1);
+                oNorthMax = clip(north + d_north + safety_distance - m_dNorthMin, 0, north_size - 1);
+                oEastMin = clip(east - d_east - safety_distance - m_dEastMin, 0, east_size - 1);
+                oEastMax = clip(east + d_east + safety_distance - m_dEastMin, 0, east_size - 1);
                 for (size_t m = oNorthMin; m <= oNorthMax; m++)
                 {
-                    iColStart = grid.begin() + m * g_east_size;
-                    std::for_each(iColStart + oEastMin, iColStart + oEastMax, [](int& n) { n = 1; });
+                    iColStart = grid.begin() + m * east_size;
+                    std::for_each(iColStart + oEastMin, iColStart + oEastMax, [](float& n) { n = 1; });
                 }
             }
         }
@@ -221,19 +221,19 @@ public:
     
     The `voxel_size` argument sets the resolution of the voxel map. 
     */
-    void create_voxmap(int voxel_size, vector<int>& voxmap)
+    void create_voxmap(int voxel_size, vector<int>& voxmap, int &north_size, int &east_size, int &alt_size)
     {
         // given the minimumand maximum coordinates we can
         // calculate the size of the grid.
-        g_north_size = floor(ceil(m_dNorthMax - m_dNorthMin) / voxel_size);
-        g_east_size = floor(ceil(m_dEastMax - m_dEastMin) / voxel_size);
-        g_alt_size = floor(m_dAltMax / voxel_size);
+        north_size = floor(ceil(m_dNorthMax - m_dNorthMin) / voxel_size);
+        east_size = floor(ceil(m_dEastMax - m_dEastMin) / voxel_size);
+        alt_size = floor(m_dAltMax / voxel_size);
 //        voxmap.resize(g_north_size * g_east_size * g_alt_size);
 //        std::for_each(voxmap.begin(), voxmap.end(), [](int& n) { n = 0; });
 
-        vector<vector<vector<int>>> _voxmap(g_north_size, vector<vector<int>>(g_east_size, vector<int>(g_alt_size, 0)));
+        vector<vector<vector<int>>> _voxmap(north_size, vector<vector<int>>(east_size, vector<int>(alt_size, 0)));
         vector<int>::iterator iYStart, iXStart;
-        int north, east, alt, d_north, d_east, d_alt = 0;
+        float north, east, alt, d_north, d_east, d_alt = 0;
         int oNorthMin, oNorthMax, oEastMin, oEastMax, height = 0;
 
         for (size_t i = 0; i < m_qvNorths.size(); i++)
@@ -260,11 +260,11 @@ public:
                 }
             }
         }
-        for (size_t m = 0; m < g_north_size; m++)
+        for (size_t m = 0; m < north_size; m++)
         {
-            for (size_t n = 0; n < g_east_size; n++)
+            for (size_t n = 0; n < east_size; n++)
             {
-                for (size_t p = 0; p < g_alt_size; p++)
+                for (size_t p = 0; p < alt_size; p++)
                 {
                     voxmap.push_back(_voxmap[m][n][p]);
                 }
@@ -313,9 +313,9 @@ public:
     void sample(int num)
     {
         m_vSamplePoints.clear();
-        VCoordType xs = uniform(0, m_dNorthMax - m_dNorthMin, num);
-        VCoordType ys = uniform(0, m_dEastMax - m_dEastMin, num);
-        VCoordType zs = uniform(0, 10, num);
+        VCoordType xs = uniform((float)0.0, (float)(m_dNorthMax - m_dNorthMin), num);
+        VCoordType ys = uniform((float)0.0, (float)(m_dEastMax - m_dEastMin), num);
+        VCoordType zs = uniform((float)0.0, (float)10.0, num);
         for (int i = 0; i < num; i++) {
             if (!collides(xs[i], ys[i], zs[i])) {
                 m_vSamplePoints.push_back({xs[i], ys[i], zs[i]});
@@ -403,7 +403,7 @@ private:
     VCoordType m_qvDNorths;
     VCoordType m_qvDEasts;
     VCoordType m_qvDAlts;
-    vector<QTFreePolygon<int>> m_qvPolygons;
+    vector<QTFreePolygon<float>> m_qvPolygons;
     vector<point<coordinate_type, 3>> m_vSamplePoints;
     FreeGraph<coordinate_type, 3> m_cGraph;
 };

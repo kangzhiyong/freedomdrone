@@ -116,12 +116,12 @@ void SearchAlgorithm::visualize_path()
     {
         d = path[i];
         da = actions[d];
-        sgrid[pos.get(0) * g_north_size + pos.get(1)] = str_d(d);
+        sgrid[int(pos.get(0) * g_north_size + pos.get(1))] = str_d(d);
         pos += da;
     }
 
-    sgrid[goal.get(0) * g_north_size + goal.get(1)] = 'G';
-    sgrid[start.get(0) * g_north_size + start.get(1)] = 'S';
+    sgrid[int(goal.get(0) * g_north_size + goal.get(1))] = 'G';
+    sgrid[int(start.get(0) * g_north_size + start.get(1))] = 'S';
     
     for (int i = 0; i < g_east_size; i++) {
         cout << "[ ";
@@ -351,7 +351,7 @@ void SearchAlgorithm::a_star()
     }
 }
 
-void SearchAlgorithm::a_start_graph(FreeGraph<int, 3> g)
+void SearchAlgorithm::a_start_graph(FreeGraph<float, 3> g)
 {
     int path_cost, current_cost = 0;
     set<GirdCellType, MyCompare> visited;
@@ -382,8 +382,8 @@ void SearchAlgorithm::a_start_graph(FreeGraph<int, 3> g)
         else
         {
             int new_cost, cost = 0;
-            FreeGraph<int, 3>::EdgesType edges = g.edges(current_node.m_point);
-            FreeGraph<int, 3>::EdgesType::iterator eit = edges.begin();
+            FreeGraph<float, 3>::EdgesType edges = g.edges(current_node.m_point);
+            FreeGraph<float, 3>::EdgesType::iterator eit = edges.begin();
             GirdCellType next_node;
             while (eit != edges.end())
             {
@@ -419,7 +419,7 @@ void SearchAlgorithm::a_start_graph(FreeGraph<int, 3> g)
 
 //Implementation of Bresenham's line drawing algorithm
 //See en.wikipedia.org/wiki/Bresenham's_line_algorithm
-bool SearchAlgorithm::bresenham(point<int, 2> p0, point<int, 2> p1)
+bool SearchAlgorithm::bresenham(point3D p0, point3D p1)
 {
     /*
     Yield integer coordinates on the line from (x0, y0) to (x1, y1).
@@ -468,22 +468,22 @@ bool SearchAlgorithm::bresenham(point<int, 2> p0, point<int, 2> p1)
     return true;
 }
 
-bool SearchAlgorithm::collinearity(point<int, 2> p1, point<int, 2> p2, point<int, 2> p3)
+bool SearchAlgorithm::collinearity(point3D p1, point3D p2, point3D p3)
 {
     // TODO: Calculate the determinant of the matrix using integer arithmetic
     // TODO: Set collinear to True if the determinant is equal to zero
     return (p1[0]*(p2[1] - p3[1]) + p2[0]*(p3[1] - p1[1]) + p3[0]*(p1[1] - p2[1])) == 0;
 }
 
-void SearchAlgorithm::prune_path_by_collinearity(vector<point<int, 2>> path, vector<point<int, 2>> &pruned_path)
+void SearchAlgorithm::prune_path_by_collinearity(vector<point3D> path, vector<point3D> &pruned_path)
 {
     pruned_path = path;
     int i = 2;
     while (i < pruned_path.size())
     {
-        point<int, 2> p1 = pruned_path[i - 2];
-        point<int, 2> p2 = pruned_path[i - 1];
-        point<int, 2> p3 = pruned_path[i];
+        point3D p1 = pruned_path[i - 2];
+        point3D p2 = pruned_path[i - 1];
+        point3D p3 = pruned_path[i];
         
         /*
         # If the 3 points are in a line remove
@@ -508,14 +508,14 @@ void SearchAlgorithm::prune_path_by_collinearity(vector<point<int, 2>> path, vec
     }
 }
 
-void SearchAlgorithm::prune_path_by_bresenham(vector<point<int, 2>> path, vector<point<int, 2>> &pruned_path)
+void SearchAlgorithm::prune_path_by_bresenham(vector<point3D> path, vector<point3D> &pruned_path)
 {
     pruned_path = path;
     int i = 1;
     while (i < pruned_path.size())
     {
-        point<int, 2> p1 = pruned_path[i - 1];
-        point<int, 2> p2 = pruned_path[i];
+        point3D p1 = pruned_path[i - 1];
+        point3D p2 = pruned_path[i];
         
         /*
         # If the 3 points are in a line remove

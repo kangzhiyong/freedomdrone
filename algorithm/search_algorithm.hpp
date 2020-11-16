@@ -43,12 +43,12 @@ public:
         m_point = p;
         queue_cost = cost;
     }
-    GirdCellCoord(int _x, int _y)
+    GirdCellCoord(float _x, float _y)
     {
         m_point = PointType({ _x, _y, 0 });
     }
 
-    int get(size_t index)
+    coordinate_type get(size_t index)
     {
         return m_point.get(index);
     }
@@ -66,7 +66,7 @@ public:
 
     GirdCellCoord operator+(GirdCellCoord& p)
     {
-        return GirdCellCoord(a.m_point + p.m_point);
+        return GirdCellCoord(m_point + p.m_point);
     }
 
     GirdCellCoord operator-(GirdCellCoord& p)
@@ -95,7 +95,7 @@ public:
     }
 };
 
-typedef GirdCellCoord<int, 3> GirdCellType;
+typedef GirdCellCoord<float, 3> GirdCellType;
 
 class BranchNode
 {
@@ -143,12 +143,12 @@ protected:
     GirdCellType start;
     GirdCellType goal;
     vector<Direction> path;
-    vector<point<int, 3> > path_points;
-    vector<int> grid;
+    vector<point3D > path_points;
+    vector<float> grid;
     map<Direction, GirdCellType> actions;
 public:
     SearchAlgorithm(){}
-    SearchAlgorithm(GirdCellType s, GirdCellType g, vector<int> _grid)
+    SearchAlgorithm(GirdCellType s, GirdCellType g, vector<float> _grid)
     {
         start = s;
         goal = g;
@@ -182,15 +182,15 @@ public:
 
     // A-Star search
     void a_star();
-    void a_start_graph(FreeGraph<int, 3> g);
-    vector< point<int, 3> > get_path_points()
+    void a_start_graph(FreeGraph<float, 3> g);
+    vector< point3D > get_path_points()
     {
         return path_points;
     }
-    bool bresenham(point<int, 2> p0, point<int, 2> p1);
-    bool collinearity(point<int, 2> p1, point<int, 2> p2, point<int, 2> p3);
-    void prune_path_by_collinearity(vector<point<int, 2>> path, vector<point<int, 2>> &pruned_path);
-    void prune_path_by_bresenham(vector<point<int, 2>> path, vector<point<int, 2>> &pruned_path);
+    bool bresenham(point3D p0, point3D p1);
+    bool collinearity(point3D p1, point3D p2, point3D p3);
+    void prune_path_by_collinearity(vector<point3D> path, vector<point3D> &pruned_path);
+    void prune_path_by_bresenham(vector<point3D> path, vector<point3D> &pruned_path);
 };
 
 extern int g_north_size;

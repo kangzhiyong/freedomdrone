@@ -6,6 +6,12 @@
 //
 
 #include <stdio.h>
+
+#include <msgpack.hpp>
+#include <string>
+#include <iostream>
+#include <sstream>
+
 #include "freedomdrone.h"
 #include "search_algorithm.hpp"
 #include "free_utils.hpp"
@@ -63,6 +69,36 @@ void test_random(size_t count) {
 
 int main()
 {
+//    msgpack::type::tuple<float, float, float> src(111, 222, 333);
+//
+//    // serialize the object into the buffer.
+//    // any classes that implements write(const char*,size_t) can be a buffer.
+//    std::stringstream buffer;
+//    msgpack::pack(buffer, src);
+//    cout << buffer.str() << endl;
+//    // send the buffer ...
+//    buffer.seekg(0);
+//
+//    // deserialize the buffer into msgpack::object instance.
+//    std::string str(buffer.str());
+
+//    msgpack::object_handle oh =
+//        msgpack::unpack(str.data(), str.size());
+//
+//    // deserialized object is valid during the msgpack::object_handle instance is alive.
+//    msgpack::object deserialized = oh.get();
+
+    // msgpack::object supports ostream.
+//    std::cout << deserialized << std::endl;
+
+    // convert msgpack::object instance into the original type.
+    // if the type is mismatched, it throws msgpack::type_error exception.
+//    msgpack::type::tuple<int, bool, std::string> dst;
+//    deserialized.convert(dst);
+//
+//    // or create the new instance
+//    msgpack::type::tuple<int, bool, std::string> dst2 =
+//        deserialized.as<msgpack::type::tuple<int, bool, std::string> >();
     //try {
     //    test_wikipedia();
     //    std::cout << '\n';
@@ -112,20 +148,20 @@ int main()
     gc = local_to_global(lNEDS, gh);
     gc.print();  */
     
-    string path = "../../data/colliders.csv";
-#ifdef WIN32
-    path = "../../../data/colliders.csv";
-#endif
-    FreeData<int> data(path, ",");
-    vector<int> grid;
-    int drone_altitude = 5, safe_distance = 0;
-    data.createGrid(drone_altitude, safe_distance, grid);
-
-    const float* zptr = (float *)&(grid[0]);
+//    string path = "../../data/colliders.csv";
+//#ifdef WIN32
+//    path = "../../../data/colliders.csv";
+//#endif
+//    FreeData<float> data(path, ",");
+//    vector<float> grid;
+//    float drone_altitude = 5, safe_distance = 0;
+//    data.createGrid(drone_altitude, safe_distance, grid, g_north_size, g_east_size, g_alt_size);
+//
+//    const float* zptr = (float *)&(grid[0]);
 //
 //    // For the purposes of the visual the east coordinate lay along
 //    // the x-axis and the north coordinates long the y-axis.
-    int colors = 1;
+//    int colors = 1;
     //GirdCellType start_ne(25, 100), goal_ne(750, 370);
 //    SearchAlgorithm astar(start_ne, goal_ne, grid);
 //    astar.a_star();
@@ -169,71 +205,74 @@ int main()
 //        cout << e.what() << endl;
 //    }
 
-    data.extract_polygons(safe_distance);
-    data.sample(500);
+//    data.extract_polygons(safe_distance);
+//    data.sample(500);
+//
+//    data.create_graph(10);
+//
+//    FreeGraph<float, 3> graph = data.getGraph();
+//    vector<FreeEdge<float, 3>> edges;
+//    vector<point3D> nodes;
+//    graph.getAllNodesAndEdges(nodes, edges);
+//
+//    cout << nodes.size() << " " << edges.size() << endl;
+//    GirdCellType start_ne(nodes[0]), goal_ne(nodes[nodes.size() - 1]);
+//    SearchAlgorithm a_start_graph(start_ne, goal_ne);
+//    a_start_graph.a_start_graph(graph);
+//    plt::plot({(double)start_ne.get(1)}, {(double)start_ne.get(0)}, "X");
+//    plt::plot({(double)goal_ne.get(1)}, {(double)goal_ne.get(0)}, "X");
+//    vector< point3D > path_points = a_start_graph.get_path_points();
+//
+//    plt::imshow(zptr, g_north_size, g_east_size, colors, { {"cmap", "Greys"}, {"origin", "lower"} });
+//
+//    vector<float> pp_x, pp_y, pp_z;
+//    FreeEdge<float, 3> edge;
+//    for (int i = 0; i < edges.size(); i++) {
+//        edge = edges[i];
+//        pp_x.push_back(edge.getStart()[0]);
+//        pp_x.push_back(edge.getEnd()[0]);
+//        pp_y.push_back(edge.getStart()[1]);
+//        pp_y.push_back(edge.getEnd()[1]);
+//        plt::plot(pp_y, pp_x, "g");
+//        pp_x.clear();
+//        pp_y.clear();
+//    }
+//
+//
+//    vector<point3D> allNodes = data.getSamplePoints();
+//    for (size_t i = 0; i < allNodes.size(); i++) {
+//        pp_x.push_back(allNodes[i][0]);
+//        pp_y.push_back(allNodes[i][1]);
+//        plt::scatter(pp_y, pp_x, 30, { {"c", "black"} });
+//        pp_x.clear();
+//        pp_y.clear();
+//    }
+//
+//    pp_x.clear();
+//    pp_y.clear();
+//    for (size_t i = 0; i < nodes.size(); i++) {
+//        pp_x.push_back(nodes[i][0]);
+//        pp_y.push_back(nodes[i][1]);
+//        plt::scatter(pp_y, pp_x, 30, { {"c", "black"} });
+//        pp_x.clear();
+//        pp_y.clear();
+//    }
+//
+//    pp_x.clear();
+//    pp_y.clear();
+//    for (size_t i = 0; i < path_points.size(); i++) {
+//        pp_x.push_back(path_points[i][0]);
+//        pp_y.push_back(path_points[i][1]);
+//    }
+//    plt::scatter(pp_y, pp_x, 30, { {"c", "pink"} });
+//    plt::plot(pp_y, pp_x, "r");
+//
+//    plt::ylabel("EAST");
+//    plt::xlabel("NORTH");
+//    plt::show();
     
-    data.create_graph(10);
-    
-    FreeGraph<int, 3> graph = data.getGraph();
-    vector<FreeEdge<int, 3>> edges;
-    vector<point<int, 3>> nodes;
-    graph.getAllNodesAndEdges(nodes, edges);
-
-    cout << nodes.size() << " " << edges.size() << endl;
-    GirdCellType start_ne(nodes[0]), goal_ne(nodes[nodes.size() - 1]);
-    SearchAlgorithm a_start_graph(start_ne, goal_ne);
-    clock_t t = clock();
-    a_start_graph.a_start_graph(graph);
-    plt::plot({(double)start_ne.get(1)}, {(double)start_ne.get(0)}, "X");
-    plt::plot({(double)goal_ne.get(1)}, {(double)goal_ne.get(0)}, "X");
-    vector< point<int, 3> > path_points = a_start_graph.get_path_points();
-
-    plt::imshow(zptr, g_north_size, g_east_size, colors, { {"cmap", "Greys"}, {"origin", "lower"} });
-
-    vector<int> pp_x, pp_y, pp_z;
-    FreeEdge<int, 3> edge;
-    for (int i = 0; i < edges.size(); i++) {
-        edge = edges[i];
-        pp_x.push_back(edge.getStart()[0]);
-        pp_x.push_back(edge.getEnd()[0]);
-        pp_y.push_back(edge.getStart()[1]);
-        pp_y.push_back(edge.getEnd()[1]);
-        plt::plot(pp_y, pp_x, "g");
-        pp_x.clear();
-        pp_y.clear();
-    }
-
-
-    vector<point<int, 3>> allNodes = data.getSamplePoints();
-    for (size_t i = 0; i < allNodes.size(); i++) {
-        pp_x.push_back(allNodes[i][0]);
-        pp_y.push_back(allNodes[i][1]);
-        plt::scatter(pp_y, pp_x, 30, { {"c", "black"} });
-        pp_x.clear();
-        pp_y.clear();
-    }
-
-    pp_x.clear();
-    pp_y.clear();
-    for (size_t i = 0; i < nodes.size(); i++) {
-        pp_x.push_back(nodes[i][0]);
-        pp_y.push_back(nodes[i][1]);
-        plt::scatter(pp_y, pp_x, 30, { {"c", "black"} });
-        pp_x.clear();
-        pp_y.clear();
-    }
-
-    pp_x.clear();
-    pp_y.clear();
-    for (size_t i = 0; i < path_points.size(); i++) {
-        pp_x.push_back(path_points[i][0]);
-        pp_y.push_back(path_points[i][1]);
-    }
-    plt::scatter(pp_y, pp_x, 30, { {"c", "pink"} });
-    plt::plot(pp_y, pp_x, "r");
-
-    plt::ylabel("EAST");
-    plt::xlabel("NORTH");
-    plt::show();
+    MavlinkConnection conn("TCP", "127.0.0.1", 5760, false, false);
+    MotionPlanning drone(&conn);
+    drone.start_drone();
     return 0;
 }
