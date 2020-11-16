@@ -8,7 +8,7 @@ from queue import PriorityQueue
 import numpy.linalg as LA
 from sklearn.neighbors import KDTree
 
-plt.rcParams['figure.figsize'] = 12, 12
+plt.rcParams['figure.figsize'] = 6, 6
 
 # This is the same obstacle data from the previous lesson.
 filename = 'colliders.csv'
@@ -71,6 +71,7 @@ for n1 in nodes:
     plt.scatter(n1[1] - emin, n1[0] - nmin, c='blue')
     
 # draw connected nodes
+print(len(nodes), len(g.nodes), len(g.edges))
 for n1 in g.nodes:
     plt.scatter(n1[1] - emin, n1[0] - nmin, c='red')
     

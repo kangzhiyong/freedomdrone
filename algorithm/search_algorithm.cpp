@@ -50,13 +50,13 @@ char SearchAlgorithm::str_d(Direction d)
 
 // Define a function that returns a list of valid actions
 // through the grid from the current node
-void SearchAlgorithm::valid_actions(GirdCellCoord current_node, vector<Direction> &valid)
+void SearchAlgorithm::valid_actions(GirdCellType current_node, vector<Direction> &valid)
 {
     // Returns a list of valid actions given a grid and current node.
     // First define a list of all possible actions
 
     int n = g_east_size - 1, m = g_north_size - 1;
-    int x = current_node.getX(), y = current_node.getY();
+    int x = current_node.get(0), y = current_node.get(1);
     vector<Direction>::iterator it;
     
     // check if the node is off the grid or it's an obstacle
@@ -108,20 +108,20 @@ void SearchAlgorithm::visualize_path()
         }
     }
 
-    GirdCellCoord pos = start;
+    GirdCellType pos = start;
     // Fill in the string grid
-    GirdCellCoord da;
+    GirdCellType da;
     Direction d;
     for (int i = path.size() - 1; i >= 0; i--)
     {
         d = path[i];
         da = actions[d];
-        sgrid[pos.getX() * g_north_size + pos.getY()] = str_d(d);
+        sgrid[pos.get(0) * g_north_size + pos.get(1)] = str_d(d);
         pos += da;
     }
 
-    sgrid[goal.getX() * g_north_size + goal.getY()] = 'G';
-    sgrid[start.getX() * g_north_size + start.getY()] = 'S';
+    sgrid[goal.get(0) * g_north_size + goal.get(1)] = 'G';
+    sgrid[start.get(0) * g_north_size + start.get(1)] = 'S';
     
     for (int i = 0; i < g_east_size; i++) {
         cout << "[ ";
@@ -138,15 +138,15 @@ void SearchAlgorithm::breadth_first()
     // TODO : Replace the None values for
     // "queue" and "visited" with data structure objects
     // and add the start position to each
-    queue<GirdCellCoord> q;
+    queue<GirdCellType> q;
     q.push(start);
-    vector<GirdCellCoord> visited;
+    vector<GirdCellType> visited;
     visited.push_back(start);
 
-    map<GirdCellCoord, BranchNode, MyCompare> branch;
+    map<GirdCellType, BranchNode, MyCompare> branch;
 
     bool found = false;
-    GirdCellCoord current_node;
+    GirdCellType current_node;
     // Run loop while queue is not empty
     while (!q.empty())
     {
@@ -172,14 +172,14 @@ void SearchAlgorithm::breadth_first()
             # 3. Add how you got there to the branch dictionary
              */
             vector<Direction> valid;
-            GirdCellCoord da, next_node;
+            GirdCellType da, next_node;
             valid_actions(current_node, valid);
             for (int i = 0; i < valid.size(); i++)
             {
                 // delta of performing the action
                 Direction a = valid[i];
                 da = actions[a];
-                next_node = GirdCellCoord(current_node.getX() + da.getX(), current_node.getY() + da.getY());
+                next_node = GirdCellType(current_node.get(0) + da.get(0), current_node.get(1) + da.get(1));
                 
                 if (std::find(visited.begin(), visited.end(), next_node) == visited.end())
                 {
@@ -196,7 +196,7 @@ void SearchAlgorithm::breadth_first()
     if (found)
     {
         // retrace steps
-        GirdCellCoord n = goal;
+        GirdCellType n = goal;
         while (branch[n].getCurrentNode() != start)
         {
             path.push_back(branch[n].getCurrentDirection());
@@ -211,11 +211,11 @@ void SearchAlgorithm::depth_first()
     // TODO : Replace the None values for
     // "statck" and "visited" with data structure objects
     // and add the start position to each
-    vector<GirdCellCoord> visited;
-    map<GirdCellCoord, BranchNode, MyCompare> branch;
+    vector<GirdCellType> visited;
+    map<GirdCellType, BranchNode, MyCompare> branch;
     bool found = false;
-    GirdCellCoord current_node;    
-    stack<GirdCellCoord> s;
+    GirdCellType current_node;    
+    stack<GirdCellType> s;
     s.push(start);
  
     // Run loop while queue is not empty
@@ -239,14 +239,14 @@ void SearchAlgorithm::depth_first()
             {
                 visited.push_back(current_node);
                 vector<Direction> valid;
-                GirdCellCoord da, next_node;
+                GirdCellType da, next_node;
                 valid_actions(current_node, valid);
                 for (int i = 0; i < valid.size(); i++)
                 {
                     // delta of performing the action
                     Direction a = valid[i];
                     da = actions[a];
-                    next_node = GirdCellCoord(current_node.getX() + da.getX(), current_node.getY() + da.getY());
+                    next_node = GirdCellType(current_node.get(0) + da.get(0), current_node.get(1) + da.get(1));
                     if (std::find(visited.begin(), visited.end(), next_node) == visited.end())
                     {
                         s.push(next_node);
@@ -262,7 +262,7 @@ void SearchAlgorithm::depth_first()
     if (found)
     {
         // retrace steps
-        GirdCellCoord n = goal;
+        GirdCellType n = goal;
         while (branch[n].getCurrentNode() != start)
         {
             path.push_back(branch[n].getCurrentDirection());
@@ -272,23 +272,23 @@ void SearchAlgorithm::depth_first()
     }
 }
 
-float heuristic(GirdCellCoord p, GirdCellCoord g)
+float heuristic(GirdCellType p, GirdCellType g)
 {
     return (p - g).getCost();
 }
 
-int heuristic_func(GirdCellCoord p, GirdCellCoord g)
+int heuristic_func(GirdCellType p, GirdCellType g)
 {
-    return abs(p.getX() - g.getX()) + abs(p.getY() - g.getY());
+    return abs(p.get(0) - g.get(0)) + abs(p.get(1) - g.get(1));
 }
 void SearchAlgorithm::a_star()
 {
     int path_cost, current_cost = 0;
-    set<GirdCellCoord, MyCompare> visited;
-    map<GirdCellCoord, BranchNode, MyCompare> branch;
+    set<GirdCellType, MyCompare> visited;
+    map<GirdCellType, BranchNode, MyCompare> branch;
     bool found = false;
-    GirdCellCoord current_node;   
-    priority_queue<GirdCellCoord> q;
+    GirdCellType current_node;   
+    priority_queue<GirdCellType> q;
     q.push((0, start));
     visited.insert(start);
 
@@ -314,14 +314,14 @@ void SearchAlgorithm::a_star()
         {
             int branch_cost, queue_cost = 0;
             vector<Direction> valid;
-            GirdCellCoord da, next_node;
+            GirdCellType da, next_node;
             valid_actions(current_node, valid);
             for (int i = 0; i < valid.size(); i++)
             {
                 // delta of performing the action
                 Direction a = valid[i];
                 da = actions[a];
-                next_node = GirdCellCoord(current_node.getX() + da.getX(), current_node.getY() + da.getY());
+                next_node = GirdCellType(current_node.get(0) + da.get(0), current_node.get(1) + da.get(1));
                 branch_cost = current_cost + da.getCost();
                 next_node.queue_cost = branch_cost + heuristic_func(next_node, goal);
                 if ( visited.find(next_node) == visited.end())
@@ -337,17 +337,83 @@ void SearchAlgorithm::a_star()
     if (found)
     {
         // retrace steps
-        GirdCellCoord n = goal;
+        GirdCellType n = goal;
         path_cost = branch[n].getCost();
-        path_points.push_back({goal.getX(), goal.getY()});
+        path_points.push_back(goal.m_point);
         while (branch[n].getCurrentNode() != start)
         {
-            path_points.push_back({branch[n].getCurrentNode().getX(), branch[n].getCurrentNode().getY()});
+            path_points.push_back(branch[n].getCurrentNode().m_point);
             path.push_back(branch[n].getCurrentDirection());
             n = branch[n].getCurrentNode();
         }
-        path_points.push_back({branch[n].getCurrentNode().getX(), branch[n].getCurrentNode().getY()});
+        path_points.push_back(branch[n].getCurrentNode().m_point);
         path.push_back(branch[n].getCurrentDirection());
+    }
+}
+
+void SearchAlgorithm::a_start_graph(FreeGraph<int, 3> g)
+{
+    int path_cost, current_cost = 0;
+    set<GirdCellType, MyCompare> visited;
+    map<GirdCellType, BranchNode, MyCompare> branch;
+    bool found = false;
+    GirdCellType current_node;
+    priority_queue<GirdCellType> q;
+    q.push((0, start));
+    visited.insert(start);
+    while (!q.empty())
+    {
+        current_node = q.top();
+        q.pop();
+        if (current_node == start)
+        {
+            current_cost = 0;
+        }
+        else
+        {
+            current_cost = branch[current_node].getCost();
+        }
+        if (current_node == goal)
+        {
+            cout << "Found a path" << endl;
+            found = true;
+            break;
+        }
+        else
+        {
+            int new_cost, cost = 0;
+            FreeGraph<int, 3>::EdgesType edges = g.edges(current_node.m_point);
+            FreeGraph<int, 3>::EdgesType::iterator eit = edges.begin();
+            GirdCellType next_node;
+            while (eit != edges.end())
+            {
+                next_node = GirdCellType(eit->first);
+                cost = atoi(eit->second["weight"].c_str());
+                new_cost = current_cost + cost + heuristic(next_node, goal);
+                next_node.queue_cost = new_cost;
+                if (visited.find(next_node) == visited.end())
+                {
+                    visited.insert(next_node);
+                    q.push(next_node);
+                    branch[next_node] = BranchNode(new_cost, current_node);
+                }
+                eit++;
+            }
+        }
+    }
+    path_points.clear();
+    if (found)
+    {
+        // retrace steps
+        GirdCellType n = goal;
+        path_cost = branch[n].getCost();
+        path_points.push_back(goal.m_point);
+        while (branch[n].getCurrentNode() != start)
+        {
+            path_points.push_back(branch[n].getCurrentNode().m_point);
+            n = branch[n].getCurrentNode();
+        }
+        path_points.push_back(branch[n].getCurrentNode().m_point);
     }
 }
 
@@ -472,5 +538,5 @@ void SearchAlgorithm::prune_path_by_bresenham(vector<point<int, 2>> path, vector
             i += 1;
         }
     }
-    pruned_path.push_back({start.getX(), start.getY()});
+    pruned_path.push_back({start.get(0), start.get(1)});
 }

@@ -61,7 +61,7 @@ private:
         if (end <= begin)
             return nullptr;
         size_t n = begin + (end - begin)/2;
-        std::nth_element(&nodes_[begin], &nodes_[n], &nodes_[end], node_cmp(index));
+        std::nth_element(&nodes_[begin], &nodes_[n], &nodes_[0] + end, node_cmp(index));
         index = (index + 1) % dimensions;
         nodes_[n].left_ = make_tree(begin, n, index);
         nodes_[n].right_ = make_tree(n + 1, end, index);
@@ -78,25 +78,50 @@ private:
             m_vNbrNodes.erase(m_vNbrNodes.end() - 1);
         }
         best_dist_ = m_vNbrNodes[m_vNbrNodes.size() - 1].nearest_dist_;
+        best_ = &m_vNbrNodes[m_vNbrNodes.size() - 1];
     }
     void nearest(node* root, const point_type& point, size_t index, int k)
     {
         if (root == nullptr)
+        {
             return;
+        }
         ++visited_;
-        float d = root->distance(point);
-
-        if (d == 0)
+        double d = root->distance(point);
+        if (best_ == nullptr || d < best_dist_) {
+            checkNearestMore(root, d, k);
+        }
+        if (best_dist_ == 0)
+        {
             return;
-        
-        checkNearestMore(root, d, k);
-
-        float dx = root->get(index) - point.get(index);
+        }
+        double dx = root->get(index) - point.get(index);
         index = (index + 1) % dimensions;
         nearest(dx > 0 ? root->left_ : root->right_, point, index, k);
         if (dx * dx >= best_dist_)
+        {
             return;
+        }
         nearest(dx > 0 ? root->right_ : root->left_, point, index, k);
+    }
+
+    void nearest(node* root, const point_type& point, size_t index) {
+        if (root == nullptr)
+            return;
+        ++visited_;
+        double d = root->distance(point);
+        if (best_ == nullptr || d < best_dist_) {
+            best_dist_ = d;
+            best_ = root;
+        }
+        if (best_dist_ == 0)
+            return;
+        double dx = root->get(index) - point.get(index);
+        index = (index + 1) % dimensions;
+        nearest(dx > 0 ? root->left_ : root->right_, point, index);
+        if (dx * dx >= best_dist_)
+            return;
+        nearest(dx > 0 ? root->right_ : root->left_, point, index);
     }
 
     void nearest_radius(node* root, const point_type& point, size_t index, float radius)
@@ -117,6 +142,7 @@ private:
             return;
         nearest_radius(dx > 0 ? root->right_ : root->left_, point, index, radius);
     }
+
 public:
     FreeKDTree(const FreeKDTree&) = delete;
     FreeKDTree& operator=(const FreeKDTree&) = delete;
@@ -217,9 +243,27 @@ public:
         if (root_ == nullptr)
             throw std::logic_error("tree is empty");
         best_ = nullptr;
+        best_dist_ = 0;
+        visited_ = 0;
+        m_vNbrNodes.clear();
+        nearest(root_, pt, 0, k);
+    }
+
+    /**
+     * Finds the nearest point in the tree to the given point.
+     * It is not valid to call this function if the tree is empty.
+     *
+     * @param pt a point
+     * @return the nearest point in the tree to the given point
+     */
+    const point_type& nearest(const point_type& pt) {
+        if (root_ == nullptr)
+            throw std::logic_error("tree is empty");
+        best_ = nullptr;
         visited_ = 0;
         best_dist_ = 0;
-        nearest(root_, pt, 0, k);
+        nearest(root_, pt, 0);
+        return best_->point_;
     }
 
     /**

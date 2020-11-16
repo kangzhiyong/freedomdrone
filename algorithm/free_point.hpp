@@ -50,7 +50,7 @@ public:
      * @param pt another point
      * @return distance squared from this point to the other point
      */
-    float distance(const point& pt) const
+    float distance(const point<coordinate_type, dimensions>& pt) const
     {
         float dist = 0;
         for (size_t i = 0; i < dimensions; ++i)
@@ -101,12 +101,17 @@ public:
     
     void print(std::string prefix="")
     {
-        std::cout << prefix << " (x, y, z, ...): ( ";
+        std::cout << prefix << "( ";
         for (size_t i = 0; i < dimensions; ++i)
         {
             std::cout << get(i) << " ";
         }
         std::cout<< ")" << std::endl;
+    }
+    
+    bool operator <(const point<coordinate_type, dimensions>& d) const
+    {
+        return distance({0, 0, 0}) < d.distance({0, 0, 0});
     }
 private:
     std::array<coordinate_type, dimensions> coords_;

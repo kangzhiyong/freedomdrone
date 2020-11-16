@@ -23,28 +23,39 @@ public:
     }
     bool contains(QPointF p)
     {
-        return m_qPolygon.containsPoint(p, Qt::OddEvenFill);
+        return m_qPolygon.containsPoint(p, Qt::WindingFill);
     }
     bool intersect(QPointF p0, QPointF p1)
     {
-        if (contains(p0) || contains(p1))
+        if (contains(p0) != contains(p1))
         {
             return true;
         }
         QLineF line0(p0, p1);
-        QLineF line1;
-        for (size_t i = 1; i < m_qPolygon.size(); i++)
+        
+//        QLineF line1;
+        QPointF tmpP;
+//        for (size_t i = 1; i < m_qPolygon.size(); i++)
+//        {
+//            line1 = QLineF(m_qPolygon[i-1], m_qPolygon[i]);
+//            if (line1.intersects(line0, &tmpP) == QLineF::BoundedIntersection)
+//            {
+//                return true;
+//            }
+//        }
+//        line1 = QLineF(m_qPolygon[m_qPolygon.size() - 1], m_qPolygon[0]);
+//        if (line1.intersects(line0, &tmpP) == QLineF::BoundedIntersection)
+//        {
+//            return true;
+//        }
+        
+        QPointF a = m_qPolygon.back();
+        foreach(QPointF b, m_qPolygon)
         {
-            line1 = (m_qPolygon[i-1], m_qPolygon[i]);
-            if (line1.intersect(line0, &QPoint()) == BoundedIntersection)
+            if (QLineF::BoundedIntersection == line0.intersect(QLineF(a, b), &tmpP))
             {
-                return true;
+                return  true;
             }
-        }
-        line1 = (m_qPolygon[m_qPolygon.size()], m_qPolygon[0]);
-        if (line1.intersect(line0, &QPoint()) == BoundedIntersection)
-        {
-            return true;
         }
         return false;
     }

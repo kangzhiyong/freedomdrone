@@ -19,6 +19,7 @@ elseif (WIN32)
     set(PYTHON_NUMPY_INCLUDE_DIR "C:\\Users\\lenovo\\AppData\\Local\\Programs\\Python\\Python36\\lib\\site-packages\\numpy\\core\\include")
     set(PYTHON_LIBRARIES "C:\\Users\\lenovo\\AppData\\Local\\Programs\\Python\\Python36\\libs\\")
     set(QT_LIBRARIES "C:\\Users\\lenovo\\.conda\\pkgs\\qt-5.9.6-vc14h62aca36_0\\Library\\lib")
+    set(PYTHON_LIBCFCLASS  Python3)
 elseif (APPLE)
     message(STATUS "mac os")
     set(PYTHON_INCLUDE_DIR "/Applications/anaconda3/envs/fcnd/include/python3.6m")
@@ -32,7 +33,7 @@ else ()
     MESSAGE(STATUS "other platform")
 endif ()
 
-find_package(Qt5 COMPONENTS Gui Positioning)
+find_package(Qt5 COMPONENTS Core Gui Qml Quick REQUIRED Positioning)
 
 include_directories(${PYTHON_INCLUDE_DIR})
 include_directories(${PYTHON_NUMPY_INCLUDE_DIR})
@@ -66,9 +67,6 @@ add_executable (freedomdrone
         ${HEADERS})
 
 target_link_libraries(freedomdrone
-        Python3
-        Qt5::Gui
-        Qt5Gui
-        QT5Core
-        QT5Positioning
+        ${PYTHON_LIBCFCLASS}
+        Qt5::Core Qt5::Gui Qt5::Qml Qt5::Quick Qt5::Positioning
         )

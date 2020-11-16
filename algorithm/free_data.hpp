@@ -312,15 +312,13 @@ public:
     }
     void sample(int num)
     {
-        mvSamplePoints.clear();
+        m_vSamplePoints.clear();
         VCoordType xs = uniform(0, m_dNorthMax - m_dNorthMin, num);
         VCoordType ys = uniform(0, m_dEastMax - m_dEastMin, num);
         VCoordType zs = uniform(0, 10, num);
         for (int i = 0; i < num; i++) {
-            bool in_collision = false;
-            
             if (!collides(xs[i], ys[i], zs[i])) {
-                mvSamplePoints.push_back({xs[i], ys[i], zs[i]});
+                m_vSamplePoints.push_back({xs[i], ys[i], zs[i]});
             }
         }
     }
@@ -339,27 +337,27 @@ public:
         }
     }
 
-    bool can_connect(point<coordinate_type, 3> p, point<coordinate_type, 3> p1, coordinate_type height)
+    bool can_connect(point<coordinate_type, 3> p, point<coordinate_type, 3> p1)
     {
         QTFreePolygon<coordinate_type> polygon;
         for (int j = 0; j < m_qvPolygons.size(); j++) {
             polygon = m_qvPolygons[j];
-            
-            if (polygon.intersect(p, p1) && polygon.getHeight() >= height) {
-                return true;
+            if (polygon.intersect(QPointF(p[0], p[1]), QPointF(p1[0], p1[1])) && polygon.getHeight() >= min(p[2], p1[2])) {
+                return false;
             }
         }
-        return false;
+        return true;
     }
 
     void create_graph(int k)
     {
         point<coordinate_type, 3> p, p1;
-        FreeKDTree<coordinate_type, 3> kdtree(mvSamplePoints.begin(), mvSamplePoints.end());
-        for (size_t i = 0; i < mvSamplePoints.size(); i++)
+        FreeKDTree<coordinate_type, 3> kdtree(m_vSamplePoints.begin(), m_vSamplePoints.end());
+        for (size_t i = 0; i < m_vSamplePoints.size(); i++)
         {
-            p = mvSamplePoints[i];
+            p = m_vSamplePoints[i];
             kdtree.nearest(p, k);
+
             for (size_t j = 0; j < kdtree.m_vNbrNodes.size(); j++)
             {
                 p1 = kdtree.m_vNbrNodes[j].point_;
@@ -369,10 +367,25 @@ public:
                 }
                 if (can_connect(p, p1))
                 {
-                    m_cGraph.add_edge(p, p1, {{"weight", "1"}})
+                    m_cGraph.add_edge(p, p1, {{"weight", "1"}});
                 }
             }
         }
+    }
+    
+    FreeGraph<coordinate_type, 3> getGraph()
+    {
+        return m_cGraph;
+    }
+    
+    vector<point<coordinate_type, 3>> getSamplePoints()
+    {
+        return m_vSamplePoints;
+    }
+
+    void setSamplePoints(vector<point<coordinate_type, 3>> data)
+    {
+        m_vSamplePoints = data;
     }
 private:
     coordinate_type m_dLat{ 0 };
@@ -391,6 +404,6 @@ private:
     VCoordType m_qvDEasts;
     VCoordType m_qvDAlts;
     vector<QTFreePolygon<int>> m_qvPolygons;
-    vector<point<coordinate_type, 3>> mvSamplePoints;
+    vector<point<coordinate_type, 3>> m_vSamplePoints;
     FreeGraph<coordinate_type, 3> m_cGraph;
 };
