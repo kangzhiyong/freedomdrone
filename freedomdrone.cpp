@@ -232,3 +232,133 @@ void BackyardFlyer::start_drone()
     cout << "starting connection" << endl;
     start();
 }
+
+MotionPlanning::MotionPlanning(MavlinkConnection* conn) : Drone(conn)
+{
+    // register all your callbacks here
+    register_callback(LOCAL_POSITION, ((void (Drone::*)()) & MotionPlanning::local_position_callback));
+    register_callback(LOCAL_VELOCITY, ((void (Drone::*)()) & MotionPlanning::velocity_callback));
+    register_callback(STATE, ((void (Drone::*)()) & MotionPlanning::state_callback));
+
+}
+
+void MotionPlanning::local_position_callback()
+{
+    if (flight_state == TAKEOFF)
+    {
+        if (-1.0 * local_position()[2] > 0.95 * target_position[2])
+        {
+            waypoint_transition();
+        }
+    }
+    else if (flight_state == WAYPOINT)
+    {
+        point3D lp = local_position();
+        if (norm(target_position - lp) < 1.0)
+        {
+            if (all_waypoints.size() > 0)
+            {
+                waypoint_transition();
+            }
+            else if (norm(local_velocity()) < 1.0)
+            {
+                landing_transition();
+            }
+        }
+    }
+}
+
+void MotionPlanning::velocity_callback()
+{
+    if (flight_state == LANDING)
+    {
+        if ((global_position()[2] - global_home()[2] < 0.1)
+            && (abs(local_position()[2]) < 0.01))
+        {
+            disarming_transition();
+        }
+    }
+}
+
+void MotionPlanning::state_callback()
+{
+    if (in_mission)
+    {
+        if (flight_state == MANUAL)
+        {
+            arming_transition();
+        }
+        else if (flight_state == ARMING && armed())
+        {
+            plan_path();
+        }
+        else if (flight_state == PLANNING)
+        {
+            takeoff_transition();
+        }
+        else if (flight_state == DISARMING && !armed() && !guided())
+        {
+            manual_transition();
+        }
+    }
+}
+
+void MotionPlanning::arming_transition()
+{
+    flight_state = ARMING;
+    cout << "arming transition\r\n" << endl;
+    arm();
+    take_control();
+}
+
+void MotionPlanning::takeoff_transition()
+{
+    flight_state = TAKEOFF;
+    cout << "takeoff transition\r\n" << endl;
+    takeoff(target_position[2]);
+}
+
+void MotionPlanning::waypoint_transition()
+{
+    flight_state = WAYPOINT;
+    cout << "waypoint transition" << endl;
+    target_position = all_waypoints.front();
+    all_waypoints.pop();
+    target_position.print("target_position");
+    cmd_position(target_position[0], target_position[1], target_position[2], 0.0);
+}
+
+void MotionPlanning::landing_transition()
+{
+    flight_state = LANDING;
+    cout << "landing transition" << endl;
+    land();
+}
+
+void MotionPlanning::disarming_transition()
+{
+    flight_state = DISARMING;
+    cout << "disarm transition" << endl;
+    disarm();
+    release_control();
+}
+
+void MotionPlanning::manual_transition()
+{
+    flight_state = MANUAL;
+    cout << "manual transition" << endl;
+    stop();
+    in_mission = false;
+}
+
+void MotionPlanning::start_drone()
+{
+    cout << "starting connection" << endl;
+    start();
+}
+
+void MotionPlanning::send_waypoints()
+{
+    cout << "Sending waypoints to simulator ..." << endl;
+
+}

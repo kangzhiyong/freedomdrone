@@ -170,7 +170,7 @@ int main()
 //    }
 
     data.extract_polygons(safe_distance);
-    data.sample(300);
+    data.sample(500);
     
     data.create_graph(10);
     
