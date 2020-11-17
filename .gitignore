@@ -103,3 +103,57 @@ python/jupyter notebook/3DMotionPlanning/__pycache__/sampling.cpython-36.pyc
 python/jupyter notebook/3DMotionPlanning/Logs/TLog.txt
 python/jupyter notebook/3DMotionPlanning/__pycache__/sampling.cpython-36.pyc
 python/jupyter notebook/3DMotionPlanning/__pycache__/planning_utils.cpython-36.pyc
+/.vs/CMake Overview
+/.vs/ProjectSettings.json
+/.vs/VSWorkspaceState.json
+/.vs/cmake.db
+/.vs/freedomdrone/v16/.suo
+/.vs/freedomdrone/v16/Browse.VC.db
+/.vs/freedomdrone/v16/Browse.VC.db-shm
+/.vs/freedomdrone/v16/Browse.VC.db-wal
+/.vs/freedomdrone/v16/Browse.VC.opendb
+/.vs/freedomdrone/v16/ipch/AutoPCH/23a27390087d1ffa/SEARCH_ALGORITHM.ipch
+/.vs/freedomdrone/v16/ipch/AutoPCH/477673298afbd86c/MAIN.ipch
+/.vs/freedomdrone/v16/ipch/AutoPCH/6dd2269991bdc3af/FREEDOMDRONE.ipch
+/.vs/freedomdrone/v16/ipch/AutoPCH/b79b94ca5a501802/MAVLINK_CONNECTION.ipch
+/.vs/freedomdrone/v16/ipch/AutoPCH/ccba85d1411db005/DRONE.ipch
+/.vs/freedomdrone/v16/ipch/AutoPCH/f77273bd25b8b376/MAIN.ipch
+/.vs/slnx.sqlite
+/out/build/x64-Debug/.ninja_deps
+/out/build/x64-Debug/.ninja_log
+/out/build/x64-Debug/CMakeCache.txt
+/out/build/x64-Debug/CMakeFiles/3.17.20032601-MSVC_2/CMakeDetermineCompilerABI_C.bin
+/out/build/x64-Debug/CMakeFiles/3.17.20032601-MSVC_2/CMakeDetermineCompilerABI_CXX.bin
+/out/build/x64-Debug/CMakeFiles/3.17.20032601-MSVC_2/CompilerIdC/CMakeCCompilerId.c
+/out/build/x64-Debug/CMakeFiles/3.17.20032601-MSVC_2/CompilerIdC/CMakeCCompilerId.exe
+/out/build/x64-Debug/CMakeFiles/3.17.20032601-MSVC_2/CompilerIdC/CMakeCCompilerId.obj
+/out/build/x64-Debug/CMakeFiles/3.17.20032601-MSVC_2/CompilerIdCXX/CMakeCXXCompilerId.cpp
+/out/build/x64-Debug/CMakeFiles/3.17.20032601-MSVC_2/CompilerIdCXX/CMakeCXXCompilerId.exe
+/out/build/x64-Debug/CMakeFiles/3.17.20032601-MSVC_2/CompilerIdCXX/CMakeCXXCompilerId.obj
+/out/build/x64-Debug/CMakeFiles/CMakeOutput.log
+/out/build/x64-Debug/CMakeFiles/ShowIncludes/foo.h
+/out/build/x64-Debug/CMakeFiles/ShowIncludes/main.c
+/out/build/x64-Debug/CMakeFiles/ShowIncludes/main.obj
+/out/build/x64-Debug/CMakeFiles/TargetDirectories.txt
+/out/build/x64-Debug/CMakeFiles/cmake.check_cache
+/out/build/x64-Debug/CMakeFiles/freedomdrone.dir/algorithm/free_point.cpp.obj
+/out/build/x64-Debug/CMakeFiles/freedomdrone.dir/algorithm/free_polygon.cpp.obj
+/out/build/x64-Debug/CMakeFiles/freedomdrone.dir/algorithm/qt_free_polygon.cpp.obj
+/out/build/x64-Debug/CMakeFiles/freedomdrone.dir/algorithm/search_algorithm.cpp.obj
+/out/build/x64-Debug/CMakeFiles/freedomdrone.dir/connection/mavlink_connection.cpp.obj
+/out/build/x64-Debug/CMakeFiles/freedomdrone.dir/connection/mavlink_socket.cpp.obj
+/out/build/x64-Debug/CMakeFiles/freedomdrone.dir/connection/message_types.cpp.obj
+/out/build/x64-Debug/CMakeFiles/freedomdrone.dir/drone.cpp.obj
+/out/build/x64-Debug/CMakeFiles/freedomdrone.dir/freedomdrone.cpp.obj
+/out/build/x64-Debug/CMakeFiles/freedomdrone.dir/freedomdrone_autogen/mocs_compilation.cpp.obj
+/out/build/x64-Debug/CMakeFiles/freedomdrone.dir/main.cpp.obj
+/out/build/x64-Debug/CMakeFiles/freedomdrone_autogen.dir/AutogenInfo.json
+/out/build/x64-Debug/CMakeFiles/freedomdrone_autogen.dir/AutogenUsed.txt
+/out/build/x64-Debug/CMakeFiles/freedomdrone_autogen.dir/ParseCache.txt
+/out/build/x64-Debug/Testing/Temporary/LastTest.log
+/out/build/x64-Debug/VSInheritEnvironments.txt
+/out/build/x64-Debug/build.ninja
+/out/build/x64-Debug/freedomdrone.exe
+/out/build/x64-Debug/freedomdrone.exe.manifest
+/out/build/x64-Debug/freedomdrone_autogen/mocs_compilation.cpp
+/out/build/x64-Debug/rules.ninja

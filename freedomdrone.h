@@ -91,6 +91,6 @@ public:
     void manual_transition();
     void start_drone();
     void find_closest_node(vector<point3D> nodes, point3D p, point3D &p_min);
-    void send_waypoints(vector<MSGPACKPoint<float>> waypoints);
+    void send_waypoints(vector<point3D> points);
     void plan_path();
 };

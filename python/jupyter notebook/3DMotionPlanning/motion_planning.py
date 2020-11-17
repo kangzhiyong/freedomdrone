@@ -143,16 +143,16 @@ class MotionPlanning(Drone):
 
         sampler = Sampler(data, SAFETY_DISTANCE)
         self.polygons = sampler._polygons
-        nodes = sampler.sample(300)
+        nodes = sampler.sample(100)
         print('nodes_len: ', len(nodes))
-        # g = self.create_graph(nodes, 10)
-        # print('graph_edgs: ', len(g.edges))
+        g = self.create_graph(nodes, 5)
+        print('graph_edgs: ', len(g.edges))
         start = self.local_position
         goal = global_to_local([-122.396428, 37.795128, TARGET_ALTITUDE], self.global_home)
         print(start, goal)
 
-        start = self.find_closest_node(nodes, start)
-        goal = self.find_closest_node(nodes, goal)
+        start = self.find_closest_node(g.nodes, start)
+        goal = self.find_closest_node(g.nodes, goal)
         print(start, goal)
         # path, cost = a_star_for_graph(g, heuristic, start, goal)
         # print('a_star_path: ', path)

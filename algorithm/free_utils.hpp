@@ -336,7 +336,7 @@ static vector<coordinate_type> uniform(coordinate_type min, coordinate_type max,
 {
     vector<coordinate_type> d;
     std::mt19937 generator((std::random_device()()));
-    std::uniform_int_distribution<coordinate_type> distribution(min, max);
+    std::uniform_real_distribution<coordinate_type> distribution(min, max);
     
     auto dice= std::bind(distribution,generator);
     for (int i = 0; i < num; i++)

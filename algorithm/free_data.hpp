@@ -294,7 +294,7 @@ public:
             p.append(QPointF(obstacle[0], obstacle[3]));
             p.append(QPointF(obstacle[1], obstacle[3]));
             p.append(QPointF(obstacle[1], obstacle[2]));
-            m_qvPolygons.push_back({p, alt + d_alt - m_dAltMin});
+            m_qvPolygons.push_back({p, alt + d_alt + safety_distance - m_dAltMin});
             obstacle.clear();
         }
     }
@@ -315,7 +315,7 @@ public:
         m_vSamplePoints.clear();
         VCoordType xs = uniform((float)0.0, (float)(m_dNorthMax - m_dNorthMin), num);
         VCoordType ys = uniform((float)0.0, (float)(m_dEastMax - m_dEastMin), num);
-        VCoordType zs = uniform((float)0.0, (float)10.0, num);
+        VCoordType zs = uniform((float)0.0, (float)10, num);
         for (int i = 0; i < num; i++) {
             if (!collides(xs[i], ys[i], zs[i])) {
                 m_vSamplePoints.push_back({xs[i], ys[i], zs[i]});

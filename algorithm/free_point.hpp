@@ -9,8 +9,6 @@
 #ifndef my_point_hpp
 #define my_point_hpp
 
-#include <msgpack.hpp>
-
 #include <algorithm>
 #include <array>
 #include <vector>
@@ -84,6 +82,16 @@ public:
         return a;
     }
 
+    point<coordinate_type, dimensions> operator+(coordinate_type distance)
+    {
+        std::array<coordinate_type, dimensions> a;
+        for (size_t i = 0; i < dimensions; ++i)
+        {
+            a[i] = get(i) + distance;
+        }
+        return a;
+    }
+
     point<coordinate_type, dimensions> operator-(point<coordinate_type, dimensions>& p)
     {
         size_t n = min(dimensions, p.coords_.size());
@@ -110,7 +118,7 @@ public:
         }
         std::cout<< ")" << std::endl;
     }
-    
+
     bool operator <(const point<coordinate_type, dimensions>& d) const
     {
         return distance({0, 0, 0}) < d.distance({0, 0, 0});
@@ -132,20 +140,6 @@ std::ostream& operator<<(std::ostream& out, const point<coordinate_type, dimensi
     out << ')';
     return out;
 }
-
-template<typename coordinate_type>
-class MSGPACKPoint {
-public:
-    MSGPACKPoint(coordinate_type _x, coordinate_type _y, coordinate_type _z){
-        x = _x;
-        y = _y;
-        z = _z;
-    }
-    coordinate_type x;
-    coordinate_type y;
-    coordinate_type z;
-    MSGPACK_DEFINE(x, y, z);
-};
 
 typedef point<float, 2> point2D;
 typedef point<float, 3> point3D;

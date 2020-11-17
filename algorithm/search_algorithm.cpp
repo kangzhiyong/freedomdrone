@@ -353,6 +353,10 @@ void SearchAlgorithm::a_star()
 
 void SearchAlgorithm::a_start_graph(FreeGraph<float, 3> g)
 {
+    if (start.m_point == goal.m_point)
+    {
+        return;
+    }
     int path_cost, current_cost = 0;
     set<GirdCellType, MyCompare> visited;
     map<GirdCellType, BranchNode, MyCompare> branch;
@@ -361,6 +365,7 @@ void SearchAlgorithm::a_start_graph(FreeGraph<float, 3> g)
     priority_queue<GirdCellType> q;
     q.push((0, start));
     visited.insert(start);
+
     while (!q.empty())
     {
         current_node = q.top();
@@ -408,7 +413,8 @@ void SearchAlgorithm::a_start_graph(FreeGraph<float, 3> g)
         GirdCellType n = goal;
         path_cost = branch[n].getCost();
         path_points.push_back(goal.m_point);
-        while (branch[n].getCurrentNode() != start)
+        map<GirdCellType, BranchNode, MyCompare>::iterator it = branch.find(n);
+        while ( it != branch.end() && branch[n].getCurrentNode() != start)
         {
             path_points.push_back(branch[n].getCurrentNode().m_point);
             n = branch[n].getCurrentNode();

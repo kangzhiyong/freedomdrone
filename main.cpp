@@ -69,13 +69,18 @@ void test_random(size_t count) {
 
 int main()
 {
-//    msgpack::type::tuple<float, float, float> src(111, 222, 333);
-//
-//    // serialize the object into the buffer.
-//    // any classes that implements write(const char*,size_t) can be a buffer.
-//    std::stringstream buffer;
-//    msgpack::pack(buffer, src);
-//    cout << buffer.str() << endl;
+    //msgpack::type::tuple<int, bool, std::string> src(1, true, "example");
+
+    //// serialize the object into the buffer.
+    //// any classes that implements write(const char*,size_t) can be a buffer.
+    //std::stringstream buffer;
+    //msgpack::pack(buffer, src);
+    //msgpack::pack(buffer, src);
+    //msgpack::pack(buffer, src);
+    //msgpack::pack(buffer, src);
+    //msgpack::pack(buffer, src);
+
+    //cout << buffer.str() << endl;
 //    // send the buffer ...
 //    buffer.seekg(0);
 //
@@ -123,9 +128,9 @@ int main()
     //    q.pop();
     //}
     //return 0;
-//    MavlinkConnection conn("TCP", "127.0.0.1", 5760, false, false);
-//    BackyardFlyer drone(&conn);
-//    drone.start_drone();
+    //MavlinkConnection conn("TCP", "127.0.0.1", 5760, false, false);
+    //BackyardFlyer drone(&conn);
+    //drone.start_drone();
     
     /*SearchAlgorithm bfs;
     bfs.breadth_first();
