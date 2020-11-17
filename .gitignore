@@ -157,3 +157,7 @@ python/jupyter notebook/3DMotionPlanning/__pycache__/planning_utils.cpython-36.p
 /out/build/x64-Debug/freedomdrone.exe.manifest
 /out/build/x64-Debug/freedomdrone_autogen/mocs_compilation.cpp
 /out/build/x64-Debug/rules.ninja
+build/freedomdrone.build/Debug/freedomdrone_autogen.build/Script-1B249506F74E40F49F41CF6B.sh
+build/freedomdrone.build/Debug/ZERO_CHECK.build/Script-660190902DAF4F4AAF15DD63.sh
+python/jupyter notebook/3DMotionPlanning/__pycache__/planning_utils.cpython-36.pyc
+python/jupyter notebook/3DMotionPlanning/__pycache__/sampling.cpython-36.pyc

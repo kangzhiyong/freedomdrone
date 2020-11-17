@@ -256,11 +256,6 @@ void MotionPlanning::local_position_callback()
 {
     if (flight_state == TAKEOFF)
     {
-        cout << "takeoff locap, targetp" << endl;
-        local_position().print();
-        target_position.print();
-        cout << endl;
-
         if (-1.0 * local_position()[2] > 0.95 * target_position[2])
         {
             waypoint_transition();
@@ -397,21 +392,13 @@ void MotionPlanning::send_waypoints(vector<point3D> points)
     // serialize the object into the buffer.
     // any classes that implements write(const char*,size_t) can be a buffer.
     cout << "Sending waypoints to simulator ..." << endl;
-    msgpack::sbuffer sbuf;
-    std::stringstream buffer;
-    msgpack::packer<msgpack::sbuffer> pk(sbuf);
+    string data;
     for (size_t i = 0; i < points.size(); i++)
     {
-        pk.pack(std::tuple <float, float, float>(points[i][0], points[i][1], points[i][2]));
-        msgpack::pack(buffer, std::tuple <float, float, float>(points[i][0], points[i][1], points[i][2]));
+        data += plt::dumps(points[i][0], points[i][1], points[i][2], 0.0);
     }
-    cout.setf(ios::showbase);
-    cout.setf(ios_base::hex, ios_base::basefield);
-    cout << sbuf.data() << endl;
-    cout << buffer.str() << endl;
-    cout.unsetf(ios::hex);
-
-    //getConnection()->getMaster()->write((void*)sbuf.data(), sbuf.size());
+    cout << data << endl;
+//    getConnection()->getMaster()->write(sbuf.data(), strlen(sbuf.data()));
 }
 
 void MotionPlanning::plan_path()
@@ -428,17 +415,14 @@ void MotionPlanning::plan_path()
     FreeData<float> data(path, ",");
     float lat0 = data.getLat();
     float lon0 = data.getLon();
-    point3D home_ne({125, 245, 0});
-    point3D home_glo = local_to_global(home_ne, global_home());
-    home_glo.print();
-    cmd_position(home_ne, 0);
-    //_update_local_position(global_to_local(global_position(), global_home()));
+    set_home_position(lon0, lat0, 0);
+    _update_local_position(global_to_local(global_position(), global_home()));
     
     data.extract_polygons(safety_distance);
     data.sample(1000);
     data.create_graph(10);
     point3D start = local_position();
-    point3D goal = point3D({ 230, 380, 20 })/*global_to_local({-122.396428, 37.795128, target_altitude}, global_home())*/;
+    point3D goal = global_to_local({-122.396428, 37.795128, target_altitude}, global_home());
     cout << "start and goal" << endl;
     start.print();
     goal.print();
@@ -453,12 +437,10 @@ void MotionPlanning::plan_path()
     cout << "startnew and goalnew" << endl;
     start_new.print();
     goal_new.print();
-    vector<float> grid;
-    data.createGrid(target_altitude, safety_distance, grid, g_north_size, g_east_size, g_alt_size);
     
     GirdCellType start_grid(start_new);
     GirdCellType goal_grid(goal_new);
-    SearchAlgorithm a_start_graph(start_grid, goal_grid, grid);
+    SearchAlgorithm a_start_graph(start_grid, goal_grid);
     a_start_graph.a_start_graph(graph);
     
     vector<point3D> path_points_prune;
@@ -471,59 +453,59 @@ void MotionPlanning::plan_path()
             all_waypoints.push({ path_points_prune[i][0], path_points_prune[i][1], path_points_prune[i][2] });
         }
         flight_state = PLANNING;
+        
+//        const float* zptr = (float *)&(grid[0]);
+//        int colors = 1;
+//        plt::plot({(double)start[1]}, {(double)start[0]}, "bX");
+//        plt::plot({(double)goal[1]}, {(double)goal[0]}, "cX");
+//        plt::plot({(double)start_new[1]}, {(double)start_new[0]}, "bX");
+//        plt::plot({(double)goal_new[1]}, {(double)goal_new[0]}, "cX");
+//        plt::imshow(zptr, g_north_size, g_east_size, colors, { {"cmap", "Greys"}, {"origin", "lower"} });
+//
+//        vector<float> pp_x, pp_y, pp_z;
+//        FreeEdge<float, 3> edge;
+//        for (int i = 0; i < edges.size(); i++) {
+//            edge = edges[i];
+//            pp_x.push_back(edge.getStart()[0]);
+//            pp_x.push_back(edge.getEnd()[0]);
+//            pp_y.push_back(edge.getStart()[1]);
+//            pp_y.push_back(edge.getEnd()[1]);
+//            plt::plot(pp_y, pp_x, "g");
+//            pp_x.clear();
+//            pp_y.clear();
+//        }
+//
+//
+//        //vector<point3D> allNodes = data.getSamplePoints();
+//        //for (size_t i = 0; i < allNodes.size(); i++) {
+//        //    pp_x.push_back(allNodes[i][0]);
+//        //    pp_y.push_back(allNodes[i][1]);
+//        //    plt::scatter(pp_y, pp_x, 30, { {"c", "black"} });
+//        //    pp_x.clear();
+//        //    pp_y.clear();
+//        //}
+//
+//        pp_x.clear();
+//        pp_y.clear();
+//        for (size_t i = 0; i < nodes.size(); i++) {
+//            pp_x.push_back(nodes[i][0]);
+//            pp_y.push_back(nodes[i][1]);
+//            plt::scatter(pp_y, pp_x, 30, { {"c", "red"} });
+//            pp_x.clear();
+//            pp_y.clear();
+//        }
+//
+//        pp_x.clear();
+//        pp_y.clear();
+//        for (size_t i = 0; i < path_points_prune.size(); i++) {
+//            pp_x.push_back(path_points_prune[i][0]);
+//            pp_y.push_back(path_points_prune[i][1]);
+//        }
+//        plt::scatter(pp_y, pp_x, 30, { {"c", "pink"} });
+//        plt::plot(pp_y, pp_x, "r");
+//
+//        plt::ylabel("EAST");
+//        plt::xlabel("NORTH");
+//        plt::show();
     }
-
-    //const float* zptr = (float *)&(grid[0]);
-    //int colors = 1;
-    //plt::plot({(double)start[1]}, {(double)start[0]}, "bX");
-    //plt::plot({(double)goal[1]}, {(double)goal[0]}, "cX");
-    //plt::plot({(double)start_new[1]}, {(double)start_new[0]}, "bX");
-    //plt::plot({(double)goal_new[1]}, {(double)goal_new[0]}, "cX");
-    //plt::imshow(zptr, g_north_size, g_east_size, colors, { {"cmap", "Greys"}, {"origin", "lower"} });
-
-    //vector<float> pp_x, pp_y, pp_z;
-    //FreeEdge<float, 3> edge;
-    //for (int i = 0; i < edges.size(); i++) {
-    //    edge = edges[i];
-    //    pp_x.push_back(edge.getStart()[0]);
-    //    pp_x.push_back(edge.getEnd()[0]);
-    //    pp_y.push_back(edge.getStart()[1]);
-    //    pp_y.push_back(edge.getEnd()[1]);
-    //    plt::plot(pp_y, pp_x, "g");
-    //    pp_x.clear();
-    //    pp_y.clear();
-    //}
-
-
-    ////vector<point3D> allNodes = data.getSamplePoints();
-    ////for (size_t i = 0; i < allNodes.size(); i++) {
-    ////    pp_x.push_back(allNodes[i][0]);
-    ////    pp_y.push_back(allNodes[i][1]);
-    ////    plt::scatter(pp_y, pp_x, 30, { {"c", "black"} });
-    ////    pp_x.clear();
-    ////    pp_y.clear();
-    ////}
-
-    //pp_x.clear();
-    //pp_y.clear();
-    //for (size_t i = 0; i < nodes.size(); i++) {
-    //    pp_x.push_back(nodes[i][0]);
-    //    pp_y.push_back(nodes[i][1]);
-    //    plt::scatter(pp_y, pp_x, 30, { {"c", "red"} });
-    //    pp_x.clear();
-    //    pp_y.clear();
-    //}
-
-    //pp_x.clear();
-    //pp_y.clear();
-    //for (size_t i = 0; i < path_points_prune.size(); i++) {
-    //    pp_x.push_back(path_points_prune[i][0]);
-    //    pp_y.push_back(path_points_prune[i][1]);
-    //}
-    //plt::scatter(pp_y, pp_x, 30, { {"c", "pink"} });
-    //plt::plot(pp_y, pp_x, "r");
-
-    //plt::ylabel("EAST");
-    //plt::xlabel("NORTH");
-    //plt::show();
 }

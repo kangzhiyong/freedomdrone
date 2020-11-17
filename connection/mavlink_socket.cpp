@@ -156,7 +156,6 @@ mavudp::mavudp(std::string dest_ip, unsigned short dest_port, bool input, bool b
         perror("bind:");
         return;
     }
-    printf("succe\r\n");
 
     last_addr = "";
     last_port = 0;
@@ -228,8 +227,6 @@ mavtcp::mavtcp(std::string dest_ip, unsigned short  dest_port, bool input, bool 
     if (::connect(_socket, (sockaddr*)&destAddr, sizeof(destAddr)) < 0) {
         printf("Connect failed (connect())\r\n");
     }
-
-    printf("succe\r\n");
 }
 
 void mavtcp::write(const void* buffer, int bufferLen)

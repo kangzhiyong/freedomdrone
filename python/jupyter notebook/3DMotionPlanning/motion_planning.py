@@ -118,7 +118,6 @@ class MotionPlanning(Drone):
         self.connection._master.write(data)
 
     def plan_path(self):
-        self.flight_state = States.PLANNING
 
         print("Searching for a path ...")
         TARGET_ALTITUDE = 5
@@ -143,17 +142,22 @@ class MotionPlanning(Drone):
 
         sampler = Sampler(data, SAFETY_DISTANCE)
         self.polygons = sampler._polygons
-        nodes = sampler.sample(100)
+        nodes = sampler.sample(3)
         print('nodes_len: ', len(nodes))
-        g = self.create_graph(nodes, 5)
-        print('graph_edgs: ', len(g.edges))
-        start = self.local_position
-        goal = global_to_local([-122.396428, 37.795128, TARGET_ALTITUDE], self.global_home)
-        print(start, goal)
+        xx = [[p[0], p[1], TARGET_ALTITUDE, 0] for p in nodes]
+        data = msgpack.dumps(xx)
+        print(data)
+        self.connection._master.write(data)
+        # print(data)
+        # g = self.create_graph(nodes, 10)
+        # print('graph_edgs: ', len(g.edges))
+        # start = self.local_position
+        # goal = global_to_local([-122.396428, 37.795128, TARGET_ALTITUDE], self.global_home)
+        # print(start, goal)
 
-        start = self.find_closest_node(g.nodes, start)
-        goal = self.find_closest_node(g.nodes, goal)
-        print(start, goal)
+        # start = self.find_closest_node(g.nodes, start)
+        # goal = self.find_closest_node(g.nodes, goal)
+        # print(start, goal)
         # path, cost = a_star_for_graph(g, heuristic, start, goal)
         # print('a_star_path: ', path)
         # path = self.prune_path(path)
@@ -165,6 +169,7 @@ class MotionPlanning(Drone):
         #     self.waypoints = waypoints
         #     # TODO: send waypoints to sim (this is just for visualization of waypoints)
         #     self.send_waypoints()
+        #     self.flight_state = States.PLANNING
 
     def start(self):
         #self.start_log("Logs", "NavLog.txt")

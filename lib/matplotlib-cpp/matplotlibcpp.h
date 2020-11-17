@@ -100,7 +100,7 @@ struct _interpreter {
     PyObject *s_python_function_barh;
     PyObject *s_python_function_colorbar;
     PyObject *s_python_function_subplots_adjust;
-
+    PyObject *s_python_function_dumps;
 
     /* For now, _interpreter is implemented as a singleton since its currently not possible to have
        multiple independent embedded python interpreters without patching the python source code
@@ -185,7 +185,8 @@ private:
         PyObject* pyplotname = PyString_FromString("matplotlib.pyplot");
         PyObject* cmname  = PyString_FromString("matplotlib.cm");
         PyObject* pylabname  = PyString_FromString("pylab");
-        if (!pyplotname || !pylabname || !matplotlibname || !cmname) {
+        PyObject* msgpackname = PyString_FromString("msgpack");
+        if (!pyplotname || !pylabname || !matplotlibname || !cmname || !msgpackname) {
             throw std::runtime_error("couldnt create string");
         }
 
@@ -214,6 +215,10 @@ private:
         Py_DECREF(pylabname);
         if (!pylabmod) { throw std::runtime_error("Error loading module pylab!"); }
 
+        PyObject* pymsgpackmod = PyImport_Import(msgpackname);
+        Py_DECREF(msgpackname);
+        if (!pymsgpackmod) { throw std::runtime_error("Error loading module msgpack!"); }
+        
         s_python_function_arrow = safe_import(pymod, "arrow");
         s_python_function_show = safe_import(pymod, "show");
         s_python_function_close = safe_import(pymod, "close");
@@ -269,6 +274,7 @@ private:
 #ifndef WITHOUT_NUMPY
         s_python_function_imshow = safe_import(pymod, "imshow");
 #endif
+        s_python_function_dumps = safe_import(pymsgpackmod, "dumps");
         s_python_empty_tuple = PyTuple_New(0);
     }
 
@@ -845,6 +851,34 @@ bool arrow(Numeric x, Numeric y, Numeric end_x, Numeric end_y, const std::string
         Py_DECREF(res);
 
     return res;
+}
+
+inline string dumps(const float x, const float y, const float z, const float o) {
+
+    detail::_interpreter::get();
+
+    PyObject* obj_x = PyFloat_FromDouble(x);
+    PyObject* obj_y = PyFloat_FromDouble(y);
+    PyObject* obj_z = PyFloat_FromDouble(z);
+    PyObject* obj_o = PyFloat_FromDouble(o);
+
+    PyObject* dump_args = PyTuple_New(4);
+    PyTuple_SetItem(dump_args, 0, obj_x);
+    PyTuple_SetItem(dump_args, 1, obj_y);
+    PyTuple_SetItem(dump_args, 2, obj_z);
+    PyTuple_SetItem(dump_args, 3, obj_o);
+
+    PyObject* res = PyObject_CallObject(detail::_interpreter::get().s_python_function_dumps, dump_args);
+
+    string ret;
+    Py_DECREF(dump_args);
+    if (res)
+    {
+        PyArg_Parse(res, "s", &ret);
+        Py_DECREF(res);
+    }
+
+    return ret;
 }
 
 template< typename Numeric>

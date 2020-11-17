@@ -285,16 +285,16 @@ public:
             d_north = m_qvDNorths[i];
             d_east = m_qvDEasts[i];
             d_alt = m_qvDAlts[i];
-            obstacle.push_back(north - d_north - safety_distance - m_dNorthMin);
-            obstacle.push_back(north + d_north + safety_distance - m_dNorthMin);
-            obstacle.push_back(east - d_east - safety_distance - m_dEastMin);
-            obstacle.push_back(east + d_east + safety_distance - m_dEastMin);
+            obstacle.push_back(north - d_north - safety_distance);
+            obstacle.push_back(north + d_north + safety_distance);
+            obstacle.push_back(east - d_east - safety_distance);
+            obstacle.push_back(east + d_east + safety_distance);
             QPolygonF p;
             p.append(QPointF(obstacle[0], obstacle[2]));
             p.append(QPointF(obstacle[0], obstacle[3]));
             p.append(QPointF(obstacle[1], obstacle[3]));
             p.append(QPointF(obstacle[1], obstacle[2]));
-            m_qvPolygons.push_back({p, alt + d_alt + safety_distance - m_dAltMin});
+            m_qvPolygons.push_back({p, alt + d_alt + safety_distance});
             obstacle.clear();
         }
     }
@@ -313,9 +313,9 @@ public:
     void sample(int num)
     {
         m_vSamplePoints.clear();
-        VCoordType xs = uniform((float)0.0, (float)(m_dNorthMax - m_dNorthMin), num);
-        VCoordType ys = uniform((float)0.0, (float)(m_dEastMax - m_dEastMin), num);
-        VCoordType zs = uniform((float)0.0, (float)10, num);
+        VCoordType xs = uniform(m_dNorthMin, m_dNorthMax, num);
+        VCoordType ys = uniform(m_dEastMin, m_dEastMax, num);
+        VCoordType zs = uniform((float)0.0, (float)20, num);
         for (int i = 0; i < num; i++) {
             if (!collides(xs[i], ys[i], zs[i])) {
                 m_vSamplePoints.push_back({xs[i], ys[i], zs[i]});
