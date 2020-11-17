@@ -313,7 +313,7 @@ coordinate_type local_to_global(coordinate_type local_position, coordinate_type 
     from_latlon(global_home[1], global_home[0], 0, east_home, north_home, zone_number, zone_letter);
     to_latlon(east_home + local_position[1], north_home + local_position[0], zone_number, zone_letter, false, lat, lon);
 
-    return { lon, lat, -(local_position[2] - global_home[2]) };
+    return { static_cast<float>(lon), static_cast<float>(lat), static_cast<float>(-(local_position[2] - global_home[2])) };
 }
 
 template<typename coordinate_type>

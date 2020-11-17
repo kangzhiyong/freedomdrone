@@ -150,6 +150,7 @@ public:
     void take_control();
     void release_control();
     void cmd_position( float north, float east, float altitude, float heading);
+    void cmd_position(point3D p, float heading);
     void takeoff(float target_altitude);
     void land();
     void cmd_attitude( float roll, float pitch, float yaw, float thrust);
@@ -157,6 +158,7 @@ public:
     void cmd_moment( float roll_moment, float pitch_moment, float yaw_moment, float thrust);
     void cmd_velocity( float velocity_north, float velocity_east, float velocity_down, float heading);
     void set_home_position( float longitude, float latitude, float altitude);
+    void set_home_position(point3D p);
     void set_home_as_current_position();
     void start();
     void stop();

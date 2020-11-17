@@ -428,14 +428,17 @@ void MotionPlanning::plan_path()
     FreeData<float> data(path, ",");
     float lat0 = data.getLat();
     float lon0 = data.getLon();
-    set_home_position(lon0, lat0, 0);
-    _update_local_position(global_to_local(global_position(), global_home()));
+    point3D home_ne({125, 245, 0});
+    point3D home_glo = local_to_global(home_ne, global_home());
+    home_glo.print();
+    cmd_position(home_ne, 0);
+    //_update_local_position(global_to_local(global_position(), global_home()));
     
     data.extract_polygons(safety_distance);
     data.sample(1000);
     data.create_graph(10);
-    point3D start = point3D({ 200, 340, 20 })/*local_position()*/;
-    point3D goal = point3D({ 750, 560, 20 })/*global_to_local({-122.396428, 37.795128, target_altitude}, global_home())*/;
+    point3D start = local_position();
+    point3D goal = point3D({ 230, 380, 20 })/*global_to_local({-122.396428, 37.795128, target_altitude}, global_home())*/;
     cout << "start and goal" << endl;
     start.print();
     goal.print();
@@ -462,7 +465,7 @@ void MotionPlanning::plan_path()
     vector<point3D> path_points = a_start_graph.get_path_points();
     if (path_points.size() > 0)
     {
-        a_start_graph.prune_path_by_bresenham(path_points, path_points_prune);
+        a_start_graph.prune_path_by_collinearity(path_points, path_points_prune);
         send_waypoints(path_points_prune);
         for (int i = 0; i < path_points_prune.size(); i++) {
             all_waypoints.push({ path_points_prune[i][0], path_points_prune[i][1], path_points_prune[i][2] });

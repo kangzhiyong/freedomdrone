@@ -479,6 +479,29 @@ void Drone::cmd_position( float north, float east, float altitude, float heading
     }
 }
 
+void Drone::cmd_position(point3D p, float heading)
+{
+    /*
+    Command the local position and drone heading.
+
+    Args:
+        north: local north in meters
+        east: local east in meters
+        altitude: altitude above ground in meters
+        heading: drone yaw in radians
+    */
+    try {
+        // connection cmd_position is defined as NED, so need to flip the sign
+        // on altitude
+        if (m_conn != nullptr) {
+            m_conn->cmd_position(p[0], p[1], -p[2], heading);
+        }
+    }
+    catch (...) {
+        perror("cmd_position failed: ");
+    }
+}
+
 void Drone::takeoff(float target_altitude)
 {
     // Command the drone to takeoff to the target_alt (in meters)
@@ -592,6 +615,19 @@ void Drone::set_home_position( float longitude, float latitude, float altitude)
             m_conn->set_home_position(latitude, longitude, altitude);
         }
     } catch (...) {
+        perror("set_home_position failed: ");
+    }
+}
+
+void Drone::set_home_position(point3D p)
+{
+    // Set the drone's home position to these coordinates
+    try {
+        if (m_conn != nullptr) {
+            m_conn->set_home_position(p[0], p[1], p[2]);
+        }
+    }
+    catch (...) {
         perror("set_home_position failed: ");
     }
 }
