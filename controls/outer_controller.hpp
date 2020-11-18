@@ -23,7 +23,7 @@ public:
 
         // some limits to use
         _v_max = 0.3;     // the maximum horizontal velocity in[m / s]
-        _hdot_max = 0.4;   // the maximum vertical velocity in[m / s]
+        _hdot_max = 0.9;   // the maximum vertical velocity in[m / s]
     }
     PointType lateral_position_control(PointType pos_cmd, PointType pos, PointType vel_cmd)
     {
@@ -70,7 +70,6 @@ public:
         // compute a[Vup] command
         hdot_cmd += _kp_alt * (alt_cmd - alt);
         hdot_cmd = clip(hdot_cmd, -_hdot_max, _hdot_max);
-
         return hdot_cmd;
     }
 private:

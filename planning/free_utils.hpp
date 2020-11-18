@@ -320,9 +320,9 @@ template<typename coordinate_type>
 static coordinate_type clip(coordinate_type data, coordinate_type d_min, coordinate_type d_max)
 {
     coordinate_type tmp = data;
-    if (data < 0)
+    if (data < d_min)
     {
-        tmp = 0;
+        tmp = d_min;
     }
     else if (data > d_max)
     {
@@ -354,4 +354,17 @@ static vector<coordinate_type> uniform(coordinate_type min, coordinate_type max,
         d.push_back(dice());
     }
     return d;
+}
+
+static vector<string> split(string str, string delimiter)
+{
+    vector<string> strList;
+    char* tmp = nullptr;
+    tmp = strtok((char*)str.c_str(), delimiter.c_str());
+    while (tmp)
+    {
+        strList.emplace_back(tmp);
+        tmp = strtok(nullptr, ",");
+    }
+    return strList;
 }

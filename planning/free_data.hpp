@@ -16,19 +16,29 @@ public:
     typedef vector<coordinate_type> VCoordType;
     typedef vector<string> VString;
 
-    VString split(string str, string delimiter)
+    static vector<point<coordinate_type, 4>> loadtxt(string fileName, string delimiter)
     {
-        VString strList;
-        char* tmp = nullptr;
-        tmp = strtok((char*)str.c_str(), delimiter.c_str());
-        while (tmp)
+        vector<point<coordinate_type, 4>> points;
+        fstream file;
+        file.open(fileName.c_str());
+        if (file.is_open())
         {
-            strList.emplace_back(tmp);
-            tmp = strtok(nullptr, ",");
+            int i = 1;
+            string str;
+            while (getline(file, str))
+            {
+                VString strList = split(str, delimiter);
+                if (strList.size() >= 4) {
+                    points.push_back({(float)atof(strList[0].c_str()), (float)atof(strList[1].c_str()), (float)atof(strList[2].c_str()), (float)atof(strList[3].c_str())});
+                }
+            }
         }
-        return strList;
+        else
+        {
+            printf("Data file open failed!\r\n");
+        }
+        return points;
     }
-
     FreeData(std::string fileName, std::string delimiter)
     {
         fstream file;
