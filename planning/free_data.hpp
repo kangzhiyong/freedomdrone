@@ -4,8 +4,6 @@
 #include <fstream>
 using namespace std;
 
-#include "qt_free_polygon.hpp"
-
 #include "free_polygon.hpp"
 #include "free_utils.hpp"
 #include "free_KDTree.hpp"

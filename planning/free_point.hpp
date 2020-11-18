@@ -92,6 +92,16 @@ public:
         return a;
     }
 
+    point<coordinate_type, dimensions> operator*(coordinate_type m)
+    {
+        std::array<coordinate_type, dimensions> a;
+        for (size_t i = 0; i < dimensions; ++i)
+        {
+            a[i] = get(i) * m;
+        }
+        return a;
+    }
+
     point<coordinate_type, dimensions> operator-(point<coordinate_type, dimensions>& p)
     {
         size_t n = min(dimensions, p.coords_.size());

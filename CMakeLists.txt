@@ -39,7 +39,9 @@ find_package(Qt5 COMPONENTS Core Gui Qml Quick REQUIRED Positioning)
 include_directories(${MSGPACK_INCLUDE_DIR})
 include_directories(${PYTHON_INCLUDE_DIR})
 include_directories(${PYTHON_NUMPY_INCLUDE_DIR})
-include_directories(./algorithm)
+include_directories(./planning)
+include_directories(./controls)
+include_directories(./estimation)
 include_directories(./connection)
 include_directories(./messaging)
 include_directories(./logging)
@@ -53,13 +55,17 @@ link_directories(${QT_LIBRARIES})
 FILE(GLOB SOURCES
         connection/*.cpp
         messaging/*.cpp
-        algorithm/*.cpp
+        planning/*.cpp
+        controls/*.cpp
+        estimation/*.cpp
         ./*.cpp)
 
 FILE(GLOB HEADERS
         connection/*.hpp
         messaging/*.hpp
-        algorithm/*.hpp
+        planning/*.hpp
+        controls/*.hpp
+        estimation/*.hpp
         *.hpp
         *.h)
 set(PYTHONLIBS /Applications/anaconda3/envs/fcnd/lib/)

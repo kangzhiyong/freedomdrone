@@ -317,7 +317,7 @@ coordinate_type local_to_global(coordinate_type local_position, coordinate_type 
 }
 
 template<typename coordinate_type>
-static int clip(coordinate_type data, int d_min, int d_max)
+static coordinate_type clip(coordinate_type data, coordinate_type d_min, coordinate_type d_max)
 {
     coordinate_type tmp = data;
     if (data < 0)
@@ -328,7 +328,17 @@ static int clip(coordinate_type data, int d_min, int d_max)
     {
         tmp = d_max;
     }
-    return int(tmp);
+    return tmp;
+}
+
+template<typename coordinate_type, size_t dimensions>
+static point<coordinate_type, dimensions> clip(point<coordinate_type, dimensions> p, coordinate_type d_min, coordinate_type d_max)
+{
+    for (size_t i = 0; i < dimensions; i++)
+    {
+        p[i] = clip(p[i], d_min, d_max);
+    }
+    return p;
 }
 
 template<typename coordinate_type>

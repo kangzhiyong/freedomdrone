@@ -161,3 +161,5 @@ build/freedomdrone.build/Debug/freedomdrone_autogen.build/Script-1B249506F74E40F
 build/freedomdrone.build/Debug/ZERO_CHECK.build/Script-660190902DAF4F4AAF15DD63.sh
 python/jupyter notebook/3DMotionPlanning/__pycache__/planning_utils.cpython-36.pyc
 python/jupyter notebook/3DMotionPlanning/__pycache__/sampling.cpython-36.pyc
+/.vs/freedomdrone/v16/ipch/AutoPCH/cb25c3c9b5945297/*.ipch
+/out/build/x64-Debug/CMakeFiles/freedomdrone.dir/planning/*.obj
