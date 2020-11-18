@@ -420,6 +420,7 @@ void SearchAlgorithm::a_start_graph(FreeGraph<float, 3> g)
             n = branch[n].getCurrentNode();
         }
         path_points.push_back(branch[n].getCurrentNode().m_point);
+        reverse(path_points.begin(), path_points.end());
     }
 }
 

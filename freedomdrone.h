@@ -10,6 +10,7 @@ using namespace std;
 #include "mavlink_connection.hpp"
 #include "free_point.hpp"
 #include "free_data.hpp"
+#include "msgpack.hpp"
 
 typedef void (*CallBackFunc)(void *userData, double lo, double la, double alt);
 
@@ -93,4 +94,22 @@ public:
     void find_closest_node(vector<point3D> nodes, point3D p, point3D &p_min);
     void send_waypoints(vector<point3D> points);
     void plan_path();
+};
+
+class MSGPoint
+{
+private:
+    int x;
+    int y;
+    int z;
+    int a;
+public:
+    MSGPoint(point3D p)
+    {
+        x = p[0];
+        y = p[1];
+        z = p[2];
+        a = 0;
+    }
+    MSGPACK_DEFINE(x, y, z, a);
 };
