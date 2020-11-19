@@ -24,7 +24,7 @@ namespace plt = matplotlibcpp;
 int main()
 {
     MavlinkConnection conn("TCP", "127.0.0.1", 5760, false, false);
-    AttitudeFlyer drone(&conn);
+    TrajectoryVelocityFlyer drone(&conn);
     drone.start_drone();
     return 0;
 }

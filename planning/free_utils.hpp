@@ -4,6 +4,7 @@
 using namespace std;
 
 #include "free_point.hpp"
+#include "matrix3x3f.hpp"
 
 #ifndef M_PI
 #define M_PI       3.14159265358979323846   // pi
@@ -367,4 +368,31 @@ static vector<string> split(string str, string delimiter)
         tmp = strtok(nullptr, ",");
     }
     return strList;
+}
+
+static Mat3x3F euler2RM(float roll, float pitch, float yaw)
+{
+    Mat3x3F R;
+    float cr = cos(roll);
+    float sr = sin(roll);
+
+    float cp = cos(pitch);
+    float sp = sin(pitch);
+
+    float cy = cos(yaw);
+    float sy = sin(yaw);
+
+    R[0*3 + 0] = cp * cy;
+    R[1*3 + 0] = -cr * sy + sr * sp * cy;
+    R[2*3 + 0] = sr * sy + cr * sp * cy;
+
+    R[0*3 + 1] = cp * sy;
+    R[1*3 + 1] = cr * cy + sr * sp * sy;
+    R[2*3 + 1] = -sr * cy + cr * sp * sy;
+
+    R[0*3 + 2] = -sp;
+    R[1*3 + 2] = sr * cp;
+    R[2*3 + 2] = cr * cp;
+
+    return R.Transpose();
 }

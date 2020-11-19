@@ -60,7 +60,7 @@ public:
         }
         return sqrt(dist);
     }
-    
+
     bool operator ==(const point<coordinate_type, dimensions>& p)
     {
         return std::equal(coords_.begin(), coords_.end(), p.coords_.begin());

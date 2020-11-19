@@ -165,3 +165,9 @@ python/jupyter notebook/3DMotionPlanning/__pycache__/sampling.cpython-36.pyc
 /out/build/x64-Debug/CMakeFiles/freedomdrone.dir/planning/*.obj
 build/freedomdrone.build/Debug/freedomdrone_autogen.build/Script-CFCFAA5F34334B5CA72A94C0.sh
 build/freedomdrone.build/Debug/ZERO_CHECK.build/Script-0886094CA37A4AE482B8E85B.sh
+/.vs/freedomdrone/v16/ipch/AutoPCH/6a42b42a9687444/NONLINEAR_CONTROLLER.ipch
+/.vs/freedomdrone/v16/ipch/AutoPCH/6b25f522db34fa44/MATRIX3X3F.ipch
+/.vs/freedomdrone/v16/ipch/AutoPCH/6d1cab73f15d5989/COMMON_FLYER.ipch
+/.vs/freedomdrone/v16/ipch/AutoPCH/8019b7b317377c39/FREEDOMDRONE.ipch
+/.vs/freedomdrone/v16/ipch/AutoPCH/f31ab4d8be1452a3/ATTITUDE_FLYER_CRAZYFLIE.ipch
+/python/jupyter notebook/Controls/.gitignore
