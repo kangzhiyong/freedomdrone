@@ -1,6 +1,11 @@
 #pragma once
 
-#include "common_flyer.hpp"
+#include <queue>
+#include <vector>
+using  namespace::std;
+
+#include "free_point.hpp"
+#include "drone.hpp"
 
 class BackyardFlyer : public Drone
 {

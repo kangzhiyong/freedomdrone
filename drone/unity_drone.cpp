@@ -1,4 +1,5 @@
 #include "unity_drone.hpp"
+#include "free_data.hpp"
 
 point3D UnityDrone::local_position_target()
 {
@@ -11,7 +12,7 @@ void UnityDrone::set_local_position_target(point3D target)
     _target_north = target[0];
     _target_east = target[1];
     _target_down = target[2];
-    local_position_target(target[0], target[1], target[2], 0);
+    getConnection()->local_position_target(target[0], target[1], target[2], 0);
 
     // Check for current xtrack error
     if (_time0 == 0)
@@ -19,11 +20,8 @@ void UnityDrone::set_local_position_target(point3D target)
         _time0 = clock();
     }
 
-    _horizontal_error = calculate_horizontal_error();
-    all_horizontal_errors.push_back(_horizontal_error);
-
-    _vertical_error = calculate_vertical_error();
-    all_vertical_errors.push_back(_vertical_error);
+    all_horizontal_errors.push_back(calculate_horizontal_error());
+    all_vertical_errors.push_back(calculate_vertical_error());
     _mission_time = clock() - _time0;
     all_times.push_back(_mission_time);
     check_mission_success();
@@ -40,7 +38,7 @@ void UnityDrone::set_local_velocity_target(point3D target)
     _target_velocity_north = target[0];
     _target_velocity_east = target[1];
     _target_velocity_down = target[2];
-    local_velocity_target(target[0], target[1], target[2], 0);
+    getConnection()->local_velocity_target(target[0], target[1], target[2], 0);
 }
 
 point3D UnityDrone::local_acceleration_target()
@@ -53,7 +51,7 @@ void UnityDrone::set_local_acceleration_target(point3D target)
     _target_acceleration_north = target[0];
     _target_acceleration_east = target[1];
     _target_acceleration_down = target[2];
-    local_acceleration_target(target[0], target[1], target[2], 0);
+    getConnection()->local_acceleration_target(target[0], target[1], target[2], 0);
 }
 point3D UnityDrone::attitude_target()
 {
@@ -66,7 +64,7 @@ void UnityDrone::set_attitude_target(point3D target)
     _target_roll = target[0];
     _target_pitch = target[1];
     _target_yaw = target[2];
-    attitude_target(target[0], target[1], target[2], 0);
+    getConnection()->attitude_target(target[0], target[1], target[2], 0);
 }
 
 point3D UnityDrone::body_rate_target()
@@ -80,13 +78,13 @@ void UnityDrone::set_body_rate_target(point3D target)
     _target_roll_rate = target[0];
     _target_pitch_rate = target[1];
     _target_yaw_rate = target[2];
-    body_rate_target(target[0], target[1], target[2], 0);
+    getConnection()->body_rate_target(target[0], target[1], target[2], 0);
 }
 
 float UnityDrone::threshold_horizontal_error()
 {
     // Maximum allowed xtrack error on the mission
-    return _threshold_xtrack;
+    return _threshold_horizontal_error;
 }
 
 void UnityDrone::set_threshold_horizontal_error(float threshold)
@@ -137,18 +135,22 @@ void UnityDrone::set_threshold_time(clock_t threshold)
     }
 }
 
-void UnityDrone::load_test_trajectory(float time_mult, vector<point3D>& position_trajectory, vector<time_t>& time_trajectory, vector<point3D>& yaw_trajectory)
+void UnityDrone::load_test_trajectory(float time_mult, vector<point3D>& position_trajectory, vector<time_t>& time_trajectory, vector<float>& yaw_trajectory)
 {
     /*Loads the test_trajectory.txt
 
     Args :
         time_mult : a multiplier to decrease the total time of the trajectory
     */
-    vector<point<float, 4>> data = FreeData<float>::loadtxt('test_trajectory.txt', delimiter = ',', dtype = 'Float64');
+    string path = "../../data/test_trajectory.txt";
+#ifdef WIN32
+    path = "../../../data/test_trajectory.txt";
+#endif
+    vector<point<float, 4>> data = FreeData<float>::loadtxt(path, ",");
     time_t current_time = time(0);
     for (size_t i = 0; i < data.size(); i++)
     {
-        position_trajectory.push_back(data[i][1], data[i][2], data[i][3]);
+        position_trajectory.push_back({data[i][1], data[i][2], data[i][3]});
         time_trajectory.push_back(data[i][0] * time_mult + current_time);
     }
 
@@ -175,31 +177,25 @@ float UnityDrone::calculate_vertical_error()
 void UnityDrone::print_mission_score()
 {
     // Prints the maximum xtrack error, total time, and mission success
-    print('Maximum Horizontal Error: ', _maximum_horizontal_error);
-    print('Maximum Vertical Error: ', _maximum_vertical_error);
-    print('Mission Time: ', _mission_time);
-    print('Mission Success: ', _mission_success);
+    cout << "Maximum Horizontal Error: " << _maximum_horizontal_error << endl;
+    cout << "Maximum Vertical Error: " << _maximum_vertical_error << endl;
+    cout << "Mission Time: " << _mission_time << endl;
+    cout << "Mission Success: " << _mission_success << endl;
 }
 
 void UnityDrone::check_mission_success()
 {
     // Check the mission success criterion (xtrack and time)
-    if (_horizontal_error > _maximum_horizontal_error)
+    float max_hor_error = *max_element(all_horizontal_errors.begin(), all_horizontal_errors.end());
+    if (max_hor_error > _threshold_horizontal_error)
     {
-        _maximum_horizontal_error = _horizontal_error;
-        if (_maximum_horizontal_error > _threshold_horizontal_error)
-        {
-            _mission_success = false;
-        }
+        _mission_success = false;
     }
 
-    if (_vertical_error > _maximum_vertical_error)
+    float max_ver_error = *max_element(all_vertical_errors.begin(), all_vertical_errors.end());
+    if (max_ver_error > _threshold_vertical_error)
     {
-        _maximum_vertical_error = _vertical_error;
-        if (_maximum_vertical_error > _threshold_vertical_error)
-        {
-            _mission_success = false;
-        }
+        _mission_success = false;
     }
 
     if (_mission_time > _threshold_time)

@@ -1,4 +1,5 @@
 #include "trajectory_velocity_flyer_crazyflie.hpp"
+#include "free_data.hpp"
 
 void TrajectoryHandler::_load_trajectory(string filename)
 {

@@ -12,7 +12,6 @@
 #include <iostream>
 #include <sstream>
 
-#include "freedomdrone.h"
 #include "search_algorithm.hpp"
 #include "free_utils.hpp"
 #include "free_data.hpp"
@@ -23,8 +22,8 @@ namespace plt = matplotlibcpp;
 
 int main()
 {
-    MavlinkConnection conn("TCP", "127.0.0.1", 5760, false, false);
-    TrajectoryVelocityFlyer drone(&conn);
-    drone.start_drone();
+//    MavlinkConnection conn("TCP", "127.0.0.1", 5760, false, false);
+//    TrajectoryVelocityFlyer drone(&conn);
+//    drone.start_drone();
     return 0;
 }

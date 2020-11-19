@@ -43,6 +43,13 @@ public:
     {
         return coords_[index];
     }
+    
+    void get(coordinate_type &x, coordinate_type &y, coordinate_type &z)
+    {
+        x = coords_[0];
+        y = coords_[1];
+        z = coords_[2];
+    }
     /**
      * Returns the distance squared from this point to another
      * point.
@@ -66,7 +73,7 @@ public:
         return std::equal(coords_.begin(), coords_.end(), p.coords_.begin());
     }
     
-    coordinate_type& operator[](size_t i)
+    coordinate_type& operator[](int i)
     {
         return coords_[i];
     }
@@ -102,6 +109,16 @@ public:
         return a;
     }
 
+    point<coordinate_type, dimensions> operator*(point<coordinate_type, dimensions> m)
+    {
+        std::array<coordinate_type, dimensions> a;
+        for (size_t i = 0; i < dimensions; ++i)
+        {
+            a[i] = get(i) * m.get(i);
+        }
+        return a;
+    }
+    
     point<coordinate_type, dimensions> operator/(coordinate_type m)
     {
         std::array<coordinate_type, dimensions> a;
@@ -142,6 +159,29 @@ public:
     bool operator <(const point<coordinate_type, dimensions>& d) const
     {
         return distance({0, 0, 0}) < d.distance({0, 0, 0});
+    }
+    
+    inline float mag()
+    {
+        return distance({0, 0, 0});
+    }
+
+    inline point<coordinate_type, dimensions> norm()
+    {
+        point<coordinate_type, dimensions> res;
+        float l = mag();
+        if (l == 0.0f)
+            return {0, 0, 0};
+        return operator/(l);
+    }
+
+    inline point<coordinate_type, dimensions> cross(point<coordinate_type, dimensions> v)
+    {
+        point<coordinate_type, dimensions> resVector;
+        resVector[0] = coords_[1] * v[2] - coords_[2] * v[1];
+        resVector[1] = coords_[2] * v[0] - coords_[0] * v[2];
+        resVector[2] = coords_[0] * v[1] - coords_[1] * v[0];
+        return resVector;
     }
 private:
     std::array<coordinate_type, dimensions> coords_;

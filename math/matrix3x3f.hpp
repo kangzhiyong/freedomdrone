@@ -3,6 +3,8 @@
 #include <algorithm> // swap
 #include <assert.h>
 
+#include "free_utils.hpp"
+
 // class for operating with 3-by-3 matricies of floats
 // assumes row-major ordering:
 // 0  1  2
@@ -78,15 +80,15 @@ public:
 		return Mat3x3F(res);
 	}
 
-	static Mat3x3F Rotation(V3F vec, float theta)
+	static Mat3x3F Rotation(point3D vec, float theta)
 	{
 		vec = vec.norm();
 		float c = cos(theta);
 		float s = sin(theta);
 		float t = (1.0f - c);
-		float X = vec.x; float X2 = X * X;
-		float Y = vec.y; float Y2 = Y * Y;
-		float Z = vec.z; float Z2 = Z * Z;
+		float X = vec[0]; float X2 = X * X;
+		float Y = vec[1]; float Y2 = Y * Y;
+		float Z = vec[2]; float Z2 = Z * Z;
 
 		float v[9];
 		v[0] = t * X2 + c;
@@ -120,29 +122,29 @@ public:
 		return Mat3x3F(v);
 	}
 
-	static Mat3x3F SkewSymmetric(const V3F& w) { return Mat3x3F::SkewSymmetric(w.x, w.y, w.z); }
+	static Mat3x3F SkewSymmetric(point3D& w) { return Mat3x3F::SkewSymmetric(w[0], w[1], w[2]); }
 
-	static Mat3x3F OuterProduct(const V3F a, const V3F b)//a^T*b
+	static Mat3x3F OuterProduct(point3D a, point3D b)//a^T*b
 	{
 		float v[9];
-		v[0] = a.x * b.x;
-		v[1] = a.x * b.y;
-		v[2] = a.x * b.z;
+		v[0] = a[0] * b[0];
+		v[1] = a[0] * b[1];
+		v[2] = a[0] * b[2];
 
-		v[3] = a.y * b.x;
-		v[4] = a.y * b.y;
-		v[5] = a.y * b.z;
+		v[3] = a[1] * b[0];
+		v[4] = a[1] * b[1];
+		v[5] = a[1] * b[2];
 
-		v[6] = a.z * b.x;
-		v[7] = a.z * b.y;
-		v[8] = a.z * b.z;
+		v[6] = a[2] * b[0];
+		v[7] = a[2] * b[1];
+		v[8] = a[2] * b[2];
 
 		return Mat3x3F(v);
 	}
 
-	V3F operator*(const V3F& a) const
+	point3D operator*(point3D& a) const
 	{
-		V3F ret;
+        point3D ret;
 		ret[0] = a[0] * _v[0] + a[1] * _v[1] + a[2] * _v[2];
 		ret[1] = a[0] * _v[3] + a[1] * _v[4] + a[2] * _v[5];
 		ret[2] = a[0] * _v[6] + a[1] * _v[7] + a[2] * _v[8];
@@ -216,15 +218,15 @@ public:
 		}
 		return Mat3x3F(res);
 	}
-
+    
 	//cross product of vector with each column of a matrix, returns a matrix (vec x Mat)
 	// side = 0 <-> vec x Mat
 	// side = 1 <-> Mat x vec
-	Mat3x3F Cross(const V3F vec, int side)
+	Mat3x3F Cross(point3D vec, int side)
 	{
-		V3F tmp1(_v[0], _v[3], _v[6]);
-		V3F tmp2(_v[1], _v[4], _v[7]);
-		V3F tmp3(_v[2], _v[5], _v[8]);
+        point3D tmp1({_v[0], _v[3], _v[6]});
+        point3D tmp2({_v[1], _v[4], _v[7]});
+        point3D tmp3({_v[2], _v[5], _v[8]});
 		float v[9];
 		if (side == 0) {
 			tmp1 = vec.cross(tmp1);
@@ -233,8 +235,8 @@ public:
 		}
 		else if (side == 1) {
 			tmp1 = tmp1.cross(vec);
-			tmp2 = tmp2.cross(vec);
-			tmp3 = tmp3.cross(vec);
+			tmp2 = tmp1.cross(vec);
+			tmp3 = tmp1.cross(vec);
 		}
 		tmp1.get(v[0], v[3], v[6]);
 		tmp2.get(v[1], v[4], v[7]);

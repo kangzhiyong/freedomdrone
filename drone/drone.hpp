@@ -15,6 +15,19 @@ using namespace std;
 #include "mavlink_connection.hpp"
 #include "free_point.hpp"
 
+enum States
+{
+    MANUAL = 0,
+    ARMING,
+    TAKEOFF,
+    WAYPOINT,
+    LANDING,
+    DISARMING,
+    PLANNING
+};
+
+typedef void (*CallBackFunc)(void *userData, double lo, double la, double alt);
+
 class Drone
 {
 private:

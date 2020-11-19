@@ -5,6 +5,9 @@ Class for the specific impelementation of a controller that will be comanding ve
 Contains the solution for P controllers on altitudeand lateral position to commands velocities
 to a drone over the wireless link.*/
 
+#include "free_point.hpp"
+#include "free_utils.hpp"
+
 template<typename coordinate_type>
 class OuterLoopController
 {

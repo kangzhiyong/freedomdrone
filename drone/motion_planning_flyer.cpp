@@ -1,4 +1,5 @@
 #include "motion_planning_flyer.hpp"
+#include "search_algorithm.hpp"
 
 MotionPlanning::MotionPlanning(MavlinkConnection* conn) : Drone(conn)
 {

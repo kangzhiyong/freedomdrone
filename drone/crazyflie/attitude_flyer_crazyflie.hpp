@@ -1,7 +1,15 @@
 #pragma once
-#include "common_flyer.hpp"
-#include "outer_controller.hpp"
-#include "inner_controller.hpp"
+
+#include <queue>
+#include <vector>
+using  namespace::std;
+#include "free_point.hpp"
+#include "drone.hpp"
+
+#include "outer_controller_crazyflie.hpp"
+#include "inner_controller_crazyflie.hpp"
+
+#define TAKEOFF_ALTITUDE 0.5
 
 class AttitudeFlyer : public Drone
 {

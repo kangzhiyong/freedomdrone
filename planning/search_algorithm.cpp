@@ -289,7 +289,8 @@ void SearchAlgorithm::a_star()
     bool found = false;
     GirdCellType current_node;   
     priority_queue<GirdCellType> q;
-    q.push((0, start));
+    start.queue_cost = 0;
+    q.push(start);
     visited.insert(start);
 
     while (!q.empty())
@@ -363,7 +364,8 @@ void SearchAlgorithm::a_start_graph(FreeGraph<float, 3> g)
     bool found = false;
     GirdCellType current_node;
     priority_queue<GirdCellType> q;
-    q.push((0, start));
+    start.queue_cost = 0;
+    q.push(start);
     visited.insert(start);
 
     while (!q.empty())

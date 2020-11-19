@@ -171,3 +171,7 @@ build/freedomdrone.build/Debug/ZERO_CHECK.build/Script-0886094CA37A4AE482B8E85B.
 /.vs/freedomdrone/v16/ipch/AutoPCH/8019b7b317377c39/FREEDOMDRONE.ipch
 /.vs/freedomdrone/v16/ipch/AutoPCH/f31ab4d8be1452a3/ATTITUDE_FLYER_CRAZYFLIE.ipch
 /python/jupyter notebook/Controls/.gitignore
+*.d
+*.sh
+*.dia
+*.o

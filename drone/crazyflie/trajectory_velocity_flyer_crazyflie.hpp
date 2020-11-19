@@ -1,5 +1,12 @@
 #pragma once
-#include "common_flyer.hpp"
+#include <queue>
+#include <vector>
+using  namespace::std;
+#include "free_point.hpp"
+#include "drone.hpp"
+
+#include "outer_controller_crazyflie.hpp"
+#define TAKEOFF_ALTITUDE 0.5
 
 class TrajectoryHandler
 {

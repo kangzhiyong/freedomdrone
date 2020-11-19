@@ -41,10 +41,14 @@ include_directories(${PYTHON_INCLUDE_DIR})
 include_directories(${PYTHON_NUMPY_INCLUDE_DIR})
 include_directories(./planning)
 include_directories(./controls)
+include_directories(./controls/crazyflie)
 include_directories(./estimation)
 include_directories(./connection)
 include_directories(./messaging)
 include_directories(./logging)
+include_directories(./drone)
+include_directories(./drone/crazyflie)
+include_directories(./math)
 include_directories(./lib)
 include_directories(./lib/matplotlib-cpp)
 include_directories(.)
@@ -57,7 +61,11 @@ FILE(GLOB SOURCES
         messaging/*.cpp
         planning/*.cpp
         controls/*.cpp
+        controls/crazyflie/*.cpp
         estimation/*.cpp
+        drone/*.cpp
+        drone/crazyflie/*.cpp
+        math/*.cpp
         ./*.cpp)
 
 FILE(GLOB HEADERS
@@ -65,7 +73,11 @@ FILE(GLOB HEADERS
         messaging/*.hpp
         planning/*.hpp
         controls/*.hpp
+        controls/crazyflie/*.hpp
         estimation/*.hpp
+        drone/*.hpp
+        drone/crazyflie/*.hpp
+        math/*.hpp
         *.hpp
         *.h)
 set(PYTHONLIBS /Applications/anaconda3/envs/fcnd/lib/)

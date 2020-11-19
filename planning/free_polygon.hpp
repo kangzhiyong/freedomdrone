@@ -52,7 +52,11 @@ public:
         QPointF a = m_qPolygon.back();
         foreach(QPointF b, m_qPolygon)
         {
+#ifndef WIN32
+            if (QLineF::BoundedIntersection == line0.intersects(QLineF(a, b), &tmpP))
+#else
             if (QLineF::BoundedIntersection == line0.intersect(QLineF(a, b), &tmpP))
+#endif
             {
                 return  true;
             }

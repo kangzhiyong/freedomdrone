@@ -1,4 +1,5 @@
 #include "backyard_flyer.hpp"
+#include "free_utils.hpp"
 
 BackyardFlyer::BackyardFlyer(MavlinkConnection* conn) : Drone(conn)
 {

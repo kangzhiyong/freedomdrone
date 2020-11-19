@@ -60,6 +60,7 @@ static vector< ZoneNode > ZONE_LETTERS = {
                                             ZoneNode(-24, 'K'), ZoneNode(-32, 'J'), ZoneNode(-40, 'H'), ZoneNode(-48, 'G'), ZoneNode(-56, 'F'), ZoneNode(-64, 'E'),
                                             ZoneNode(-72, 'D'), ZoneNode(-80, 'C') };
 
+
 inline float norm(float x0, float y0, float z0, float x1, float y1, float z1)
 {
     return sqrt(pow(x0 - x1, 2) + pow(y0 - y1, 2) + pow(z0 - z1, 2));
@@ -197,7 +198,7 @@ static void to_latlon(double easting, double northing, int zone_number, char zon
     double n = WS / ep_sin_sqrt;
     double r = (1 - EX) / ep_sin;
 
-    double c = _E * (p_cos, 2);
+    double c = _E * pow(p_cos, 2);
     double c2 = c * c;
 
     double d = x / (n * K0);
@@ -256,7 +257,7 @@ static void from_latlon(double latitude, double longitude, int force_zone_number
     double central_lon_rad = central_lon * M_DEG_TO_RAD;
 
     double n = WS / sqrt(1 - EX * pow(lat_sin, 2));
-    double c = E_P2 * (lat_cos, 2);
+    double c = E_P2 * pow(lat_cos, 2);
 
     double a = lat_cos * (lon_rad - central_lon_rad);
     double a2 = a * a;
@@ -394,5 +395,5 @@ static Mat3x3F euler2RM(float roll, float pitch, float yaw)
     R[1*3 + 2] = sr * cp;
     R[2*3 + 2] = cr * cp;
 
-    return R.Transpose();
+    return R.RetTranspose();
 }
