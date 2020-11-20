@@ -13,7 +13,7 @@ void BackyardFlyer::local_position_callback()
 {
     if (flight_state == TAKEOFF)
     {
-        if (-1.0 * local_position()[2] > 0.95 * target_position[2])
+        if (1.0 * local_position()[2] > 0.95 * target_position[2])
         {
             calculate_box();
             waypoint_transition();
@@ -21,14 +21,13 @@ void BackyardFlyer::local_position_callback()
     }
     else if (flight_state == WAYPOINT)
     {
-        point3D lp = local_position();
-        if (norm(target_position - lp) < 1.0)
+        if ((target_position - local_position()).mag() < 1.0)
         {
             if (all_waypoints.size() > 0)
             {
                 waypoint_transition();
             }
-            else if (norm(local_velocity()) < 1.0)
+            else if (local_velocity().mag() < 1.0)
             {
                 landing_transition();
             }

@@ -175,3 +175,16 @@ build/freedomdrone.build/Debug/ZERO_CHECK.build/Script-0886094CA37A4AE482B8E85B.
 *.sh
 *.dia
 *.o
+/.vs/freedomdrone/v16/ipch/AutoPCH/10e86eb5e85d0783/NONLINEAR_CONTROLLER_FLYER.ipch
+/.vs/freedomdrone/v16/ipch/AutoPCH/387b155f721f3f7a/NONLINEAR_CONTROLLER.ipch
+/.vs/freedomdrone/v16/ipch/AutoPCH/54b37204d37e47d7/BACKYARD_FLYER.ipch
+/.vs/freedomdrone/v16/ipch/AutoPCH/6532e9bed8740207/ATTITUDE_FLYER_CRAZYFLIE.ipch
+/.vs/freedomdrone/v16/ipch/AutoPCH/6ba07ede0f4ecb5/UNITY_DRONE.ipch
+/.vs/freedomdrone/v16/ipch/AutoPCH/73ba04da5fcffc9a/TRAJECTORY_VELOCITY_FLYER_CRAZYFLIE.ipch
+/.vs/freedomdrone/v16/ipch/AutoPCH/8e60310496b812ba/VELOCITY_FLYER_CRAZYFLIE.ipch
+/.vs/freedomdrone/v16/ipch/AutoPCH/e01af4e8b44e361f/DRONE.ipch
+/.vs/freedomdrone/v16/ipch/AutoPCH/f15fce08f67a073a/MOTION_PLANNING_FLYER.ipch
+/data/test_trajectory - 副本.txt
+/out/build/x64-Debug/CMakeFiles/freedomdrone.dir/controls/*.obj
+/out/build/x64-Debug/CMakeFiles/freedomdrone.dir/drone/*.obj
+/out/build/x64-Debug/CMakeFiles/freedomdrone.dir/drone/crazyflie/*.obj

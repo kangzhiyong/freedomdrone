@@ -23,12 +23,13 @@ protected:
     point3D local_velocity_target;
     vector<point3D> position_trajectory;
     vector<float> yaw_trajectory;
-    vector<time_t> time_trajectory;
-    point3D attitude_target;
-    point3D local_acceleration_target;
+    vector<float> time_trajectory;
+    point2D local_acceleration_target;
+    float yaw_target;
     float thrust_cmd;
     point3D body_rate_target;
     int waypoint_number;
+    time_t _start_time;
 public:
     ControlsFlyer(MavlinkConnection *conn);
     void position_controller();
@@ -37,6 +38,7 @@ public:
     void attitude_callback();
     void gyro_callback();
     void local_position_callback();
+    void check_and_increment_waypoint();
     void velocity_callback();
     void state_callback();
     void calculate_box();

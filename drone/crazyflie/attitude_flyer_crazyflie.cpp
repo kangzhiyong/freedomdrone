@@ -103,14 +103,13 @@ void AttitudeFlyer::check_and_increment_waypoint()
 
      /*# NOTE: depending on how aggressive of paths you are flying, and how reliably you want
      # them to be flown, you may want to add the vertical axis to the distance check.*/
-    point3D lp = local_position();
-    if (norm(target_position - lp) < 0.2)
+    if ((target_position - local_position()).mag() < 0.2)
     {
         if (all_waypoints.size() > 0)
         {
             waypoint_transition();
         }
-        else if (norm(local_velocity()) < 0.2)
+        else if (local_velocity().mag() < 0.2)
         {
             landing_transition();
         }

@@ -145,7 +145,7 @@ void Drone::_update_local_position(void *msg)
     LocalFrameMessage lfm = *(LocalFrameMessage *)msg;
     _north = lfm.north();
     _east = lfm.east();
-    _down = lfm.down();
+    _down = -lfm.down();
     if ((lfm.getTime() - _local_position_time) > 0.0)
     {
         _local_position_frequency = 1.0 / (lfm.getTime() - _local_position_time);
@@ -508,7 +508,6 @@ void Drone::takeoff(float target_altitude)
     try {
         if (m_conn != nullptr) {
             m_conn->takeoff(local_position()[0], local_position()[1], target_altitude);
-            printf("takeoff local_position: %f, %f, %f\r\n", local_position()[0], local_position()[1], target_altitude);
         }
     } catch (...) {
         perror("takeoff failed: ");

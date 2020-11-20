@@ -13,23 +13,27 @@ ControlsFlyer::ControlsFlyer(MavlinkConnection* conn) : UnityDrone(conn)
 
 void ControlsFlyer::position_controller()
 {
-    float yaw_cmd;
-    controller.trajectory_control(position_trajectory, yaw_trajectory, time_trajectory, time(0), local_position_target, local_velocity_target, yaw_cmd);
-    attitude_target = point3D({0.0, 0.0, yaw_cmd});
+    float curr_time = time(0) - _start_time;
+    controller.trajectory_control(position_trajectory, yaw_trajectory, time_trajectory, curr_time, local_position_target, local_velocity_target, yaw_target);
     point2D acceleration_cmd = controller.lateral_position_control(
                                                            point2D({local_position_target[0], local_position_target[1]}),
                                                            point2D({local_velocity_target[0], local_velocity_target[1]}),
                                                            point2D({local_position()[0], local_position()[1]}),
                                                            point2D({local_velocity()[0], local_velocity()[1]}),
                                                            point2D({0, 0}));
-    local_acceleration_target = point3D({acceleration_cmd[0], acceleration_cmd[1], 0.0});
+    local_acceleration_target = point2D({acceleration_cmd[0], acceleration_cmd[1], 0.0});
 }
 
 void ControlsFlyer::attitude_controller()
 {
-    thrust_cmd = controller.altitude_control(-local_position_target[2], -local_velocity_target[2], -local_position()[2], -local_velocity()[2], attitude(), 9.81);
-    point2D roll_pitch_rate_cmd = controller.roll_pitch_controller(point2D({local_acceleration_target[0], local_acceleration_target[1]}), attitude(), thrust_cmd);
-    float yawrate_cmd = controller.yaw_control(attitude_target[2], attitude()[2]);
+    thrust_cmd = controller.altitude_control(local_position_target[2], local_velocity_target[2], 
+                                             local_position()[2], local_velocity()[2], 
+                                             attitude(), GRAVITY);
+    point2D roll_pitch_rate_cmd = controller.roll_pitch_controller(
+                                             local_acceleration_target,
+                                             attitude(), 
+                                             thrust_cmd);
+    float yawrate_cmd = controller.yaw_control(yaw_target, attitude()[2]);
     body_rate_target = point3D({roll_pitch_rate_cmd[0], roll_pitch_rate_cmd[1], yawrate_cmd});
 }
 
@@ -41,29 +45,29 @@ void ControlsFlyer::bodyrate_controller()
 
 void ControlsFlyer::attitude_callback()
 {
-        if (flight_state == WAYPOINT)
-        {
-            attitude_controller();
-        }
+    if (flight_state == WAYPOINT)
+    {
+        attitude_controller();
+    }
 }
 
 void ControlsFlyer::gyro_callback()
 {
-        if (flight_state == WAYPOINT)
-        {
-            bodyrate_controller();
-        }
+    if (flight_state == WAYPOINT)
+    {
+        bodyrate_controller();
+    }
 }
 
 void ControlsFlyer::local_position_callback()
 {
     if (flight_state == TAKEOFF)
     {
-        if (-1.0 * local_position()[2] > 0.95 * target_position[2])
+        if (1.0 * local_position()[2] > 0.95 * target_position[2])
         {
-            float time_mult = 0.5;
-            // all_waypoints = calculate_box();
-            load_test_trajectory(time_mult, position_trajectory, time_trajectory, yaw_trajectory);
+            _start_time = time(0);
+             //calculate_box();
+            load_test_trajectory(position_trajectory, time_trajectory, yaw_trajectory);
             for (int i = 0; i < position_trajectory.size(); i++) {
                 all_waypoints.push(position_trajectory[i]);
             }
@@ -73,16 +77,40 @@ void ControlsFlyer::local_position_callback()
     }
     else if (flight_state == WAYPOINT)
     {
-        if (time(0) > time_trajectory[waypoint_number])
+        if (time_trajectory.size() > 0 && waypoint_number >= 0 && ((time(0) - _start_time) > time_trajectory[waypoint_number]))
         {
             if (all_waypoints.size() > 0)
             {
                 waypoint_transition();
             }
-            else if (norm(local_velocity()) < 1.0)
+            else if (local_velocity().mag() < 1.0)
             {
                 landing_transition();
             }
+        }
+    }
+}
+
+void ControlsFlyer::check_and_increment_waypoint()
+{
+    /*helper function to handle waypoint checks and transitions
+
+    check if the proximity condition has been met for a waypointand
+    transition the waypoint as needed.
+    if there are no more waypoints, trigger the landing transition.
+     */
+
+     /*# NOTE: depending on how aggressive of paths you are flying, and how reliably you want
+     # them to be flown, you may want to add the vertical axis to the distance check.*/
+    if ((target_position - local_position()).mag() < 0.2)
+    {
+        if (all_waypoints.size() > 0)
+        {
+            waypoint_transition();
+        }
+        else if (local_velocity().mag() < 0.2)
+        {
+            landing_transition();
         }
     }
 }
@@ -153,7 +181,7 @@ void ControlsFlyer::takeoff_transition()
 
 void ControlsFlyer::waypoint_transition()
 {
-    cout << "waypoint transition" << endl;
+    //cout << "waypoint transition" << endl;
     if (all_waypoints.size() <= 0)
     {
         return;

@@ -3,7 +3,7 @@
 
 point3D MOI = {0.005, 0.005, 0.01};
 
-point3D NonlinearController::trajectory_control(vector<point3D> position_trajectory, vector<float> yaw_trajectory, vector<time_t> time_trajectory,
+point3D NonlinearController::trajectory_control(vector<point3D> position_trajectory, vector<float> yaw_trajectory, vector<float> time_trajectory,
         float current_time, point3D& position_cmd, point3D& velocity_cmd, float& yaw_cmd)
 {
     /*Generate a commanded position, velocity and yaw based on the
@@ -18,16 +18,23 @@ point3D NonlinearController::trajectory_control(vector<point3D> position_traject
 
         Returns : tuple(commanded position, commanded velocity, commanded yaw)
     */
-    vector<time_t> rel_times = time_trajectory;
+    vector<float> rel_times = time_trajectory;
     for (int i = 0; i < time_trajectory.size(); i++) {
         rel_times[i] = abs(time_trajectory[i] - current_time);
     }
     int ind_min = min_element(rel_times.begin(), rel_times.end()) - rel_times.begin();
-
-    float time_ref = time_trajectory[ind_min];
     point3D position0, position1;
     float time0, time1;
-    if (current_time < time_ref)
+    float time_ref = time_trajectory[ind_min];
+    if (ind_min == 0)
+    {
+        position0 = position_trajectory[ind_min];
+        position1 = position_trajectory[ind_min];
+        time0 = 0.0;
+        time1 = 1.0;
+        yaw_cmd = yaw_trajectory[ind_min];
+    }
+    else if (current_time < time_ref)
     {
         position0 = position_trajectory[ind_min - 1];
         position1 = position_trajectory[ind_min];
@@ -55,9 +62,8 @@ point3D NonlinearController::trajectory_control(vector<point3D> position_traject
             time1 = time_trajectory[ind_min + 1];
         }
     }
-    point3D tmp = position1 - position0;
-    position_cmd = tmp * (current_time - time0) / (time1 - time0) + position0;
-    velocity_cmd = tmp / (time1 - time0);
+    position_cmd = (position1 - position0) * (current_time - time0) / (time1 - time0) + position0;
+    velocity_cmd = (position1 - position0) / (time1 - time0);
 }
 
 point2D NonlinearController::lateral_position_control(point2D local_position_cmd, point2D local_velocity_cmd, point2D local_position, point2D local_velocity, point2D acceleration_ff)
@@ -79,21 +85,21 @@ point2D NonlinearController::lateral_position_control(point2D local_position_cmd
         Returns : desired vehicle 2D acceleration in the local frame
         [north, east]
     */
-    point2D vp = local_position_cmd - local_position;
-    point2D velocity_cmd =  vp * Kp_pos;
+    point2D acceleration_cmd = acceleration_ff;
+    point2D velocity_cmd =  Kp_pos * (local_position_cmd - local_position);
 
     //Limit speed
     float velocity_norm = sqrt(velocity_cmd[0] * velocity_cmd[0] + velocity_cmd[1] * velocity_cmd[1]);
-
     if (velocity_norm > max_speed)
     {
         velocity_cmd = velocity_cmd * max_speed / velocity_norm;
     }
-    point2D ap = local_velocity_cmd - local_velocity;
-    point2D ap1 = acceleration_ff + velocity_cmd;
-    point2D ap2 = ap * Kp_vel;
-    point2D acceleration_cmd = ap1 + ap2;
-
+    acceleration_cmd = acceleration_ff + velocity_cmd + Kp_vel * (local_velocity_cmd - local_velocity);
+    float acc_norm = sqrt(acceleration_cmd[0] * acceleration_cmd[0] + acceleration_cmd[1] * acceleration_cmd[1]);
+    if (acc_norm > max_accel)
+    {
+        acceleration_cmd = acceleration_cmd * max_accel / acc_norm;
+    }
     return acceleration_cmd;
 }
 
@@ -115,20 +121,11 @@ float NonlinearController::altitude_control(float altitude_cmd, float vertical_v
 
     // Limit the ascent / descent rate
     hdot_cmd = clip(hdot_cmd, -max_descent_rate, max_ascent_rate);
-
     float acceleration_cmd = acceleration_ff + Kp_hdot * (hdot_cmd - vertical_velocity);
 
     float R33 = cos(attitude[0]) * cos(attitude[1]);
-    float thrust = DRONE_MASS_KG * acceleration_cmd / R33;
-
-    if (thrust > MAX_THRUST)
-    {
-        thrust = MAX_THRUST;
-    }
-    else if (thrust < 0.0)
-    {
-        thrust = 0.0;
-    }
+    float thrust = -DRONE_MASS_KG * acceleration_cmd / R33;
+    thrust = clip(thrust, (float)-MAX_THRUST, (float)MAX_THRUST);
     return thrust;
 }
 
@@ -148,23 +145,15 @@ point2D NonlinearController::roll_pitch_controller(point2D acceleration_cmd, poi
     //Calculate rotation matrix
     Mat3x3F R = euler2RM(attitude[0], attitude[1], attitude[2]);
     float c_d = thrust_cmd / DRONE_MASS_KG;
-    float p_cmd, q_cmd;
-    if (thrust_cmd > 0.0)
-    {
-        float target_R13 = -clip(acceleration_cmd[0] / c_d, -max_tilt, max_tilt); // - min(max(acceleration_cmd[0].item() / c_d, -max_tilt), max_tilt)
-        float target_R23 = -clip(acceleration_cmd[1] / c_d, -max_tilt, max_tilt); // - min(max(acceleration_cmd[1].item() / c_d, -max_tilt), max_tilt)
-
-        p_cmd = (1 / R(2, 2)) * (-R(1, 0) * Kp_roll * (R(0, 2) - target_R13) + R(0, 0) * Kp_pitch * (R(1, 2) - target_R23));
-        q_cmd = (1 / R(2, 2)) * (-R(1, 1) * Kp_roll * (R(0, 2) - target_R13) + R(0, 1) * Kp_pitch * (R(1, 2) - target_R23));
-    }
-    else  // Otherwise command no rate
-    {
-        cout << "negative thrust command" << endl;
-        p_cmd = 0.0;
-        q_cmd = 0.0;
-        thrust_cmd = 0.0;
-    }
-    return { p_cmd, q_cmd };
+    point2D target_R = acceleration_cmd / c_d;
+    target_R = -clip(target_R, -max_tilt, max_tilt);
+    float b_x_c_dot = Kp_roll * (R(0, 2) - target_R[0]);
+    float b_y_c_dot = Kp_pitch * (R(1, 2) - target_R[1]);
+    point2D pqrCmd;
+    pqrCmd[0] = (1 / R(2, 2)) * (-R(1, 0) * b_x_c_dot + R(0, 0) * b_y_c_dot);
+    pqrCmd[1] = (1 / R(2, 2)) * (-R(1, 1) * b_x_c_dot + R(0, 1) * b_y_c_dot);
+    
+    return pqrCmd;
 }
 
 point3D NonlinearController::body_rate_control(point3D body_rate_cmd, point3D body_rate)
@@ -180,13 +169,10 @@ point3D NonlinearController::body_rate_control(point3D body_rate_cmd, point3D bo
         yaw moment commands in Newtons* meters
     */
     point3D Kp_rate({ Kp_p, Kp_q, Kp_r });
-    point3D rate_error = body_rate_cmd - body_rate;
-
-    point3D p1 = Kp_rate * rate_error;
-    point3D moment_cmd = MOI * p1;
-    if (norm(moment_cmd) > MAX_TORQUE)
+    point3D moment_cmd = Kp_rate * (body_rate_cmd - body_rate) * MOI;
+    if (moment_cmd.mag() > MAX_TORQUE)
     {
-        moment_cmd = moment_cmd * MAX_TORQUE / norm(moment_cmd);
+        moment_cmd = moment_cmd * MAX_TORQUE / moment_cmd.mag();
     }
     return moment_cmd;
 }

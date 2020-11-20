@@ -29,9 +29,12 @@ private:
     float max_ascent_rate{ 5 };
     float max_descent_rate{ 2 };
     float max_speed{ 5.0 };
+    float max_accel{ 5.0 };
+    // integral control
+    float integrated_altitude_error{ 0 };
 public:
     NonlinearController() {}
-    point3D trajectory_control(vector<point3D> position_trajectory, vector<float> yaw_trajectory, vector<time_t> time_trajectory,
+    point3D trajectory_control(vector<point3D> position_trajectory, vector<float> yaw_trajectory, vector<float> time_trajectory,
                                float current_time, point3D& position_cmd, point3D& velocity_cmd, float& yaw_cmd);
     point2D lateral_position_control(point2D local_position_cmd, point2D local_velocity_cmd, point2D local_position, point2D local_velocity, point2D acceleration_ff);
     float altitude_control(float altitude_cmd, float vertical_velocity_cmd, float altitude, float vertical_velocity, point3D attitude, float acceleration_ff = 0.0);

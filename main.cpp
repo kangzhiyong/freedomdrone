@@ -7,23 +7,13 @@
 
 #include <stdio.h>
 
-#include <msgpack.hpp>
-#include <string>
-#include <iostream>
-#include <sstream>
-
-#include "search_algorithm.hpp"
-#include "free_utils.hpp"
-#include "free_data.hpp"
-#include "matplotlibcpp.h"
-#include "free_graph.hpp"
-
-namespace plt = matplotlibcpp;
+#include "nonlinear_controller_flyer.hpp"
 
 int main()
 {
-//    MavlinkConnection conn("TCP", "127.0.0.1", 5760, false, false);
-//    TrajectoryVelocityFlyer drone(&conn);
-//    drone.start_drone();
+    MavlinkConnection conn("TCP", "127.0.0.1", 5760, false, false);
+    ControlsFlyer drone(&conn);
+    drone.start_drone();
+    drone.print_mission_score();
     return 0;
 }

@@ -26,7 +26,7 @@ public:
     void set_threshold_vertical(float threshold);
     clock_t threshold_time();
     void set_threshold_time(clock_t threshold);
-    void load_test_trajectory(float time_mult, vector<point3D>& position_trajectory, vector<time_t>& time_trajectory, vector<float>& yaw_trajectory);
+    void load_test_trajectory(vector<point3D>& position_trajectory, vector<float>& time_trajectory, vector<float>& yaw_trajectory);
     float calculate_horizontal_error();
     float calculate_vertical_error();
     void print_mission_score();
@@ -69,7 +69,7 @@ private:
     float _maximum_horizontal_error{ 0.0 };
     float _average_vertical_error{ 0.0 };
     float _maximum_vertical_error{ 0.0 };
-    time_t _mission_time;
+    clock_t _mission_time;
     clock_t _time0;
     bool _mission_success{ true };
 };

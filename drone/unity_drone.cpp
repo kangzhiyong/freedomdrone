@@ -135,7 +135,7 @@ void UnityDrone::set_threshold_time(clock_t threshold)
     }
 }
 
-void UnityDrone::load_test_trajectory(float time_mult, vector<point3D>& position_trajectory, vector<time_t>& time_trajectory, vector<float>& yaw_trajectory)
+void UnityDrone::load_test_trajectory(vector<point3D>& position_trajectory, vector<float>& time_trajectory, vector<float>& yaw_trajectory)
 {
     /*Loads the test_trajectory.txt
 
@@ -147,11 +147,10 @@ void UnityDrone::load_test_trajectory(float time_mult, vector<point3D>& position
     path = "../../../data/test_trajectory.txt";
 #endif
     vector<point<float, 4>> data = FreeData<float>::loadtxt(path, ",");
-    time_t current_time = time(0);
     for (size_t i = 0; i < data.size(); i++)
     {
         position_trajectory.push_back({data[i][1], data[i][2], data[i][3]});
-        time_trajectory.push_back(data[i][0] * time_mult + current_time);
+        time_trajectory.push_back(data[i][0]);
     }
 
     for (size_t i = 0; i < (position_trajectory.size() - 1); i++)

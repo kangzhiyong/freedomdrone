@@ -68,6 +68,16 @@ public:
         return sqrt(dist);
     }
 
+    point<coordinate_type, dimensions> operator-()
+    {
+        std::array<coordinate_type, dimensions> a;
+        for (size_t i = 0; i < dimensions; ++i)
+        {
+            a[i] = -get(i);
+        }
+        return a;
+    }
+
     bool operator ==(const point<coordinate_type, dimensions>& p)
     {
         return std::equal(coords_.begin(), coords_.end(), p.coords_.begin());
@@ -206,5 +216,16 @@ typedef point<float, 3> point3D;
 typedef point<float, 4> point4D;
 typedef point<double, 3> point3DD;
 typedef point<int, 2> point2DI;
+
+template<typename coordinate_type, size_t dimensions>
+inline point<coordinate_type, dimensions> operator*(float a, point<coordinate_type, dimensions> b)
+{
+    std::array<coordinate_type, dimensions> xa;
+    for (size_t i = 0; i < dimensions; ++i)
+    {
+        xa[i] = b.get(i) * a;
+    }
+    return xa;
+}
 
 #endif /* my_point_hpp */

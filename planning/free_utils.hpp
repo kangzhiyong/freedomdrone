@@ -1,6 +1,8 @@
 #pragma once
 #include <cmath>
 #include <ctime>
+#include <functional>
+
 using namespace std;
 
 #include "free_point.hpp"
@@ -64,18 +66,6 @@ static vector< ZoneNode > ZONE_LETTERS = {
 inline float norm(float x0, float y0, float z0, float x1, float y1, float z1)
 {
     return sqrt(pow(x0 - x1, 2) + pow(y0 - y1, 2) + pow(z0 - z1, 2));
-}
-
-inline float norm(point3D p, int dimension=2)
-{
-	if (dimension == 2)
-	{
-		return sqrt(pow(p[0], 2) + pow(p[1], 2));
-	}
-	else
-	{
-		return sqrt(pow(p[0], 2) + pow(p[1], 2) + pow(p[2], 2));
-	}
 }
 
 static int zone_number_to_central_longitude(int zone_number)
@@ -350,7 +340,7 @@ static vector<coordinate_type> uniform(coordinate_type min, coordinate_type max,
     std::mt19937 generator((std::random_device()()));
     std::uniform_real_distribution<coordinate_type> distribution(min, max);
     
-    auto dice= std::bind(distribution,generator);
+    auto dice= bind(distribution,generator);
     for (int i = 0; i < num; i++)
     {
         d.push_back(dice());
