@@ -142,9 +142,9 @@ void UnityDrone::load_test_trajectory(vector<point3D>& position_trajectory, vect
     Args :
         time_mult : a multiplier to decrease the total time of the trajectory
     */
-    string path = "../../data/test_trajectory.txt";
+    string path = "../../../../data/traj/test_trajectory.txt";
 #ifdef WIN32
-    path = "../../../data/test_trajectory.txt";
+    path = "../../../data/traj/test_trajectory.txt";
 #endif
     vector<point<float, 4>> data = FreeData<float>::loadtxt(path, ",");
     for (size_t i = 0; i < data.size(); i++)

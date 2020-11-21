@@ -33,6 +33,7 @@ public:
         size_t n = min(dimensions, list.size());
         std::copy_n(list.begin(), n, coords_.begin());
     }
+
     /**
      * Returns the coordinate in the given dimension.
      *
@@ -193,6 +194,20 @@ public:
         resVector[2] = coords_[0] * v[1] - coords_[1] * v[0];
         return resVector;
     }
+    
+    size_t count()
+    {
+        return coords_.size();
+    }
+    typename array<coordinate_type, dimensions>::iterator begin()
+    {
+        return coords_.begin();
+    }
+    
+    typename array<coordinate_type, dimensions>::iterator end()
+    {
+        return coords_.end();
+    }
 private:
     std::array<coordinate_type, dimensions> coords_;
 };
@@ -226,6 +241,52 @@ inline point<coordinate_type, dimensions> operator*(float a, point<coordinate_ty
         xa[i] = b.get(i) * a;
     }
     return xa;
+}
+
+template<typename coordinate_type, size_t dimensions>
+inline point<coordinate_type, dimensions> operator+(point<coordinate_type, dimensions> q, point<coordinate_type, dimensions> p)
+{
+    size_t n = min(q.count(), p.count());
+    std::array<coordinate_type, dimensions> a;
+    for (size_t i = 0; i < n; ++i)
+    {
+        a[i] = q.get(i) + p[i];
+    }
+    return a;
+}
+
+template<typename coordinate_type, size_t dimensions>
+inline point<coordinate_type, dimensions> operator+(point<coordinate_type, dimensions> q, coordinate_type distance)
+{
+    std::array<coordinate_type, dimensions> a;
+    for (size_t i = 0; i < q.count(); ++i)
+    {
+        a[i] = q.get(i) + distance;
+    }
+    return a;
+}
+
+template<typename coordinate_type, size_t dimensions>
+inline point<coordinate_type, dimensions> operator-(point<coordinate_type, dimensions> q, point<coordinate_type, dimensions> p)
+{
+    size_t n = min(q.count(), p.count());
+    std::array<coordinate_type, dimensions> a;
+    for (size_t i = 0; i < n; ++i)
+    {
+        a[i] = q.get(i) - p[i];
+    }
+    return a;
+}
+
+template<typename coordinate_type, size_t dimensions>
+inline point<coordinate_type, dimensions> operator-(point<coordinate_type, dimensions> p)
+{
+    std::array<coordinate_type, dimensions> a;
+    for (size_t i = 0; i < p.count(); ++i)
+    {
+        a[i] = -p.get(i);
+    }
+    return a;
 }
 
 #endif /* my_point_hpp */

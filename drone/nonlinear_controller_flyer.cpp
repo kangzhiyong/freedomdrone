@@ -63,7 +63,7 @@ void ControlsFlyer::local_position_callback()
 {
     if (flight_state == TAKEOFF)
     {
-        if (1.0 * local_position()[2] > 0.95 * target_position[2])
+        if (-1.0 * local_position()[2] > 0.95 * target_position[2])
         {
             _start_time = time(0);
              //calculate_box();

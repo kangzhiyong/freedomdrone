@@ -82,6 +82,7 @@ public:
 
 	static Mat3x3F Rotation(point3D vec, float theta)
 	{
+        point3D tmp = vec.norm();
 		vec = vec.norm();
 		float c = cos(theta);
 		float s = sin(theta);
