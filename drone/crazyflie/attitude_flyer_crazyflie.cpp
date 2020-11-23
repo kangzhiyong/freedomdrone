@@ -11,7 +11,7 @@ AttitudeFlyer::AttitudeFlyer(MavlinkConnection* conn) : Drone(conn)
 
 void AttitudeFlyer::local_position_callback()
 {
-    if (flight_state == TAKEOFF)
+    if (flight_state == States::TAKEOFF)
     {
         if (-1.0 * local_position()[2] > -0.95 * target_position[2])
         {
@@ -24,7 +24,7 @@ void AttitudeFlyer::local_position_callback()
         # `self.land()` and `self.takeoff()` functions in their respective transition functions
         # and by removing those states from this elif line.
     */
-    else if (flight_state == WAYPOINT || flight_state == TAKEOFF || flight_state == LANDING)
+    else if (flight_state == States::WAYPOINT || flight_state == States::TAKEOFF || flight_state == States::LANDING)
     {
         /*  # DEBUG
             # print("curr pos: ({:.2f}, {:.2f}, {:.2f}), desired pos: ({:.2f}, {:.2f}, {:.2f})".format(
@@ -52,7 +52,7 @@ void AttitudeFlyer::local_position_callback()
 
 void AttitudeFlyer::velocity_callback()
 {
-    if (flight_state == LANDING)
+    if (flight_state == States::LANDING)
     {
         if (-1.0 * local_position()[2] < 0.1 && abs(local_velocity()[2]) < 0.05)
         {
@@ -63,7 +63,7 @@ void AttitudeFlyer::velocity_callback()
     /*# NOTE : this will run your controller during takeoff and landing.
       # to disable that functionality, you will need to remove those conditions from this if statement
     */
-    if (flight_state == WAYPOINT || flight_state == TAKEOFF || flight_state == LANDING)
+    if (flight_state == States::WAYPOINT || flight_state == States::TAKEOFF || flight_state == States::LANDING)
     {
         // run the inner loop controller
         point3D cmd = run_inner_controller();
@@ -77,15 +77,15 @@ void AttitudeFlyer::state_callback()
 {
     if (in_mission)
     {
-        if (flight_state == MANUAL)
+        if (flight_state == States::MANUAL)
         {
             arming_transition();
         }
-        else if (flight_state == ARMING && armed())
+        else if (flight_state == States::ARMING && armed())
         {
             takeoff_transition();
         }
-        else if (flight_state == DISARMING && !armed() && !guided())
+        else if (flight_state == States::DISARMING && !armed() && !guided())
         {
             manual_transition();
         }
@@ -163,7 +163,7 @@ void AttitudeFlyer::arming_transition()
     take_control();
     arm();
     set_home_as_current_position();
-    flight_state = ARMING;
+    flight_state = States::ARMING;
 }
 
 void AttitudeFlyer::takeoff_transition()
@@ -176,7 +176,7 @@ void AttitudeFlyer::takeoff_transition()
     # to let the drone handle takeoff, uncomment the follow and change the conditions accordingly
     # in the velocity callback
     # takeoff(target_altitude)*/
-    flight_state = TAKEOFF;
+    flight_state = States::TAKEOFF;
 }
 
 void AttitudeFlyer::waypoint_transition()
@@ -189,7 +189,7 @@ void AttitudeFlyer::waypoint_transition()
     target_position = all_waypoints.front();
     all_waypoints.pop();
     target_position.print("target_position");
-    flight_state = WAYPOINT;
+    flight_state = States::WAYPOINT;
 }
 
 void AttitudeFlyer::landing_transition()
@@ -199,7 +199,7 @@ void AttitudeFlyer::landing_transition()
     # to let the crazyflie handle landing, uncomment the followand change the conditions accordingly
     # in the velocity callback
     # land()*/
-    flight_state = LANDING;
+    flight_state = States::LANDING;
 }
 
 void AttitudeFlyer::disarming_transition()
@@ -207,7 +207,7 @@ void AttitudeFlyer::disarming_transition()
     cout << "disarm transition" << endl;
     disarm();
     release_control();
-    flight_state = DISARMING;
+    flight_state = States::DISARMING;
 }
 
 void AttitudeFlyer::manual_transition()
@@ -215,7 +215,7 @@ void AttitudeFlyer::manual_transition()
     cout << "manual transition" << endl;
     stop();
     in_mission = false;
-    flight_state = MANUAL;
+    flight_state = States::MANUAL;
 }
 
 void AttitudeFlyer::start_drone()

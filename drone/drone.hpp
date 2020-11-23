@@ -15,7 +15,7 @@ using namespace std;
 #include "mavlink_connection.hpp"
 #include "free_point.hpp"
 
-enum States
+enum class States
 {
     MANUAL = 0,
     ARMING,

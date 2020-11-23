@@ -11,7 +11,7 @@ UpAndDownFlyer::UpAndDownFlyer(MavlinkConnection *conn): Drone(conn)
 
 void UpAndDownFlyer::local_position_callback()
 {
-    if (flight_state == TAKEOFF) {
+    if (flight_state == States::TAKEOFF) {
         float altitude = -1.0 * local_position()[2];
         if (altitude > 0.95 * target_position[2]) {
             landing_transition();
@@ -21,7 +21,7 @@ void UpAndDownFlyer::local_position_callback()
 
 void UpAndDownFlyer::velocity_callback()
 {
-    if (flight_state == LANDING)
+    if (flight_state == States::LANDING)
     {
         if ((global_position()[2] - global_home()[2] < 0.1)
             && (abs(local_position()[2]) < 0.01))
@@ -36,14 +36,14 @@ void UpAndDownFlyer::state_callback()
     if (!in_mission) {
         return;
     }
-    if (flight_state == MANUAL) {
+    if (flight_state == States::MANUAL) {
         arming_transition();
     }
-    else if (flight_state == ARMING && armed())
+    else if (flight_state == States::ARMING && armed())
     {
         takeoff_transition();
     }
-    else if (flight_state == DISARMING && !armed())
+    else if (flight_state == States::DISARMING && !armed())
     {
         manual_transition();
     }
@@ -55,7 +55,7 @@ void UpAndDownFlyer::takeoff_transition()
     float target_altitude = 3.0;
     target_position[2] = target_altitude;
     takeoff(target_altitude);
-    flight_state = TAKEOFF;
+    flight_state = States::TAKEOFF;
 }
 
 void UpAndDownFlyer::manual_transition()
@@ -63,7 +63,7 @@ void UpAndDownFlyer::manual_transition()
     cout << "manual transition" << endl;
     release_control();
     stop();
-    flight_state = MANUAL;
+    flight_state = States::MANUAL;
     in_mission = false;
 }
 
@@ -73,21 +73,21 @@ void UpAndDownFlyer::arming_transition()
     take_control();
     arm();
     set_home_position(global_position()[0], global_position()[1], global_position()[2]);
-    flight_state = ARMING;
+    flight_state = States::ARMING;
 }
 
 void UpAndDownFlyer::landing_transition()
 {
     cout << "landing transition" << endl;
     land();
-    flight_state = LANDING;
+    flight_state = States::LANDING;
 }
 
 void UpAndDownFlyer::disarming_transition()
 {
     cout << "disarm transition" << endl;
     disarm();
-    flight_state = DISARMING;
+    flight_state = States::DISARMING;
 }
 
 void UpAndDownFlyer::start_drone()

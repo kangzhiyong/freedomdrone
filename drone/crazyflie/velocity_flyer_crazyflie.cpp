@@ -11,7 +11,7 @@ VelocityFlyer::VelocityFlyer(MavlinkConnection* conn) : Drone(conn)
 
 void VelocityFlyer::local_position_callback()
 {
-    if (flight_state == TAKEOFF)
+    if (flight_state == States::TAKEOFF)
     {
         if (-1.0 * local_position()[2] > -0.95 * target_position[2])
         {
@@ -24,7 +24,7 @@ void VelocityFlyer::local_position_callback()
         # `self.land()` and `self.takeoff()` functions in their respective transition functions
         # and by removing those states from this elif line.
     */
-    else if (flight_state == WAYPOINT /*|| flight_state == TAKEOFF || flight_state == LANDING*/)
+    else if (flight_state == States::WAYPOINT /*|| flight_state == States::TAKEOFF || flight_state == States::LANDING*/)
     {
         /*  # DEBUG
             # print("curr pos: ({:.2f}, {:.2f}, {:.2f}), desired pos: ({:.2f}, {:.2f}, {:.2f})".format(
@@ -48,7 +48,7 @@ void VelocityFlyer::local_position_callback()
 
 void VelocityFlyer::velocity_callback()
 {
-    if (flight_state == LANDING)
+    if (flight_state == States::LANDING)
     {
         if (abs(local_velocity()[2]) < 0.05)
         {
@@ -61,15 +61,15 @@ void VelocityFlyer::state_callback()
 {
     if (in_mission)
     {
-        if (flight_state == MANUAL)
+        if (flight_state == States::MANUAL)
         {
             arming_transition();
         }
-        else if (flight_state == ARMING && armed())
+        else if (flight_state == States::ARMING && armed())
         {
             takeoff_transition();
         }
-        else if (flight_state == DISARMING && !armed() && !guided())
+        else if (flight_state == States::DISARMING && !armed() && !guided())
         {
             manual_transition();
         }
@@ -133,7 +133,7 @@ void VelocityFlyer::arming_transition()
     take_control();
     arm();
     set_home_as_current_position();
-    flight_state = ARMING;
+    flight_state = States::ARMING;
 }
 
 void VelocityFlyer::takeoff_transition()
@@ -146,7 +146,7 @@ void VelocityFlyer::takeoff_transition()
     # to let the drone handle takeoff, uncomment the follow and change the conditions accordingly
     # in the velocity callback*/
     takeoff(target_altitude);
-    flight_state = TAKEOFF;
+    flight_state = States::TAKEOFF;
 }
 
 void VelocityFlyer::waypoint_transition()
@@ -160,7 +160,7 @@ void VelocityFlyer::waypoint_transition()
     all_waypoints.pop();
     target_position.print("target_position");
     cmd_position(target_position[0], target_position[1], target_position[2], 0.0);
-    flight_state = WAYPOINT;
+    flight_state = States::WAYPOINT;
 }
 
 void VelocityFlyer::landing_transition()
@@ -170,7 +170,7 @@ void VelocityFlyer::landing_transition()
     # to let the crazyflie handle landing, uncomment the followand change the conditions accordingly
     # in the velocity callback*/
     land();
-    flight_state = LANDING;
+    flight_state = States::LANDING;
 }
 
 void VelocityFlyer::disarming_transition()
@@ -178,7 +178,7 @@ void VelocityFlyer::disarming_transition()
     cout << "disarm transition" << endl;
     disarm();
     release_control();
-    flight_state = DISARMING;
+    flight_state = States::DISARMING;
 }
 
 void VelocityFlyer::manual_transition()
@@ -186,7 +186,7 @@ void VelocityFlyer::manual_transition()
     cout << "manual transition" << endl;
     stop();
     in_mission = false;
-    flight_state = MANUAL;
+    flight_state = States::MANUAL;
 }
 
 void VelocityFlyer::start_drone()

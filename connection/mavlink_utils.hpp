@@ -8,7 +8,7 @@
 #ifndef mavlink_utils_hpp
 #define mavlink_utils_hpp
 
-enum ConnectionType
+enum class ConnectionType
 {
     /*
     Different possible connection types.
@@ -20,14 +20,14 @@ enum ConnectionType
     // DJI = 4
 };
 
-enum MainMode
+enum class MainMode
 {
     //Constant which isn't defined in Mavlink but is useful for PX4
     PX4_MODE_MANUAL = 1,
     PX4_MODE_OFFBOARD = 6
 };
 
-enum PlaneMode
+enum class PlaneMode
 {
     /*
      Constant which isn't defined in Mavlink but useful when dealing with
@@ -38,7 +38,7 @@ enum PlaneMode
     SUB_MODE_STABILIZED = 3
 };
 
-enum PositionMask
+enum class PositionMask
 {
     //Useful masks for sending commands used in set_position_target_local_ned
     MASK_IGNORE_POSITION = 0x007,
@@ -52,7 +52,12 @@ enum PositionMask
     MASK_IS_LOITER = 0x3000
 };
 
-enum AttitudeMask
+inline PositionMask operator|(PositionMask p, PositionMask q)
+{
+    uint16_t mask = (uint16_t)p, mask1 = (uint16_t)q;
+    return (PositionMask)(mask | mask1);
+}
+enum class AttitudeMask
 {
     MASK_IGNORE_ATTITUDE = 0b10000000,
     MASK_IGNORE_RATES = 0b00000111

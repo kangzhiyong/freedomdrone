@@ -12,14 +12,14 @@ MotionPlanning::MotionPlanning(MavlinkConnection* conn) : Drone(conn)
 
 void MotionPlanning::local_position_callback()
 {
-    if (flight_state == TAKEOFF)
+    if (flight_state == States::TAKEOFF)
     {
         if (-1.0 * local_position()[2] > 0.95 * target_position[2])
         {
             waypoint_transition();
         }
     }
-    else if (flight_state == WAYPOINT)
+    else if (flight_state == States::WAYPOINT)
     {
         if ((target_position - local_position()).mag() < 1.0)
         {
@@ -37,7 +37,7 @@ void MotionPlanning::local_position_callback()
 
 void MotionPlanning::velocity_callback()
 {
-    if (flight_state == LANDING)
+    if (flight_state == States::LANDING)
     {
         if ((global_position()[2] - global_home()[2] < 0.1)
             && (abs(local_position()[2]) < 0.01))
@@ -51,19 +51,19 @@ void MotionPlanning::state_callback()
 {
     if (in_mission)
     {
-        if (flight_state == MANUAL)
+        if (flight_state == States::MANUAL)
         {
             arming_transition();
         }
-        else if (flight_state == ARMING && armed())
+        else if (flight_state == States::ARMING && armed())
         {
             plan_path();
         }
-        else if (flight_state == PLANNING)
+        else if (flight_state == States::PLANNING)
         {
             takeoff_transition();
         }
-        else if (flight_state == DISARMING && !armed() && !guided())
+        else if (flight_state == States::DISARMING && !armed() && !guided())
         {
             manual_transition();
         }
@@ -72,7 +72,7 @@ void MotionPlanning::state_callback()
 
 void MotionPlanning::arming_transition()
 {
-    flight_state = ARMING;
+    flight_state = States::ARMING;
     cout << "arming transition\r\n" << endl;
     arm();
     take_control();
@@ -82,12 +82,12 @@ void MotionPlanning::takeoff_transition()
 {
     cout << "takeoff transition\r\n" << endl;
     takeoff(target_position[2]);
-    flight_state = TAKEOFF;
+    flight_state = States::TAKEOFF;
 }
 
 void MotionPlanning::waypoint_transition()
 {
-    flight_state = WAYPOINT;
+    flight_state = States::WAYPOINT;
     cout << "waypoint transition" << endl;
     if (all_waypoints.size() <= 0)
     {
@@ -101,14 +101,14 @@ void MotionPlanning::waypoint_transition()
 
 void MotionPlanning::landing_transition()
 {
-    flight_state = LANDING;
+    flight_state = States::LANDING;
     cout << "landing transition" << endl;
     land();
 }
 
 void MotionPlanning::disarming_transition()
 {
-    flight_state = DISARMING;
+    flight_state = States::DISARMING;
     cout << "disarm transition" << endl;
     disarm();
     release_control();
@@ -116,7 +116,7 @@ void MotionPlanning::disarming_transition()
 
 void MotionPlanning::manual_transition()
 {
-    flight_state = MANUAL;
+    flight_state = States::MANUAL;
     cout << "manual transition" << endl;
     stop();
     in_mission = false;
@@ -211,6 +211,6 @@ void MotionPlanning::plan_path()
             path_points_prune[i].print();
             all_waypoints.push({ path_points_prune[i][0], path_points_prune[i][1], path_points_prune[i][2] });
         }
-        flight_state = PLANNING;
+        flight_state = States::PLANNING;
     }
 }

@@ -74,8 +74,7 @@ void Drone::on_message_receive(message_ids msg_name, void *msg1)
         stop();
     }
     
-    update_property_t::iterator iter;
-    iter = _update_property.find(msg_name);
+    auto iter = _update_property.find(msg_name);
     if(iter != _update_property.end())
     {
         (this->*_update_property[msg_name])(msg1);
@@ -334,8 +333,7 @@ void Drone::register_callback(message_ids name, user_callback fn)
 
     These can be added anywhere in the code and are identical to initializing a callback with the decorator
     */
-    user_callback_t::iterator iter;
-    iter = _callbacks.find(name);
+    auto iter = _callbacks.find(name);
     if(iter != _callbacks.end())
     {
         _callbacks[name].push_back(fn);
@@ -361,12 +359,11 @@ void Drone::remove_callback(message_ids name, user_callback fn)
 
         remove_message_listener(GLOBAL_POSITION, global_msg_listener)
      */
-    user_callback_t::iterator iter;
-    iter = _callbacks.find(name);
+    auto iter = _callbacks.find(name);
     if(iter != _callbacks.end())
     {
-        vector<user_callback> fns = iter->second;
-        vector<user_callback>::iterator ifns = find(fns.begin(), fns.end(), fn);
+        auto fns = iter->second;
+        auto ifns = find(fns.begin(), fns.end(), fn);
         if (ifns != fns.end()) {
             iter->second.erase(ifns);
             if (iter->second.size() == 0) {
@@ -379,11 +376,10 @@ void Drone::remove_callback(message_ids name, user_callback fn)
 void Drone::notify_callbacks(message_ids name)
 {
     //Passes the message to the appropriate listeners
-    user_callback_t::iterator iter;
-    iter = _callbacks.find(name);
+    auto iter = _callbacks.find(name);
     if(iter != _callbacks.end())
     {
-        vector<user_callback> fns = _callbacks[name];
+        auto fns = _callbacks[name];
         for (int i = 0; i < fns.size(); i++) {
             (this->*fns[i])();
         }
@@ -392,7 +388,7 @@ void Drone::notify_callbacks(message_ids name)
     iter = _callbacks.find(ANY);
     if(iter != _callbacks.end())
     {
-        vector<user_callback> fns = _callbacks[ANY];
+        auto fns = _callbacks[ANY];
         for (int i = 0; i < fns.size(); i++) {
             (this->*fns[i])();
         }

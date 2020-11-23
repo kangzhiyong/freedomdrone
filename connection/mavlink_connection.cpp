@@ -144,7 +144,7 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
         // extract whether or not we are in offboard mode for PX4
         // (the main mode)
         uint32_t main_mode = (hrt_msg.custom_mode & 0x000F0000) >> 16;
-        if (main_mode == PX4_MODE_OFFBOARD)
+        if (main_mode == (uint32_t)MainMode::PX4_MODE_OFFBOARD)
         {
             guided_mode = true;
         }
@@ -263,7 +263,7 @@ void MavlinkConnection::command_loop()
      */
     mavlink_set_position_target_local_ned_t packet;
     memset(&packet, 0, sizeof(packet));
-    packet.type_mask = (MASK_IGNORE_YAW_RATE | MASK_IGNORE_ACCELERATION | MASK_IGNORE_POSITION );
+    packet.type_mask = (uint16_t)(PositionMask::MASK_IGNORE_YAW_RATE | PositionMask::MASK_IGNORE_ACCELERATION | PositionMask::MASK_IGNORE_POSITION );
     packet.target_system = _target_system;
     packet.target_component = _target_component;
     packet.coordinate_frame = MAV_FRAME_LOCAL_NED;
@@ -482,7 +482,7 @@ void MavlinkConnection::disarm()
 void MavlinkConnection::take_control()
 {
     float mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-    float custom_mode = PX4_MODE_OFFBOARD;
+    float custom_mode = (float)MainMode::PX4_MODE_OFFBOARD;
     float custom_sub_mode = 0;
     send_long_command(MAV_CMD_DO_SET_MODE, mode, custom_mode, custom_sub_mode);
 }
@@ -490,7 +490,7 @@ void MavlinkConnection::take_control()
 void MavlinkConnection::release_control()
 {
     float mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-    float custom_mode = PX4_MODE_MANUAL;
+    float custom_mode = (float)MainMode::PX4_MODE_MANUAL;
     float custom_sub_mode = 0;
     send_long_command(MAV_CMD_DO_SET_MODE, mode, custom_mode, custom_sub_mode);
 }
@@ -524,12 +524,12 @@ void MavlinkConnection::cmd_attitude(float roll, float pitch, float yaw, float t
 {
     // convert the attitude to a quaternion
     FrameMessage frame_msg(0, roll, pitch, yaw);
-    cmd_attitude_target_send(0, _target_system, _target_component, MASK_IGNORE_RATES, frame_msg.q0(), frame_msg.q1(), frame_msg.q2(), frame_msg.q3(), 0, 0, 0, thrust);
+    cmd_attitude_target_send(0, _target_system, _target_component, (uint16_t)AttitudeMask::MASK_IGNORE_RATES, frame_msg.q0(), frame_msg.q1(), frame_msg.q2(), frame_msg.q3(), 0, 0, 0, thrust);
 }
 
 void MavlinkConnection::cmd_attitude_rate(float roll_rate, float pitch_rate, float yaw_rate, float thrust)
 {
-    cmd_attitude_target_send(0, _target_system, _target_component, MASK_IGNORE_ATTITUDE, 0.0, 0.0, 0.0, 0.0, roll_rate, pitch_rate, yaw_rate, thrust);
+    cmd_attitude_target_send(0, _target_system, _target_component, (uint16_t)AttitudeMask::MASK_IGNORE_ATTITUDE, 0.0, 0.0, 0.0, 0.0, roll_rate, pitch_rate, yaw_rate, thrust);
 }
 
 void MavlinkConnection::cmd_moment(float roll_moment, float pitch_moment, float yaw_moment, float thrust, time_t t)
@@ -569,7 +569,7 @@ void MavlinkConnection::cmd_position_target_local_ned_send(time_t time_boot_ms, 
 
 void MavlinkConnection::cmd_velocity(float vn, float ve, float vd, float heading)
 {
-    cmd_position_target_local_ned_send(0, _target_system, _target_component, MAV_FRAME_LOCAL_NED, MASK_IGNORE_YAW_RATE | MASK_IGNORE_ACCELERATION | MASK_IGNORE_POSITION, 0, 0, 0, vn, ve, vd, 0, 0, 0, heading, 0);
+    cmd_position_target_local_ned_send(0, _target_system, _target_component, MAV_FRAME_LOCAL_NED, (uint16_t)(PositionMask::MASK_IGNORE_YAW_RATE | PositionMask::MASK_IGNORE_ACCELERATION | PositionMask::MASK_IGNORE_POSITION), 0, 0, 0, vn, ve, vd, 0, 0, 0, heading, 0);
 }
 
 void MavlinkConnection::cmd_position(float n, float e, float d, float heading)
@@ -580,7 +580,7 @@ void MavlinkConnection::cmd_position(float n, float e, float d, float heading)
     {
         d = -1.0 * d;
     }
-    cmd_position_target_local_ned_send(0, _target_system, _target_component, MAV_FRAME_LOCAL_NED, MASK_IGNORE_YAW_RATE | MASK_IGNORE_ACCELERATION | MASK_IGNORE_VELOCITY, n, e, d, 0, 0, 0, 0, 0, 0, heading, 0);
+    cmd_position_target_local_ned_send(0, _target_system, _target_component, MAV_FRAME_LOCAL_NED, (uint16_t)(PositionMask::MASK_IGNORE_YAW_RATE | PositionMask::MASK_IGNORE_ACCELERATION | PositionMask::MASK_IGNORE_VELOCITY), n, e, d, 0, 0, 0, 0, 0, 0, heading, 0);
 }
     
 void MavlinkConnection::cmd_controls(float *controls, time_t t)
@@ -609,7 +609,7 @@ void MavlinkConnection::takeoff(float n, float e, float d)
      since connection doesn't keep track of this info, have drone send it
      abstract away that part in the drone class
      */
-    cmd_position_target_local_ned_send(0, _target_system, _target_component, MAV_FRAME_LOCAL_NED, MASK_IS_LAND | MASK_IGNORE_YAW_RATE | MASK_IGNORE_YAW | MASK_IGNORE_ACCELERATION | MASK_IGNORE_VELOCITY, n, e, d, 0, 0, 0, 0, 0, 0, 0, 0);
+    cmd_position_target_local_ned_send(0, _target_system, _target_component, MAV_FRAME_LOCAL_NED, static_cast<uint16_t>(PositionMask::MASK_IS_LAND | PositionMask::MASK_IGNORE_YAW_RATE | PositionMask::MASK_IGNORE_YAW | PositionMask::MASK_IGNORE_ACCELERATION | PositionMask::MASK_IGNORE_VELOCITY), n, e, d, 0, 0, 0, 0, 0, 0, 0, 0);
 }
 
 void MavlinkConnection::land(float n, float e)
@@ -617,7 +617,7 @@ void MavlinkConnection::land(float n, float e)
     // for mavlink to PX4 need to specify the NED location for landing
     // since connection doesn't keep track of this info, have drone send it
     // abstract away that part in the drone class
-    cmd_position_target_local_ned_send(0, _target_system, _target_component, MAV_FRAME_LOCAL_NED, MASK_IS_TAKEOFF | MASK_IGNORE_YAW_RATE | MASK_IGNORE_YAW | MASK_IGNORE_ACCELERATION | MASK_IGNORE_VELOCITY, n, e, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    cmd_position_target_local_ned_send(0, _target_system, _target_component, MAV_FRAME_LOCAL_NED, (uint16_t)(PositionMask::MASK_IS_TAKEOFF | PositionMask::MASK_IGNORE_YAW_RATE | PositionMask::MASK_IGNORE_YAW | PositionMask::MASK_IGNORE_ACCELERATION | PositionMask::MASK_IGNORE_VELOCITY), n, e, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 }
 
 void MavlinkConnection::set_home_position(float lat, float lon, float alt)
@@ -653,7 +653,7 @@ void MavlinkConnection::body_rate_target(float p, float q, float r, time_t t)
 
 void MavlinkConnection::set_sub_mode(int sub_mode)
 {
-    send_long_command(MAV_CMD_DO_SET_HOME, MAV_MODE_FLAG_CUSTOM_MODE_ENABLED, PX4_MODE_OFFBOARD, sub_mode);
+    send_long_command(MAV_CMD_DO_SET_HOME, MAV_MODE_FLAG_CUSTOM_MODE_ENABLED, (float)MainMode::PX4_MODE_OFFBOARD, sub_mode);
 }
 
 void MavlinkConnection::set_notify_callback(notify_message_callback fn)

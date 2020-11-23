@@ -10,7 +10,7 @@ class MotionPlanning : public Drone
 protected:
     queue<point3D> all_waypoints;
     vector<States> check_state;
-    States flight_state{ MANUAL };
+    States flight_state{ States::MANUAL };
     CallBackFunc m_pCallBackFunc{ nullptr };
     point3D target_position{ 0, 0, 0 };
     bool in_mission{ true };

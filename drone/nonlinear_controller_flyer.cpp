@@ -45,7 +45,7 @@ void ControlsFlyer::bodyrate_controller()
 
 void ControlsFlyer::attitude_callback()
 {
-    if (flight_state == WAYPOINT)
+    if (flight_state == States::WAYPOINT)
     {
         attitude_controller();
     }
@@ -53,7 +53,7 @@ void ControlsFlyer::attitude_callback()
 
 void ControlsFlyer::gyro_callback()
 {
-    if (flight_state == WAYPOINT)
+    if (flight_state == States::WAYPOINT)
     {
         bodyrate_controller();
     }
@@ -61,7 +61,7 @@ void ControlsFlyer::gyro_callback()
 
 void ControlsFlyer::local_position_callback()
 {
-    if (flight_state == TAKEOFF)
+    if (flight_state == States::TAKEOFF)
     {
         if (-1.0 * local_position()[2] > 0.95 * target_position[2])
         {
@@ -75,7 +75,7 @@ void ControlsFlyer::local_position_callback()
             waypoint_transition();
         }
     }
-    else if (flight_state == WAYPOINT)
+    else if (flight_state == States::WAYPOINT)
     {
         if (time_trajectory.size() > 0 && waypoint_number >= 0 && ((time(0) - _start_time) > time_trajectory[waypoint_number]))
         {
@@ -117,7 +117,7 @@ void ControlsFlyer::check_and_increment_waypoint()
 
 void ControlsFlyer::velocity_callback()
 {
-    if (flight_state == LANDING)
+    if (flight_state == States::LANDING)
     {
         if (global_position()[2] - global_home()[2] < 0.1)
         {
@@ -127,7 +127,7 @@ void ControlsFlyer::velocity_callback()
             }
         }
     }
-    if (flight_state == WAYPOINT)
+    if (flight_state == States::WAYPOINT)
     {
         position_controller();
     }
@@ -137,15 +137,15 @@ void ControlsFlyer::state_callback()
 {
     if (in_mission)
     {
-        if (flight_state == MANUAL)
+        if (flight_state == States::MANUAL)
         {
             arming_transition();
         }
-        else if (flight_state == ARMING && armed())
+        else if (flight_state == States::ARMING && armed())
         {
             takeoff_transition();
         }
-        else if (flight_state == DISARMING && !armed() && !guided())
+        else if (flight_state == States::DISARMING && !armed() && !guided())
         {
             manual_transition();
         }
@@ -167,7 +167,7 @@ void ControlsFlyer::arming_transition()
     take_control();
     arm();
     set_home_as_current_position();
-    flight_state = ARMING;
+    flight_state = States::ARMING;
 }
 
 void ControlsFlyer::takeoff_transition()
@@ -176,7 +176,7 @@ void ControlsFlyer::takeoff_transition()
     float target_altitude = TAKEOFF_ALTITUDE;
     target_position[2] = target_altitude;
     takeoff(target_altitude);
-    flight_state = TAKEOFF;
+    flight_state = States::TAKEOFF;
 }
 
 void ControlsFlyer::waypoint_transition()
@@ -190,14 +190,14 @@ void ControlsFlyer::waypoint_transition()
     target_position = all_waypoints.front();
     all_waypoints.pop();
     target_position.print("target_position");
-    flight_state = WAYPOINT;
+    flight_state = States::WAYPOINT;
 }
 
 void ControlsFlyer::landing_transition()
 {
     cout << "landing transition" << endl;
     land();
-    flight_state = LANDING;
+    flight_state = States::LANDING;
 }
 
 void ControlsFlyer::disarming_transition()
@@ -205,7 +205,7 @@ void ControlsFlyer::disarming_transition()
     cout << "disarm transition" << endl;
     disarm();
     release_control();
-    flight_state = DISARMING;
+    flight_state = States::DISARMING;
 }
 
 void ControlsFlyer::manual_transition()
@@ -213,7 +213,7 @@ void ControlsFlyer::manual_transition()
     cout << "manual transition" << endl;
     stop();
     in_mission = false;
-    flight_state = MANUAL;
+    flight_state = States::MANUAL;
 }
 
 void ControlsFlyer::start_drone()

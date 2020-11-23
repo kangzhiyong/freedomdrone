@@ -11,7 +11,7 @@ BackyardFlyer::BackyardFlyer(MavlinkConnection* conn) : Drone(conn)
 
 void BackyardFlyer::local_position_callback()
 {
-    if (flight_state == TAKEOFF)
+    if (flight_state == States::TAKEOFF)
     {
         if (1.0 * local_position()[2] > 0.95 * target_position[2])
         {
@@ -19,7 +19,7 @@ void BackyardFlyer::local_position_callback()
             waypoint_transition();
         }
     }
-    else if (flight_state == WAYPOINT)
+    else if (flight_state == States::WAYPOINT)
     {
         if ((target_position - local_position()).mag() < 1.0)
         {
@@ -37,7 +37,7 @@ void BackyardFlyer::local_position_callback()
 
 void BackyardFlyer::velocity_callback()
 {
-    if (flight_state == LANDING)
+    if (flight_state == States::LANDING)
     {
         if ((global_position()[2] - global_home()[2] < 0.1)
             && (abs(local_position()[2]) < 0.01))
@@ -51,15 +51,15 @@ void BackyardFlyer::state_callback()
 {
     if (in_mission)
     {
-        if (flight_state == MANUAL)
+        if (flight_state == States::MANUAL)
         {
             arming_transition();
         }
-        else if (flight_state == ARMING && armed())
+        else if (flight_state == States::ARMING && armed())
         {
             takeoff_transition();
         }
-        else if (flight_state == DISARMING && !armed() && !guided())
+        else if (flight_state == States::DISARMING && !armed() && !guided())
         {
             manual_transition();
         }
@@ -81,7 +81,7 @@ void BackyardFlyer::arming_transition()
     take_control();
     arm();
     set_home_position(global_position()[0], global_position()[1], global_position()[2]);
-    flight_state = ARMING;
+    flight_state = States::ARMING;
 }
 
 void BackyardFlyer::takeoff_transition()
@@ -90,7 +90,7 @@ void BackyardFlyer::takeoff_transition()
     float target_altitude = 3.0;
     target_position[2] = target_altitude;
     takeoff(target_altitude);
-    flight_state = TAKEOFF;
+    flight_state = States::TAKEOFF;
 }
 
 void BackyardFlyer::waypoint_transition()
@@ -100,14 +100,14 @@ void BackyardFlyer::waypoint_transition()
     all_waypoints.pop();
     target_position.print("target_position");
     cmd_position(target_position[0], target_position[1], target_position[2], 0.0);
-    flight_state = WAYPOINT;
+    flight_state = States::WAYPOINT;
 }
 
 void BackyardFlyer::landing_transition()
 {
     cout << "landing transition" << endl;
     land();
-    flight_state = LANDING;
+    flight_state = States::LANDING;
 }
 
 void BackyardFlyer::disarming_transition()
@@ -115,7 +115,7 @@ void BackyardFlyer::disarming_transition()
     cout << "disarm transition" << endl;
     disarm();
     release_control();
-    flight_state = DISARMING;
+    flight_state = States::DISARMING;
 }
 
 void BackyardFlyer::manual_transition()
@@ -123,7 +123,7 @@ void BackyardFlyer::manual_transition()
     cout << "manual transition" << endl;
     stop();
     in_mission = false;
-    flight_state = MANUAL;
+    flight_state = States::MANUAL;
 }
 
 void BackyardFlyer::start_drone()
