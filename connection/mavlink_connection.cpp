@@ -118,6 +118,10 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
         memset(&gpi_msg, 0, sizeof(mavlink_global_position_int_t));
         mavlink_msg_global_position_int_decode(&msg, &gpi_msg);
 
+        if (gpi_msg.lat == 0 && gpi_msg.lon == 0)
+        {
+            return;
+        }
         uint32_t timestamp = gpi_msg.time_boot_ms / 1000.0;
         // parse out the gps position and trigger that callback
         GlobalFrameMessage gps(timestamp, float(gpi_msg.lat) / 1e7, float(gpi_msg.lon) / 1e7, float(gpi_msg.alt) / 1000);
