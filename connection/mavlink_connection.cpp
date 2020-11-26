@@ -196,6 +196,18 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
         BodyFrameMessage gyro(timestamp, si_msg.xgyro / 1000.0, si_msg.ygyro / 1000.0, si_msg.zgyro / 1000.0);  // units -> [millirad/sec]
         notify_message_listeners(RAW_GYROSCOPE, &gyro);
     }
+    else if (msg.msgid == MAVLINK_MSG_ID_RAW_IMU)
+    {
+        mavlink_raw_imu_t rimu_msg;
+        memset(&rimu_msg, 0, sizeof(mavlink_raw_imu_t));
+        mavlink_msg_raw_imu_decode(&msg, &rimu_msg);
+
+        uint32_t timestamp = rimu_msg.time_usec/ 1000.0;
+        RAWIMUSensorMessage rawMsg(timestamp, rimu_msg.xacc, rimu_msg.yacc, rimu_msg.zacc, 
+                                   rimu_msg.xgyro, rimu_msg.ygyro, rimu_msg.zgyro, 
+                                   rimu_msg.xmag, rimu_msg.ymag, rimu_msg.zmag);
+        notify_message_listeners(RAW_IMU_SENSOR, &rawMsg);
+    }
     // http://mavlink.org/messages/common#SCALED_PRESSURE
     else if (msg.msgid == MAVLINK_MSG_ID_SCALED_PRESSURE)
     {
@@ -240,6 +252,17 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
 
         BodyFrameMessage gyro(timestamp, aq_msg.rollspeed, aq_msg.pitchspeed, aq_msg.yawspeed);
         notify_message_listeners(RAW_GYROSCOPE, &gyro);
+    }
+    else if (msg.msgid == MAVLINK_MSG_ID_GPS_INPUT)
+    {
+        mavlink_gps_input_t gpsInput;
+        memset(&gpsInput, 0, sizeof(mavlink_gps_input_t));
+        mavlink_msg_gps_input_decode(&msg, &gpsInput);
+
+        uint32_t timestamp = gpsInput.time_usec / 1000.0;
+        GPSSensorMessage gpsMsg(timestamp, float(gpsInput.lat) / 1e7, float(gpsInput.lon) / 1e7, float(gpsInput.alt) / 1000, 
+                                float(gpsInput.vn / 100), float(gpsInput.ve / 100), float(gpsInput.vd / 100));
+        notify_message_listeners(GPS_INPUT_SENSOR, &gpsMsg);
     }
     // DEBUG
     else if (msg.msgid == MAVLINK_MSG_ID_STATUSTEXT)

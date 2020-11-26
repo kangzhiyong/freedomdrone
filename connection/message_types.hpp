@@ -186,4 +186,92 @@ private:
     vector<float> properties;
 };
 
+class GPSSensorMessage : public MessageBase
+{
+    /*
+    GPS sensor input message. This is a raw sensor value sent by the GPS. This is NOT the global position estimate of the system
+    */
+public:
+    GPSSensorMessage(int64_t time, float lat, float lon, float alt, float vn, float ve, float vd);
+    int32_t lat();
+    int32_t lon();
+    float alt();
+    float vn();
+    float ve();
+    float vd();
+private:
+    int32_t _lat;   //Latitude (WGS84)
+    int32_t _lon;   //Longitude (WGS84)
+    float _alt;     //Altitude (MSL). Positive for up.
+    float _vn;      //GPS velocity in north direction in earth-fixed NED frame
+    float _ve;      //GPS velocity in east direction in earth-fixed NED frame
+    float _vd;      //GPS velocity in down direction in earth-fixed NED frame
+};
+
+class RAWIMUSensorMessage: public MessageBase
+{
+    /*
+    The RAW IMU readings for a 9DOF sensor, which is identified by the id (default IMU1). 
+    This message should always contain the true raw values without any scaling to allow data capture and system debugging.
+    */
+public:
+    RAWIMUSensorMessage(int64_t time, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro, int16_t xmag, int16_t ymag, int16_t zmag): MessageBase(time)
+    {
+        _xacc = xacc;
+        _yacc = yacc;
+        _zacc = zacc;
+        _xgyro = xgyro;
+        _ygyro = ygyro;
+        _zgyro = zgyro;
+        _xmag = xmag;
+        _ymag = ymag;
+        _zmag = zmag;
+    }
+    int16_t xacc()
+    {
+        return _xacc;
+    }
+    int16_t yacc() 
+    {
+        return _yacc;
+    }
+    int16_t zacc()
+    {
+        return _zacc;
+    }
+    int16_t xgyro()
+    {
+        return _xgyro;
+    }
+    int16_t ygyro()
+    {
+        return _xgyro;
+    }
+    int16_t zgyro()
+    {
+        return _xgyro;
+    }
+    int16_t xmag()
+    {
+        return _xmag;
+    }
+    int16_t ymag()
+    {
+        return _ymag;
+    }
+    int16_t zmag()
+    {
+        return _zmag;
+    }
+private:
+    int16_t _xacc;  //X acceleration (raw)
+    int16_t _yacc;  //Y acceleration (raw)
+    int16_t _zacc;  //Z acceleration (raw)
+    int16_t _xgyro; //Angular speed around X axis (raw)
+    int16_t _ygyro; //Angular speed around Y axis (raw)
+    int16_t _zgyro; //Angular speed around Z axis (raw)
+    int16_t _xmag;  //X Magnetic field (raw)
+    int16_t _ymag;  //Y Magnetic field (raw)
+    int16_t _zmag;  //Z Magnetic field (raw)
+};
 #endif /* message_types_hpp */

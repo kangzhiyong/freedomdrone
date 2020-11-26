@@ -243,3 +243,49 @@ DistanceSensorMessage::DistanceSensorMessage(int64_t time, float min_distance, f
     properties.push_back(min_distance);
     properties.push_back(max_distance);
 }
+
+GPSSensorMessage::GPSSensorMessage(int64_t time, float lat, float lon, float alt, float vn, float ve, float vd) :MessageBase(time)
+{
+    _lat = lat;
+    _lon = lon;
+    _alt = alt;
+    _vn = vn;
+    _ve = ve;
+    _vd = vd;
+}
+
+int32_t GPSSensorMessage::lon()
+{
+    //float: longitude in degrees
+    return _lon;
+}
+
+int32_t GPSSensorMessage::lat()
+{
+    //float: latitude in degrees
+    return _lat;
+}
+
+float GPSSensorMessage::alt()
+{
+    //float: altitude in meters above sea level
+    return _alt;
+}
+
+float GPSSensorMessage::vn()
+{
+    //float: north position in meters
+    return _vn;
+}
+
+float GPSSensorMessage::ve()
+{
+    //float: east position in meters
+    return _ve;
+}
+
+float GPSSensorMessage::vd()
+{
+    //float: down position in meters
+    return _vd;
+}

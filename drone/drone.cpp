@@ -23,6 +23,8 @@ Drone::Drone(MavlinkConnection *conn)
     _update_property[RAW_ACCELEROMETER] = &Drone::_update_acceleration_raw;
     _update_property[BAROMETER] = &Drone::_update_barometer;
     _update_property[ATTITUDE] = &Drone::_update_attitude;
+    _update_property[GPS_INPUT_SENSOR] = &Drone::_update_from_gps_sensor;
+    _update_property[RAW_IMU_SENSOR] = &Drone::_update_from_imu_sensor;
 
     // set the internal callbacks list to an empty map
     _callbacks.clear();
@@ -44,6 +46,8 @@ Drone::Drone()
     _update_property[RAW_ACCELEROMETER] = &Drone::_update_acceleration_raw;
     _update_property[BAROMETER] = &Drone::_update_barometer;
     _update_property[ATTITUDE] = &Drone::_update_attitude;
+    _update_property[GPS_INPUT_SENSOR] = &Drone::_update_from_gps_sensor;
+    _update_property[RAW_IMU_SENSOR] = &Drone::_update_from_imu_sensor;
 
     // set the internal callbacks list to an empty map
     _callbacks.clear();
@@ -647,4 +651,19 @@ void Drone::stop()
     if (m_conn != nullptr) {
         m_conn->stop();
     }
+}
+
+void Drone::_update_from_gps_sensor(void* msg)
+{
+    GPSSensorMessage gpsMsg = *(GPSSensorMessage*)msg;
+    _posMeas = V3F(gpsMsg.lat(), gpsMsg.lon(), gpsMsg.alt());
+    _velMeas = V3F(gpsMsg.vn(), gpsMsg.ve(), gpsMsg.vd());
+}
+
+void Drone::_update_from_imu_sensor(void* msg)
+{
+    RAWIMUSensorMessage imuMsg = *(RAWIMUSensorMessage*)msg;
+    _accelMeas = V3F(imuMsg.xacc(), imuMsg.yacc(), imuMsg.zacc());
+    _gyroMeas = V3F(imuMsg.xgyro(), imuMsg.ygyro(), imuMsg.zgyro());
+    _magMeas = V3F(imuMsg.xmag(), imuMsg.ymag(), imuMsg.zmag());
 }

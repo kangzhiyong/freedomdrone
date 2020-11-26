@@ -21,7 +21,9 @@ enum message_ids
     RAW_ACCELEROMETER,
     BAROMETER,
     DISTANCE_SENSOR,
-    ATTITUDE
+    ATTITUDE,
+    GPS_INPUT_SENSOR,
+    RAW_IMU_SENSOR
 };
 
 #endif /* message_ids_h */

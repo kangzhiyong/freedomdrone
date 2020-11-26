@@ -204,3 +204,11 @@ float NonlinearController::yaw_control(float yaw_cmd, float yaw)
     float yawrate_cmd = Kp_yaw * yaw_error;
     return yawrate_cmd;
 }
+
+void NonlinearController::UpdateEstimates(V3F pos, V3F vel, Quaternion<float> attitude, V3F omega)
+{
+    estAtt = attitude;
+    estOmega = omega;
+    estPos = pos;
+    estVel = vel;
+}

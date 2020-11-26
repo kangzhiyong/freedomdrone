@@ -1,6 +1,7 @@
 #pragma once
 
 #include "free_point.hpp"
+#include "Quaternion.hpp"
 
 #define DRONE_MASS_KG 0.5
 #define GRAVITY  -9.81
@@ -33,6 +34,12 @@ private:
     // integral control
     float integrated_altitude_error{ 0 };
 public:
+    // Estimator state
+    Quaternion<float> estAtt;
+    V3F estVel;
+    V3F estPos;
+    V3F estOmega;
+
     NonlinearController() {}
     point3D trajectory_control(vector<point3D> position_trajectory, vector<float> yaw_trajectory, vector<float> time_trajectory,
                                float current_time, point3D& position_cmd, point3D& velocity_cmd, float& yaw_cmd);
@@ -41,5 +48,6 @@ public:
     point2D roll_pitch_controller(point2D acceleration_cmd, point3D attitude, float thrust_cmd);
     point3D body_rate_control(point3D body_rate_cmd, point3D body_rate);
     float yaw_control(float yaw_cmd, float yaw);
+    void UpdateEstimates(V3F pos, V3F vel, Quaternion<float> attitude, V3F omega)
 };
 

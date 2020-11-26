@@ -180,5 +180,12 @@ public:
         return m_conn;
     }
     void set_connection(MavlinkConnection* conn);
+
+    void _update_from_gps_sensor(void* msg);
+    void _update_from_imu_sensor(void* msg);
+
+    V3F _posMeas, _velMeas;
+    V3F _accelMeas, _gyroMeas;
+    V3F _magMeas;
 };
 #endif /* drone_hpp */

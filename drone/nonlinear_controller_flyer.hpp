@@ -8,6 +8,8 @@ using  namespace::std;
 #include "nonlinear_controller.hpp"
 
 #define TAKEOFF_ALTITUDE 0.5
+#define RATE_100_HZ 100
+#define PREDICT_RATE RATE_100_HZ // this is slower than the IMU update rate of 500Hz
 
 class ControlsFlyer:public UnityDrone
 {
@@ -49,4 +51,14 @@ public:
     void disarming_transition();
     void manual_transition();
     void start_drone();
+    void gps_sensor_callback();
+    void imu_sensor_callback();
+
+    void find_closest_node(vector<point3D> nodes, point3D p, point3D& p_min);
+    void send_waypoints(vector<point3D> points);
+    void plan_path();
+
+    clock_t lastPrediction;
+    clock_t nextPrediction;
+    shared_ptr<BaseQuadEstimator> estimator;
 };
