@@ -30,11 +30,15 @@ public:
         coords_[1] = y;
         coords_[2] = z;
     }
-    Point(Point<float, dimensions> p)
+    void operator=( const Point<coordinate_type, dimensions> &p)
     {
         size_t n = min(dimensions, p.count());
-        std::copy_n(p.begin(), n, coords_.begin());
+        for (size_t i = 0; i < n; ++i)
+        {
+            coords_[i] = p.get(i);
+        }
     }
+
     /**
      * Returns the coordinate in the given dimension.
      *

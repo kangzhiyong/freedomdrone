@@ -54,7 +54,8 @@ void TrajectoryHandler::get_next_point(float inflight_time, V3F& position_cmd, V
     // which depends on if current time is before or after the trajectory point
     if (ind_min == 0)
     {
-        p0 = p1 = _positions[ind_min];
+        p0 = _positions[ind_min];
+        p1 = _positions[ind_min];
         t0 = 0.0;
         t1 = 1.0;
     }

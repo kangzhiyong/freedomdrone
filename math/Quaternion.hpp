@@ -101,7 +101,7 @@ namespace SLR{
       }
       
         // CHECKED
-      static Quaternion FromAxisAngle(const V3D axisAngle)
+      static Quaternion FromAxisAngle(const V3F axisAngle)
       {
         const T theta = (T)axisAngle.mag();
         if(!theta) return Identity();
@@ -376,7 +376,7 @@ namespace SLR{
 
 
         // CHECKED
-      inline Quaternion IntegrateBodyRate(const V3D pqr, const double dt) //body rates must be expressed in the body coordinate frame!
+      inline Quaternion IntegrateBodyRate(const V3F pqr, const double dt) //body rates must be expressed in the body coordinate frame!
       {
         *this = Quaternion::FromAxisAngle(pqr * dt)*(*this);
         return *this;
