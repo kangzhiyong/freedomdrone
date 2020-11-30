@@ -42,7 +42,8 @@ include_directories(${PYTHON_NUMPY_INCLUDE_DIR})
 include_directories(./planning)
 include_directories(./controls)
 include_directories(./controls/crazyflie)
-include_directories(./estimation)
+include_directories(./estimator)
+include_directories(./estimator/ekf)
 include_directories(./connection)
 include_directories(./messaging)
 include_directories(./logging)
@@ -62,7 +63,8 @@ FILE(GLOB SOURCES
         planning/*.cpp
         controls/*.cpp
         controls/crazyflie/*.cpp
-        estimation/*.cpp
+        estimator/*.cpp
+        estimator/ekf/*.cpp
         drone/*.cpp
         drone/crazyflie/*.cpp
         math/*.cpp
@@ -74,13 +76,14 @@ FILE(GLOB HEADERS
         planning/*.hpp
         controls/*.hpp
         controls/crazyflie/*.hpp
-        estimation/*.hpp
+        estimator/*.hpp
+        estimator/ekf/*.hpp
         drone/*.hpp
         drone/crazyflie/*.hpp
         math/*.hpp
         *.hpp
         *.h)
-set(PYTHONLIBS /Applications/anaconda3/envs/fcnd/lib/)
+#set(PYTHONLIBS /Applications/anaconda3/envs/fcnd/lib/)
 
 add_executable (freedomdrone 
         ${SOURCES} 
