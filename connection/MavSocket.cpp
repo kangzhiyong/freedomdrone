@@ -12,6 +12,7 @@
 
 
 #include "MavSocket.hpp"
+#include "DroneUtils.hpp"
 #include <time.h>
 #include <iostream>
 using namespace std;
@@ -114,11 +115,7 @@ bool MavSocket::recv_match(void* msg, bool blocking, int timeout)
         {
             if (blocking)
             {
-#ifdef WIN32
-                Sleep((unsigned int)timeout);
-#else
                 sleep((unsigned int)timeout);
-#endif // WIN32
                 continue;
             }
             return false;

@@ -13,6 +13,7 @@ using namespace mavlink;
 #include "MavlinkConnection.hpp"
 //#include "Utility/StringUtils.h"
 #include "MavUtils.hpp"
+#include "DroneUtils.hpp"
 
 MavlinkConnection::MavlinkConnection(std::string sock_type, std::string dest_ip, unsigned short dest_port, bool threaded, bool PX4, float send_rate, time_t timeout)
 {
@@ -41,6 +42,16 @@ MavlinkConnection::MavlinkConnection(std::string sock_type, std::string dest_ip,
     {
         _master = new MavUDP(dest_ip, dest_port);
     }
+
+    int mavlinkChannel = reserveMavlinkChannel();
+    if (mavlinkChannel != 0) {
+        _target_channel = mavlinkChannel;
+    }
+    else {
+        cout << "Ran out of mavlink channels" << endl;
+        return;
+    }
+
     _threaded = threaded;
 
     // PX4 management
@@ -49,6 +60,22 @@ MavlinkConnection::MavlinkConnection(std::string sock_type, std::string dest_ip,
 
     // seconds to wait of no messages before termination
     _timeout = timeout;
+}
+
+int MavlinkConnection::reserveMavlinkChannel(void)
+{
+    // Find a mavlink channel to use for this link, Channel 0 is reserved for internal use.
+    for (uint8_t mavlinkChannel = 1; mavlinkChannel < MAVLINK_COMM_NUM_BUFFERS; mavlinkChannel++) {
+        if (!(_mavlinkChannelsUsedBitMask & 1 << mavlinkChannel)) {
+            mavlink_reset_channel_status(mavlinkChannel);
+            // Start the channel on Mav 1 protocol
+            mavlink_status_t* mavlinkStatus = mavlink_get_channel_status(mavlinkChannel);
+            mavlinkStatus->flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
+            _mavlinkChannelsUsedBitMask |= 1 << mavlinkChannel;
+            return mavlinkChannel;
+        }
+    }
+    return 0;   // All channels reserved
 }
 
 bool MavlinkConnection::open()
@@ -102,6 +129,10 @@ void MavlinkConnection::dispatch_loop()
         last_msg_time = current_time;
 
         dispatch_message(msg);
+        // give the write thread time to use the port
+        if (writing_status > false) {
+            usleep(100); // look for components of batches at 10kHz
+        }
     }
 }
 
@@ -111,161 +142,274 @@ void MavlinkConnection::dispatch_loop()
  */
 void MavlinkConnection::dispatch_message(mavlink_message_t msg)
 {
-    // http://mavlink.org/messages/common/#GLOBAL_POSITION_INT
-    if (msg.msgid == MAVLINK_MSG_ID_GLOBAL_POSITION_INT)
-    {        
-        mavlink_global_position_int_t gpi_msg;
-        memset(&gpi_msg, 0, sizeof(mavlink_global_position_int_t));
-        mavlink_msg_global_position_int_decode(&msg, &gpi_msg);
-
-        uint32_t timestamp = gpi_msg.time_boot_ms / 1000.0;
-        // parse out the gps position and trigger that callback
-        GlobalFrameMessage gps(timestamp, float(gpi_msg.lat) / 1e7, float(gpi_msg.lon) / 1e7, float(gpi_msg.alt) / 1000);
-        notify_message_listeners(MessageIDs::GLOBAL_POSITION, &gps);
-
-        // parse out the velocity and trigger that callback
-        LocalFrameMessage vel(timestamp, float(gpi_msg.vx) / 100, float(gpi_msg.vy) / 100, float(gpi_msg.vz) / 100);
-        notify_message_listeners(MessageIDs::LOCAL_VELOCITY, &vel);
-    }
-    // http://mavlink.org/messages/common/#HEARTBEAT
-    else if (msg.msgid == MAVLINK_MSG_ID_HEARTBEAT)
-    {
-        mavlink_heartbeat_t hrt_msg;
-        memset(&hrt_msg, 0, sizeof(mavlink_heartbeat_t));
-        mavlink_msg_heartbeat_decode(&msg, &hrt_msg);
-
-        uint32_t timestamp = 0.0;
-        uint8_t motors_armed = (hrt_msg.base_mode & MAV_MODE_FLAG_SAFETY_ARMED) != 0;
-
-        // determine if want to broadcast all current mode types
-        // not just boolean on manual
-        bool guided_mode = false;
-
-        // extract whether or not we are in offboard mode for PX4
-        // (the main mode)
-        uint32_t main_mode = (hrt_msg.custom_mode & 0x000F0000) >> 16;
-        if (main_mode == (uint32_t)MainMode::PX4_MODE_OFFBOARD)
+	_target_system = msg.sysid;
+	autopilot_id = msg.compid;
+    switch (msg.msgid) {
+        // http://mavlink.org/messages/common/#GLOBAL_POSITION_INT
+        case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
         {
-            guided_mode = true;
+            mavlink_global_position_int_t gpi_msg;
+            memset(&gpi_msg, 0, sizeof(mavlink_global_position_int_t));
+            mavlink_msg_global_position_int_decode(&msg, &gpi_msg);
+
+            uint32_t timestamp = gpi_msg.time_boot_ms / 1000.0;
+            // parse out the gps position and trigger that callback
+            GlobalFrameMessage gps(timestamp, float(gpi_msg.lat) / 1e7, float(gpi_msg.lon) / 1e7, float(gpi_msg.alt) / 1000);
+            notify_message_listeners(MessageIDs::GLOBAL_POSITION, &gps);
+
+            // parse out the velocity and trigger that callback
+            LocalFrameMessage vel(timestamp, float(gpi_msg.vx) / 100, float(gpi_msg.vy) / 100, float(gpi_msg.vz) / 100);
+            notify_message_listeners(MessageIDs::LOCAL_VELOCITY, &vel);
+            break;
         }
-        StateMessage state(timestamp, motors_armed, guided_mode, hrt_msg.system_status);
-        notify_message_listeners(MessageIDs::STATE, &state);
+        // http://mavlink.org/messages/common/#HEARTBEAT
+        case MAVLINK_MSG_ID_HEARTBEAT:
+        {
+            mavlink_heartbeat_t hrt_msg;
+            memset(&hrt_msg, 0, sizeof(mavlink_heartbeat_t));
+            mavlink_msg_heartbeat_decode(&msg, &hrt_msg);
+
+            uint32_t timestamp = 0.0;
+            uint8_t motors_armed = (hrt_msg.base_mode & MAV_MODE_FLAG_SAFETY_ARMED) != 0;
+
+            // determine if want to broadcast all current mode types
+            // not just boolean on manual
+            bool guided_mode = false;
+
+            // extract whether or not we are in offboard mode for PX4
+            // (the main mode)
+            uint32_t main_mode = (hrt_msg.custom_mode & 0x000F0000) >> 16;
+            if (main_mode == (uint32_t)MainMode::PX4_MODE_OFFBOARD)
+            {
+                guided_mode = true;
+            }
+            StateMessage state(timestamp, motors_armed, guided_mode, hrt_msg.system_status);
+            notify_message_listeners(MessageIDs::STATE, &state);
+            break;
+        }
+        // http://mavlink.org/messages/common#LOCAL_POSITION_NED
+        case MAVLINK_MSG_ID_LOCAL_POSITION_NED:
+        {
+            mavlink_local_position_ned_t lpn_msg;
+            memset(&lpn_msg, 0, sizeof(mavlink_local_position_ned_t));
+            mavlink_msg_local_position_ned_decode(&msg, &lpn_msg);
+
+            uint32_t timestamp = lpn_msg.time_boot_ms / 1000.0;
+            // parse out the local positin and trigger that callback
+            LocalFrameMessage pos(timestamp, lpn_msg.x, lpn_msg.y, lpn_msg.z);
+            notify_message_listeners(MessageIDs::LOCAL_POSITION, &pos);
+
+            // parse out the velocity and trigger that callback
+            LocalFrameMessage vel(timestamp, lpn_msg.vx, lpn_msg.vy, lpn_msg.vz);
+            notify_message_listeners(MessageIDs::LOCAL_VELOCITY, &vel);
+            break;
+        }
+        // http://mavlink.org/messages/common#HOME_POSITION
+        case MAVLINK_MSG_ID_HOME_POSITION:
+        {
+            mavlink_home_position_t hp_msg;
+            mavlink_msg_home_position_decode(&msg, &hp_msg);
+
+            uint32_t timestamp = 0.0;
+            GlobalFrameMessage home(timestamp, float(hp_msg.latitude) / 1e7, float(hp_msg.longitude) / 1e7, float(hp_msg.altitude) / 1000);
+            notify_message_listeners(MessageIDs::GLOBAL_HOME, &home);
+            break;
+        }
+        // http://mavlink.org/messages/common/#SCALED_IMU
+        case MAVLINK_MSG_ID_SCALED_IMU:
+        {
+            mavlink_scaled_imu_t si_msg;
+            memset(&si_msg, 0, sizeof(mavlink_scaled_imu_t));
+            mavlink_msg_scaled_imu_decode(&msg, &si_msg);
+
+            uint32_t timestamp = si_msg.time_boot_ms / 1000.0;
+            // break out the message into its respective messages for here
+            BodyFrameMessage accel(timestamp, si_msg.xacc / 1000.0, si_msg.yacc / 1000.0, si_msg.zacc / 1000.0);  // units -> [mg]
+            notify_message_listeners(MessageIDs::RAW_ACCELEROMETER, &accel);
+
+            BodyFrameMessage gyro(timestamp, si_msg.xgyro / 1000.0, si_msg.ygyro / 1000.0, si_msg.zgyro / 1000.0);  // units -> [millirad/sec]
+            notify_message_listeners(MessageIDs::RAW_GYROSCOPE, &gyro);
+            break;
+        }
+        case MAVLINK_MSG_ID_RAW_IMU:
+        {
+            mavlink_raw_imu_t rimu_msg;
+            memset(&rimu_msg, 0, sizeof(mavlink_raw_imu_t));
+            mavlink_msg_raw_imu_decode(&msg, &rimu_msg);
+
+            uint32_t timestamp = rimu_msg.time_usec / 1000.0;
+            RAWIMUSensorMessage rawMsg(timestamp, rimu_msg.xacc, rimu_msg.yacc, rimu_msg.zacc,
+                rimu_msg.xgyro, rimu_msg.ygyro, rimu_msg.zgyro,
+                rimu_msg.xmag, rimu_msg.ymag, rimu_msg.zmag);
+            notify_message_listeners(MessageIDs::RAW_IMU_SENSOR, &rawMsg);
+            break;
+        }
+        // http://mavlink.org/messages/common#SCALED_PRESSURE
+        case MAVLINK_MSG_ID_SCALED_PRESSURE:
+        {
+            mavlink_scaled_pressure_t sp_msg;
+            memset(&sp_msg, 0, sizeof(mavlink_scaled_pressure_t));
+            mavlink_msg_scaled_pressure_decode(&msg, &sp_msg);
+
+            uint32_t timestamp = sp_msg.time_boot_ms / 1000.0;
+            BodyFrameMessage pressure(timestamp, 0, 0, sp_msg.press_abs);  // unit is [hectopascal]
+            notify_message_listeners(MessageIDs::BAROMETER, &pressure);
+            break;
+        }
+        // http://mavlink.org/messages/common#DISTANCE_SENSOR
+        case MAVLINK_MSG_ID_DISTANCE_SENSOR:
+        {
+            mavlink_distance_sensor_t ds_msg;
+            memset(&ds_msg, 0, sizeof(mavlink_distance_sensor_t));
+            mavlink_msg_distance_sensor_decode(&msg, &ds_msg);
+
+            uint32_t timestamp = ds_msg.time_boot_ms / 1000.0;
+            float direction = 0;
+            // TODO: parse orientation
+            // orientation = msg.orientation
+            DistanceSensorMessage meas(timestamp,
+                float(ds_msg.min_distance) / 100,
+                float(ds_msg.max_distance) / 100, direction,
+                float(ds_msg.current_distance) / 100,
+                float(ds_msg.covariance) / 100);
+            notify_message_listeners(MessageIDs::DISTANCE_SENSOR, &meas);
+            break;
+        }
+        // http://mavlink.org/messages/common#ATTITUDE_QUATERNION
+        case MAVLINK_MSG_ID_ATTITUDE_QUATERNION:
+        {
+            mavlink_attitude_quaternion_t aq_msg;
+            memset(&aq_msg, 0, sizeof(mavlink_attitude_quaternion_t));
+            mavlink_msg_attitude_quaternion_decode(&msg, &aq_msg);
+
+            uint32_t timestamp = aq_msg.time_boot_ms / 1000.0;
+            // TODO: check if mask notifies us to ignore a field
+
+            FrameMessage fm(timestamp, aq_msg.q1, aq_msg.q2, aq_msg.q3, aq_msg.q4);
+            notify_message_listeners(MessageIDs::ATTITUDE, &fm);
+
+            BodyFrameMessage gyro(timestamp, aq_msg.rollspeed, aq_msg.pitchspeed, aq_msg.yawspeed);
+            notify_message_listeners(MessageIDs::RAW_GYROSCOPE, &gyro);
+            break;
+        }
+		case MAVLINK_MSG_ID_GPS_RAW_INT:
+        {
+            mavlink_gps_raw_int_t gri_msg;
+			memset(&gri_msg, 0, sizeof(mavlink_gps_raw_int_t));
+            mavlink_msg_gps_raw_int_decode(&msg, &gri_msg);
+            uint32_t timestamp = gri_msg.time_usec / 1000.0;
+            // parse out the gps position and trigger that callback
+            GlobalFrameMessage gps(timestamp, gri_msg.lat  / (float)1E7, gri_msg.lon / (float)1E7, gri_msg.alt  / 1000.0);
+            notify_message_listeners(MessageIDs::GLOBAL_POSITION, &gps);
+            break;
+        }
+        case MAVLINK_MSG_ID_GPS_INPUT:
+        {
+            mavlink_gps_input_t gpsInput;
+            memset(&gpsInput, 0, sizeof(mavlink_gps_input_t));
+            mavlink_msg_gps_input_decode(&msg, &gpsInput);
+
+            uint32_t timestamp = gpsInput.time_usec / 1000.0;
+            GPSSensorMessage gpsMsg(timestamp, float(gpsInput.lat) / 1e7, float(gpsInput.lon) / 1e7, float(gpsInput.alt) / 1000,
+                float(gpsInput.vn / 100), float(gpsInput.ve / 100), float(gpsInput.vd / 100));
+            notify_message_listeners(MessageIDs::GPS_INPUT_SENSOR, &gpsMsg);
+            break;
+        }
+        case MAVLINK_MSG_ID_COMMAND_ACK:
+            handleCommandAck(msg);
+            break;
+
+            // DEBUG
+        case MAVLINK_MSG_ID_STATUSTEXT:
+        {
+            mavlink_statustext_t st_msg;
+            memset(&st_msg, 0, sizeof(mavlink_statustext_t));
+            mavlink_msg_statustext_decode(&msg, &st_msg);
+            break;
+        }
+        case MAVLINK_MSG_ID_ATTITUDE_TARGET:
+        {
+            handleAttitudeTarget(msg);
+            break;
+        }
+        default:
+        {
+            //printf("Warning, did not handle message id %i\n", msg.msgid);
+            break;
+        }
     }
-    // http://mavlink.org/messages/common#LOCAL_POSITION_NED
-    else if (msg.msgid == MAVLINK_MSG_ID_LOCAL_POSITION_NED)
-    {
-        mavlink_local_position_ned_t lpn_msg;
-        memset(&lpn_msg, 0, sizeof(mavlink_local_position_ned_t));
-        mavlink_msg_local_position_ned_decode(&msg, &lpn_msg);
+}
 
-        uint32_t timestamp = lpn_msg.time_boot_ms / 1000.0;
-        // parse out the local positin and trigger that callback
-        LocalFrameMessage pos(timestamp, lpn_msg.x, lpn_msg.y, lpn_msg.z);
-        notify_message_listeners(MessageIDs::LOCAL_POSITION, &pos);
+void MavlinkConnection::handleAttitudeTarget(mavlink_message_t& message)
+{
+    mavlink_attitude_target_t attitudeTarget;
 
-        // parse out the velocity and trigger that callback
-        LocalFrameMessage vel(timestamp, lpn_msg.vx, lpn_msg.vy, lpn_msg.vz);
-        notify_message_listeners(MessageIDs::LOCAL_VELOCITY, &vel);
+    mavlink_msg_attitude_target_decode(&message, &attitudeTarget);
+
+    float roll, pitch, yaw;
+    mavlink_quaternion_to_euler(attitudeTarget.q, &roll, &pitch, &yaw);
+    //printf("AttitudeTarget:%f, %f, %f\n", roll, pitch, yaw);
+}
+
+void MavlinkConnection::handleCommandAck(mavlink_message_t& message)
+{
+    bool showError = true;
+    mavlink_command_ack_t ack;
+    mavlink_msg_command_ack_decode(&message, &ack);
+
+    if (ack.command == MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES && ack.result != MAV_RESULT_ACCEPTED) {
+        cout<< "Vehicle responded to MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES with error(%d). Setting no capabilities." << ack.result << endl;
     }
-    // http://mavlink.org/messages/common#HOME_POSITION
-    else if (msg.msgid == MAVLINK_MSG_ID_HOME_POSITION)
-    {
-        mavlink_home_position_t hp_msg;
-        mavlink_msg_home_position_decode(&msg, &hp_msg);
 
-        uint32_t timestamp = 0.0;
-        GlobalFrameMessage home(timestamp, float(hp_msg.latitude) / 1e7, float(hp_msg.longitude) / 1e7, float(hp_msg.altitude) / 1000);
-        notify_message_listeners(MessageIDs::GLOBAL_HOME, &home);
+    if (ack.command == MAV_CMD_REQUEST_PROTOCOL_VERSION) {
+        if (ack.result == MAV_RESULT_ACCEPTED) {
+            // The vehicle should be sending a PROTOCOL_VERSION message in a mavlink 2 packet. This may or may not make it through the pipe.
+            // So we wait for it to come and timeout if it doesn't.
+//            if (!_mavlinkProtocolRequestComplete) {
+//                QTimer::singleShot(1000, this, &Vehicle::_protocolVersionTimeOut);
+//            }
+        }
+        else {
+            cout << "Vehicle responded to MAV_CMD_REQUEST_PROTOCOL_VERSION with error(%d)." << ack.result << endl;
+        }
     }
-    // http://mavlink.org/messages/common/#SCALED_IMU
-    else if (msg.msgid == MAVLINK_MSG_ID_SCALED_IMU)
-    {
-        mavlink_scaled_imu_t si_msg;
-        memset(&si_msg, 0, sizeof(mavlink_scaled_imu_t));
-        mavlink_msg_scaled_imu_decode(&msg, &si_msg);
 
-        uint32_t timestamp = si_msg.time_boot_ms / 1000.0;
-        // break out the message into its respective messages for here
-        BodyFrameMessage accel(timestamp, si_msg.xacc / 1000.0, si_msg.yacc / 1000.0, si_msg.zacc / 1000.0);  // units -> [mg]
-        notify_message_listeners(MessageIDs::RAW_ACCELEROMETER, &accel);
-
-        BodyFrameMessage gyro(timestamp, si_msg.xgyro / 1000.0, si_msg.ygyro / 1000.0, si_msg.zgyro / 1000.0);  // units -> [millirad/sec]
-        notify_message_listeners(MessageIDs::RAW_GYROSCOPE, &gyro);
+    if (ack.command == MAV_CMD_DO_SET_ROI_LOCATION) {
+        if (ack.result == MAV_RESULT_ACCEPTED) {
+            cout << "MAV_CMD_DO_SET_ROI_LOCATION" << endl;
+        }
     }
-    else if (msg.msgid == MAVLINK_MSG_ID_RAW_IMU)
-    {
-        mavlink_raw_imu_t rimu_msg;
-        memset(&rimu_msg, 0, sizeof(mavlink_raw_imu_t));
-        mavlink_msg_raw_imu_decode(&msg, &rimu_msg);
 
-        uint32_t timestamp = rimu_msg.time_usec/ 1000.0;
-        RAWIMUSensorMessage rawMsg(timestamp, rimu_msg.xacc, rimu_msg.yacc, rimu_msg.zacc,
-                                   rimu_msg.xgyro, rimu_msg.ygyro, rimu_msg.zgyro,
-                                   rimu_msg.xmag, rimu_msg.ymag, rimu_msg.zmag);
-        notify_message_listeners(MessageIDs::RAW_IMU_SENSOR, &rawMsg);
+    if (ack.command == MAV_CMD_DO_SET_ROI_NONE) {
+        if (ack.result == MAV_RESULT_ACCEPTED) {
+            cout << "MAV_CMD_DO_SET_ROI_NONE" << endl;
+        }
     }
-    // http://mavlink.org/messages/common#SCALED_PRESSURE
-    else if (msg.msgid == MAVLINK_MSG_ID_SCALED_PRESSURE)
-    {
-        mavlink_scaled_pressure_t sp_msg;
-        memset(&sp_msg, 0, sizeof(mavlink_scaled_pressure_t));
-        mavlink_msg_scaled_pressure_decode(&msg, &sp_msg);
 
-        uint32_t timestamp = sp_msg.time_boot_ms / 1000.0;
-        BodyFrameMessage pressure(timestamp, 0, 0, sp_msg.press_abs);  // unit is [hectopascal]
-        notify_message_listeners(MessageIDs::BAROMETER, &pressure);
+#if !defined(NO_ARDUPILOT_DIALECT)
+    if (ack.command == MAV_CMD_FLASH_BOOTLOADER && ack.result == MAV_RESULT_ACCEPTED) {
+        cout << "Bootloader flash succeeded" << endl;
     }
-    // http://mavlink.org/messages/common#DISTANCE_SENSOR
-    else if (msg.msgid == MAVLINK_MSG_ID_DISTANCE_SENSOR)
-    {
-        mavlink_distance_sensor_t ds_msg;
-        memset(&ds_msg, 0, sizeof(mavlink_distance_sensor_t));
-        mavlink_msg_distance_sensor_decode(&msg, &ds_msg);
+#endif
 
-        uint32_t timestamp = ds_msg.time_boot_ms / 1000.0;
-        float direction = 0;
-        // TODO: parse orientation
-        // orientation = msg.orientation
-        DistanceSensorMessage meas(timestamp,
-                                        float(ds_msg.min_distance) / 100,
-                                        float(ds_msg.max_distance) / 100, direction,
-                                        float(ds_msg.current_distance) / 100,
-                                        float(ds_msg.covariance) / 100);
-        notify_message_listeners(MessageIDs::DISTANCE_SENSOR, &meas);
-    }
-    // http://mavlink.org/messages/common#ATTITUDE_QUATERNION
-    else if (msg.msgid == MAVLINK_MSG_ID_ATTITUDE_QUATERNION)
-    {
-        mavlink_attitude_quaternion_t aq_msg;
-        memset(&aq_msg, 0, sizeof(mavlink_attitude_quaternion_t));
-        mavlink_msg_attitude_quaternion_decode(&msg, &aq_msg);
-
-        uint32_t timestamp = aq_msg.time_boot_ms / 1000.0;
-        // TODO: check if mask notifies us to ignore a field
-
-        FrameMessage fm(timestamp, aq_msg.q1, aq_msg.q2, aq_msg.q3, aq_msg.q4);
-        notify_message_listeners(MessageIDs::ATTITUDE, &fm);
-
-        BodyFrameMessage gyro(timestamp, aq_msg.rollspeed, aq_msg.pitchspeed, aq_msg.yawspeed);
-        notify_message_listeners(MessageIDs::RAW_GYROSCOPE, &gyro);
-    }
-    else if (msg.msgid == MAVLINK_MSG_ID_GPS_INPUT)
-    {
-        mavlink_gps_input_t gpsInput;
-        memset(&gpsInput, 0, sizeof(mavlink_gps_input_t));
-        mavlink_msg_gps_input_decode(&msg, &gpsInput);
-
-        uint32_t timestamp = gpsInput.time_usec / 1000.0;
-        GPSSensorMessage gpsMsg(timestamp, float(gpsInput.lat) / 1e7, float(gpsInput.lon) / 1e7, float(gpsInput.alt) / 1000,
-                                float(gpsInput.vn / 100), float(gpsInput.ve / 100), float(gpsInput.vd / 100));
-        notify_message_listeners(MessageIDs::GPS_INPUT_SENSOR, &gpsMsg);
-    }
-    // DEBUG
-    else if (msg.msgid == MAVLINK_MSG_ID_STATUSTEXT)
-    {
-        mavlink_statustext_t st_msg;
-        memset(&st_msg, 0, sizeof(mavlink_statustext_t));
-        mavlink_msg_statustext_decode(&msg, &st_msg);
+    if (showError) {
+        switch (ack.result) {
+        case MAV_RESULT_TEMPORARILY_REJECTED:
+            cout << "%d command temporarily rejected" << ack.command << endl;
+            break;
+        case MAV_RESULT_DENIED:
+            cout << "%d command denied" << ack.command << endl;
+            break;
+        case MAV_RESULT_UNSUPPORTED:
+            cout << "%d command not supported" << ack.command << endl;
+            break;
+        case MAV_RESULT_FAILED:
+            cout << "%d command failed" << ack.command << endl;
+            break;
+        default:
+            // Do nothing
+            break;
+        }
     }
 }
 
@@ -284,17 +428,30 @@ void MavlinkConnection::command_loop()
      this needs to be sending commands at a rate of at lease 2Hz in order
      for PX4 to allow a switch into offboard control.
      */
+
+    if (!writing_status)
+    {
+        cout << "write thread already running" << endl;
+        return;
+    }
+
     mavlink_set_position_target_local_ned_t packet;
     memset(&packet, 0, sizeof(packet));
-    packet.type_mask = (uint16_t)(PositionMask::MASK_IGNORE_YAW_RATE | PositionMask::MASK_IGNORE_ACCELERATION | PositionMask::MASK_IGNORE_POSITION );
+    packet.type_mask = MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_VELOCITY & MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_YAW_RATE;
     packet.target_system = _target_system;
-    packet.target_component = _target_component;
+    packet.target_component = autopilot_id;
     packet.coordinate_frame = MAV_FRAME_LOCAL_NED;
+    packet.vx       = 0.0;
+    packet.vy       = 0.0;
+    packet.vz       = 0.0;
+    packet.yaw_rate = 0.0;
     
     mavlink_message_t high_rate_command;
     memset(&high_rate_command, 0, sizeof(mavlink_message_t));
     mavlink_msg_set_position_target_local_ned_encode(_target_system, _target_component, &high_rate_command, &packet);
-
+    send_message_immediately(high_rate_command);
+    writing_status = true;
+    
     time_t last_write_time = time(nullptr);
     while(_running)
     {
@@ -304,7 +461,7 @@ void MavlinkConnection::command_loop()
         memset(&msg, 0, sizeof(Message));
         
         msg_queue_mutex.lock();
-        while (!_out_msg_queue.empty())
+        while (_out_msg_queue.size() > 0)
         {
             memcpy(&msg, &_out_msg_queue.front(), sizeof(mavlink_message_t));
             _out_msg_queue.pop();
@@ -332,6 +489,7 @@ void MavlinkConnection::command_loop()
         // continually want to send the high rate command
         send_message_immediately(high_rate_command);
     }
+    writing_status = false;
 }
 
 bool MavlinkConnection::wait_for_message(mavlink_message_t &msg)
@@ -377,21 +535,21 @@ void MavlinkConnection::start()
     // start the main thread
     _running = true;
 
-    /* start the command loop
-     this is only needed when working with PX4 and we need to enforce
-     a certain rate of messages being sent
-    */
-    if (_using_px4)
-    {
-        _write_handle = new thread(&MavlinkConnection::command_loop, this);
-        _write_handle_daemon = true;
-//        _write_handle->join();
-    }
-
-    // start the dispatch loop, either threaded or not
+// start the dispatch loop, either threaded or not
     if (_threaded)
     {
         _read_handle = new thread(&MavlinkConnection::dispatch_loop, this);
+        cout << "CHECK FOR MESSAGES" << endl;
+    
+        while ( !_target_system )
+        {
+            if ( !_running )
+                return;
+            usleep(500000); // check at 2Hz
+        }
+    
+        cout << "Found" << endl;
+        
         _read_handle_daemon = true;
 //        _read_handle->join();
     }
@@ -400,20 +558,39 @@ void MavlinkConnection::start()
         _read_handle = nullptr;
         dispatch_loop();
     }
+    
+    /* start the command loop
+     this is only needed when working with PX4 and we need to enforce
+     a certain rate of messages being sent
+    */
+    if (_using_px4)
+    {
+        _write_handle = new thread(&MavlinkConnection::command_loop, this);
+        
+        // wait for it to be started
+        while ( ! writing_status )
+            usleep(2); // 10Hz
+        
+        _write_handle_daemon = true;
+//        _write_handle->join();
+    }
 }
 
 void MavlinkConnection::stop()
 {
     // stop the dispatch and command while loops
     _running = false;
-#ifdef WIN32
-    Sleep(2);
-#else
+    writing_status = false;
     sleep(2);
-#endif // WIN32
 
     // NOTE: no need to call join on the threads
     // as both threads are daemon threads
+
+    printf("Closing connection ...\r\n");
+    if (_master) {
+        delete _master;
+        _master = nullptr;
+    }
 }
 
 void MavlinkConnection::send_message(mavlink_message_t msg)
@@ -483,8 +660,8 @@ void MavlinkConnection::send_long_command(uint16_t command_type, float param1, f
     packet.param7 = param7;
     packet.command = command_type;
     packet.target_system = _target_system;
-    packet.target_component = _target_component;
-    packet.confirmation = 0; //may want this as an input.... used for repeat messages
+    packet.target_component = autopilot_id;
+    packet.confirmation = true; //may want this as an input.... used for repeat messages
     
     mavlink_message_t msg;
     memset(&msg, 0, sizeof(mavlink_message_t));
@@ -494,31 +671,25 @@ void MavlinkConnection::send_long_command(uint16_t command_type, float param1, f
 
 void MavlinkConnection::arm()
 {
-    send_long_command(MAV_CMD_COMPONENT_ARM_DISARM, 1);
+    send_long_command(MAV_CMD_COMPONENT_ARM_DISARM, 1, 21196);
 }
 
 void MavlinkConnection::disarm()
 {
-    send_long_command(MAV_CMD_COMPONENT_ARM_DISARM, 0);
+    send_long_command(MAV_CMD_COMPONENT_ARM_DISARM, 0, 21196);
 }
 
 void MavlinkConnection::take_control()
 {
-    float mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-    float custom_mode = (float)MainMode::PX4_MODE_OFFBOARD;
-    float custom_sub_mode = 0;
-    send_long_command(MAV_CMD_DO_SET_MODE, mode, custom_mode, custom_sub_mode);
+    send_long_command(MAV_CMD_DO_SET_MODE, MAV_MODE_FLAG_CUSTOM_MODE_ENABLED, (float)MainMode::PX4_MODE_OFFBOARD, 0);
 }
 
 void MavlinkConnection::release_control()
 {
-    float mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-    float custom_mode = (float)MainMode::PX4_MODE_MANUAL;
-    float custom_sub_mode = 0;
-    send_long_command(MAV_CMD_DO_SET_MODE, mode, custom_mode, custom_sub_mode);
+    send_long_command(MAV_CMD_DO_SET_MODE, MAV_MODE_FLAG_CUSTOM_MODE_ENABLED, (float)MainMode::PX4_MODE_MANUAL, 0);
 }
 
-void MavlinkConnection::cmd_attitude_target_send(time_t time_boot_ms, uint8_t target_system, uint8_t target_component, uint16_t type_mask, float q0, float q1, float q2, float q3, float body_roll_rate, float body_pitch_rate, float body_yaw_rate, float thrust)
+void MavlinkConnection::cmd_attitude_target_send(time_t time_boot_ms, uint8_t target_system, uint8_t target_component, uint16_t type_mask, float roll, float pitch, float yaw, float body_roll_rate, float body_pitch_rate, float body_yaw_rate, float thrust)
 {
     mavlink_set_attitude_target_t packet;
     memset(&packet, 0, sizeof(packet));
@@ -528,14 +699,16 @@ void MavlinkConnection::cmd_attitude_target_send(time_t time_boot_ms, uint8_t ta
     packet.body_yaw_rate = body_yaw_rate;
     packet.thrust = thrust;
     packet.target_system = target_system;
-    packet.target_component = target_component;
+    packet.target_component = autopilot_id;
     packet.type_mask = type_mask;
     
-    memset(packet.q, 0, sizeof(float) * 4);
-    packet.q[0] = q0;
-    packet.q[1] = q1;
-    packet.q[2] = q2;
-    packet.q[3] = q3;
+    // convert the attitude to a quaternion
+    FrameMessage frame_msg(time_boot_ms, roll, pitch, yaw);
+    memset(packet.q, 0, sizeof(double) * 4);
+    packet.q[0] = frame_msg.q0();
+    packet.q[1] = frame_msg.q1();
+    packet.q[2] = frame_msg.q2();
+    packet.q[3] = frame_msg.q3();
     
     mavlink_message_t msg;
     memset(&msg, 0, sizeof(mavlink_message_t));
@@ -545,21 +718,19 @@ void MavlinkConnection::cmd_attitude_target_send(time_t time_boot_ms, uint8_t ta
 
 void MavlinkConnection::cmd_attitude(float roll, float pitch, float yaw, float thrust)
 {
-    // convert the attitude to a quaternion
-    FrameMessage frame_msg(0, roll, pitch, yaw);
-    cmd_attitude_target_send(0, _target_system, _target_component, (uint16_t)AttitudeMask::MASK_IGNORE_RATES, frame_msg.q0(), frame_msg.q1(), frame_msg.q2(), frame_msg.q3(), 0, 0, 0, thrust);
+    cmd_attitude_target_send(0, _target_system, _target_component, (uint16_t)AttitudeMask::MASK_IGNORE_RATES, roll, pitch, yaw, 0, 0, 0, thrust);
 }
 
 void MavlinkConnection::cmd_attitude_rate(float roll_rate, float pitch_rate, float yaw_rate, float thrust)
 {
-    cmd_attitude_target_send(0, _target_system, _target_component, (uint16_t)AttitudeMask::MASK_IGNORE_ATTITUDE, 0.0, 0.0, 0.0, 0.0, roll_rate, pitch_rate, yaw_rate, thrust);
+    cmd_attitude_target_send(0, _target_system, _target_component, (uint16_t)AttitudeMask::MASK_IGNORE_ATTITUDE, 0.0, 0.0, 0.0, roll_rate, pitch_rate, yaw_rate, thrust);
 }
 
 void MavlinkConnection::cmd_moment(float roll_moment, float pitch_moment, float yaw_moment, float thrust, time_t t)
 {
     //TODO: Give this it's own mask
     float mask = 0b10000000;
-    cmd_attitude_target_send(t * 1000, _target_system, _target_component, mask, 0.0, 0.0, 0.0, 0.0, roll_moment, pitch_moment, yaw_moment, thrust);
+    cmd_attitude_target_send(t * 1000, _target_system, _target_component, mask, 0.0, 0.0, 0.0, roll_moment, pitch_moment, yaw_moment, thrust);
 }
 
 void MavlinkConnection::cmd_position_target_local_ned_send(time_t time_boot_ms, uint8_t target_system, uint8_t target_component, uint8_t coordinate_frame, uint16_t type_mask, float x, float y, float z, float vx, float vy, float vz, float afx, float afy, float afz, float yaw, float yaw_rate)
@@ -580,7 +751,7 @@ void MavlinkConnection::cmd_position_target_local_ned_send(time_t time_boot_ms, 
     packet.yaw_rate = yaw_rate;
     packet.type_mask = type_mask;
     packet.target_system = target_system;
-    packet.target_component = target_component;
+    packet.target_component = autopilot_id;
     packet.coordinate_frame = coordinate_frame;
 
     mavlink_message_t msg;
@@ -599,7 +770,7 @@ void MavlinkConnection::cmd_position(float n, float e, float d, float heading)
 {
     // when using the simualtor, d is actually interpreted as altitude
     // therefore need to do a sign change on d
-    if (!_using_px4)
+    if (_using_px4)
     {
         d = -1.0 * d;
     }
@@ -613,7 +784,7 @@ void MavlinkConnection::cmd_controls(float *controls, time_t t)
     packet.time_usec = (t * 1000000);
     packet.group_mlx = 1;
     packet.target_system = _target_system;
-    packet.target_component = _target_component;
+    packet.target_component = autopilot_id;
     
     // ensure controls_out is of length 8 even if controls isn't
     memset(packet.controls, 0, sizeof(float) * 8);
@@ -665,18 +836,17 @@ void MavlinkConnection::local_acceleration_target(float an, float ae, float ad, 
 
 void MavlinkConnection::attitude_target(float roll, float pitch, float yaw, time_t t)
 {
-    FrameMessage frame_msg(0, roll, pitch, yaw);
-    cmd_attitude_target_send(t, _target_system, _target_component, 0b01111111, frame_msg.q0(), frame_msg.q1(), frame_msg.q2(), frame_msg.q3(), 0, 0, 0, 0);
+    cmd_attitude_target_send(t, _target_system, _target_component, 0b01111111, roll, pitch, yaw, 0, 0, 0, 0);
 }
 
 void MavlinkConnection::body_rate_target(float p, float q, float r, time_t t)
 {
-    cmd_attitude_target_send(t, _target_system, _target_component, 0b11111000, 0, 0, 0, 0, p, q, r, 0);
+    cmd_attitude_target_send(t, _target_system, _target_component, 0b11111000, 0, 0, 0, p, q, r, 0);
 }
 
 void MavlinkConnection::set_sub_mode(int sub_mode)
 {
-    send_long_command(MAV_CMD_DO_SET_HOME, MAV_MODE_FLAG_CUSTOM_MODE_ENABLED, (float)MainMode::PX4_MODE_OFFBOARD, sub_mode);
+    send_long_command(MAV_CMD_DO_SET_MODE, MAV_MODE_FLAG_CUSTOM_MODE_ENABLED, (float)MainMode::PX4_MODE_OFFBOARD, sub_mode);
 }
 
 void MavlinkConnection::set_notify_callback(notify_message_callback fn)
@@ -687,4 +857,26 @@ void MavlinkConnection::set_notify_callback(notify_message_callback fn)
 void MavlinkConnection::notify_message_listeners(MessageIDs name, void *msg)
 {
     (_drone->*_notify_message_callback)(name, msg);
+}
+
+// ------------------------------------------------------------------------------
+//   Toggle Off-Board Mode
+// ------------------------------------------------------------------------------
+void MavlinkConnection::cmd_offboard_control(bool flag)
+{
+    // Prepare command for off-board mode
+    mavlink_command_long_t com = { 0 };
+    com.target_system    = _target_system;
+    com.target_component = autopilot_id;
+    com.command          = MAV_CMD_NAV_GUIDED_ENABLE;
+    com.confirmation     = true;
+    com.param1           = (float) flag; // flag >0.5 => start, <0.5 => stop
+
+    // Encode
+    mavlink_message_t message;
+//    mavlink_msg_command_long_encode_chan(_target_system, _target_component, _target_channel, &message, &com);
+    mavlink_msg_command_long_encode(_target_system, _target_component, &message, &com);
+
+    // Send the message
+    send_message(message);
 }

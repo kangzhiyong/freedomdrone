@@ -12,6 +12,53 @@ using namespace std;
 #include "MessageIDs.hpp"
 #include "MessageTypes.hpp"
 
+/**
+ * Defines for mavlink_set_position_target_local_ned_t.type_mask
+ *
+ * Bitmask to indicate which dimensions should be ignored by the vehicle
+ *
+ * a value of 0b0000000000000000 or 0b0000001000000000 indicates that none of
+ * the setpoint dimensions should be ignored.
+ *
+ * If bit 10 is set the floats afx afy afz should be interpreted as force
+ * instead of acceleration.
+ *
+ * Mapping:
+ * bit 1: x,
+ * bit 2: y,
+ * bit 3: z,
+ * bit 4: vx,
+ * bit 5: vy,
+ * bit 6: vz,
+ * bit 7: ax,
+ * bit 8: ay,
+ * bit 9: az,
+ * bit 10: is force setpoint,
+ * bit 11: yaw,
+ * bit 12: yaw rate
+ * remaining bits unused
+ *
+ * Combine bitmasks with bitwise &
+ *
+ * Example for position and yaw angle:
+ * uint16_t type_mask =
+ *     MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_POSITION &
+ *     MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_YAW_ANGLE;
+ */
+
+ // bit number  876543210987654321
+#define MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_POSITION     0b0000110111111000
+#define MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_VELOCITY     0b0000110111000111
+#define MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_ACCELERATION 0b0000110000111111
+#define MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_FORCE        0b0000111000111111
+#define MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_YAW_ANGLE    0b0000100111111111
+#define MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_YAW_RATE     0b0000010111111111
+
+#define MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_TAKEOFF      0x1000
+#define MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_LAND         0x2000
+#define MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_LOITER       0x3000
+#define MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_IDLE         0x4000
+
 class Drone;
 /*
 Implementation of the required communication to a drone executed
@@ -55,7 +102,7 @@ public:
     void disarm();
     void take_control();
     void release_control();
-    void cmd_attitude_target_send(time_t time_boot_ms, uint8_t target_system, uint8_t target_component, uint16_t type_mask, float q0, float q1, float q2, float q3, float body_roll_rate, float body_pitch_rate, float body_yaw_rate, float thrust);
+    void cmd_attitude_target_send(time_t time_boot_ms, uint8_t target_system, uint8_t target_component, uint16_t type_mask, float roll, float pitch, float yaw, float body_roll_rate, float body_pitch_rate, float body_yaw_rate, float thrust);
     void cmd_attitude(float roll, float pitch, float yaw, float thrust);
     void cmd_attitude_rate(float roll_rate, float pitch_rate, float yaw_rate, float thrust);
     void cmd_moment(float roll_moment, float pitch_moment, float yaw_moment, float thrust, time_t t=0.0);
@@ -81,6 +128,10 @@ public:
     {
         return _master;
     }
+    void cmd_offboard_control(bool flag);
+    void handleCommandAck(mavlink_message_t& message);
+    int reserveMavlinkChannel(void);
+    void handleAttitudeTarget(mavlink_message_t& message);
 private:
     MavSocket *_master;
     queue<mavlink_message_t> _out_msg_queue;
@@ -90,12 +141,15 @@ private:
     bool _write_handle_daemon{false};
     // management
     bool _running{false};
-    uint8_t _target_system{1};
-    uint8_t _target_component{1};
-    
+    uint8_t _target_system{0};
+    uint8_t _target_component{0};
+    uint8_t _target_channel{ 1 };
+    int autopilot_id{ 0 };
+
     // PX4 management
     bool _using_px4{false};
     float _send_rate{5};
+    bool writing_status{ false };
 
     // seconds to wait of no messages before termination
     time_t _timeout{5};
@@ -103,4 +157,7 @@ private:
     bool _threaded{false};
     Drone *_drone;
     notify_message_callback _notify_message_callback;
+    bool            _globalPositionIntMessageAvailable{false};
+    bool            _gpsRawIntMessageAvailable{false};
+    uint32_t _mavlinkChannelsUsedBitMask;
 };

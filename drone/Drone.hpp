@@ -174,6 +174,7 @@ public:
     void set_connection(MavlinkConnection* conn);
     void _update_from_gps_sensor(void* msg);
     void _update_from_imu_sensor(void* msg);
+    void cmd_offboard_control(bool flag);
 
     V3F _posMeas, _velMeas;
     V3F _accelMeas, _gyroMeas;

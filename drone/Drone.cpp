@@ -612,6 +612,9 @@ void Drone::set_home_position( float longitude, float latitude, float altitude)
     try {
         if (m_conn != nullptr) {
             m_conn->set_home_position(latitude, longitude, altitude);
+            _home_longitude = longitude;
+            _home_latitude = latitude;
+            _home_altitude = altitude;
         }
     } catch (...) {
         perror("set_home_position failed: ");
@@ -653,6 +656,12 @@ void Drone::stop()
     }
 }
 
+void Drone::cmd_offboard_control(bool flag)
+{
+    if (m_conn != nullptr) {
+        m_conn->cmd_offboard_control(flag);
+    }
+}
 void Drone::_update_from_gps_sensor(void* msg)
 {
     GPSSensorMessage gpsMsg = *(GPSSensorMessage*)msg;
