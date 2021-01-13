@@ -15,7 +15,7 @@ using namespace mavlink;
 #include "MavUtils.hpp"
 #include "DroneUtils.hpp"
 
-MavlinkConnection::MavlinkConnection(std::string sock_type, std::string dest_ip, unsigned short dest_port, bool threaded, bool PX4, float send_rate, time_t timeout)
+MavlinkConnection::MavlinkConnection(std::string sock_type, std::string remote_ip, unsigned short remote_port, unsigned short local_port, bool threaded, bool PX4, float send_rate, time_t timeout)
 {
     /*
     Constructor for Mavlink based drone connection.
@@ -36,11 +36,11 @@ MavlinkConnection::MavlinkConnection(std::string sock_type, std::string dest_ip,
     // create the connection
     if (sock_type == "TCP")
     {
-        _master = new MavTCP(dest_ip, dest_port);
+        _master = new MavTCP(remote_ip, remote_port, local_port);
     }
     else
     {
-        _master = new MavUDP(dest_ip, dest_port);
+        _master = new MavUDP(remote_ip, remote_port, local_port);
     }
 
     int mavlinkChannel = reserveMavlinkChannel();
@@ -142,27 +142,34 @@ void MavlinkConnection::dispatch_loop()
  */
 void MavlinkConnection::dispatch_message(mavlink_message_t msg)
 {
-	_target_system = msg.sysid;
-	autopilot_id = msg.compid;
+	//_target_system = msg.sysid;
+	//autopilot_id = msg.compid;
+    //https://mavlink.io/en/messages/common.html#messages
     switch (msg.msgid) {
-        // http://mavlink.org/messages/common/#GLOBAL_POSITION_INT
         case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
         {
             mavlink_global_position_int_t gpi_msg;
             memset(&gpi_msg, 0, sizeof(mavlink_global_position_int_t));
             mavlink_msg_global_position_int_decode(&msg, &gpi_msg);
 
+            // ArduPilot sends bogus GLOBAL_POSITION_INT messages with lat/lat 0/0 even when it has no gps signal
+            // Apparently, this is in order to transport relative altitude information.
+            if (gpi_msg.lat == 0 && gpi_msg.lon == 0) {
+                return;
+            }
+
+            _globalPositionIntMessageAvailable = true;
+            
             uint32_t timestamp = gpi_msg.time_boot_ms / 1000.0;
             // parse out the gps position and trigger that callback
             GlobalFrameMessage gps(timestamp, float(gpi_msg.lat) / 1e7, float(gpi_msg.lon) / 1e7, float(gpi_msg.alt) / 1000);
             notify_message_listeners(MessageIDs::GLOBAL_POSITION, &gps);
-
+            
             // parse out the velocity and trigger that callback
             LocalFrameMessage vel(timestamp, float(gpi_msg.vx) / 100, float(gpi_msg.vy) / 100, float(gpi_msg.vz) / 100);
             notify_message_listeners(MessageIDs::LOCAL_VELOCITY, &vel);
             break;
         }
-        // http://mavlink.org/messages/common/#HEARTBEAT
         case MAVLINK_MSG_ID_HEARTBEAT:
         {
             mavlink_heartbeat_t hrt_msg;
@@ -187,7 +194,6 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
             notify_message_listeners(MessageIDs::STATE, &state);
             break;
         }
-        // http://mavlink.org/messages/common#LOCAL_POSITION_NED
         case MAVLINK_MSG_ID_LOCAL_POSITION_NED:
         {
             mavlink_local_position_ned_t lpn_msg;
@@ -204,7 +210,6 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
             notify_message_listeners(MessageIDs::LOCAL_VELOCITY, &vel);
             break;
         }
-        // http://mavlink.org/messages/common#HOME_POSITION
         case MAVLINK_MSG_ID_HOME_POSITION:
         {
             mavlink_home_position_t hp_msg;
@@ -215,7 +220,6 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
             notify_message_listeners(MessageIDs::GLOBAL_HOME, &home);
             break;
         }
-        // http://mavlink.org/messages/common/#SCALED_IMU
         case MAVLINK_MSG_ID_SCALED_IMU:
         {
             mavlink_scaled_imu_t si_msg;
@@ -244,7 +248,6 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
             notify_message_listeners(MessageIDs::RAW_IMU_SENSOR, &rawMsg);
             break;
         }
-        // http://mavlink.org/messages/common#SCALED_PRESSURE
         case MAVLINK_MSG_ID_SCALED_PRESSURE:
         {
             mavlink_scaled_pressure_t sp_msg;
@@ -256,7 +259,6 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
             notify_message_listeners(MessageIDs::BAROMETER, &pressure);
             break;
         }
-        // http://mavlink.org/messages/common#DISTANCE_SENSOR
         case MAVLINK_MSG_ID_DISTANCE_SENSOR:
         {
             mavlink_distance_sensor_t ds_msg;
@@ -275,9 +277,10 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
             notify_message_listeners(MessageIDs::DISTANCE_SENSOR, &meas);
             break;
         }
-        // http://mavlink.org/messages/common#ATTITUDE_QUATERNION
         case MAVLINK_MSG_ID_ATTITUDE_QUATERNION:
         {
+            _receivingAttitudeQuaternion = true;
+
             mavlink_attitude_quaternion_t aq_msg;
             memset(&aq_msg, 0, sizeof(mavlink_attitude_quaternion_t));
             mavlink_msg_attitude_quaternion_decode(&msg, &aq_msg);
@@ -301,6 +304,7 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
             // parse out the gps position and trigger that callback
             GlobalFrameMessage gps(timestamp, gri_msg.lat  / (float)1E7, gri_msg.lon / (float)1E7, gri_msg.alt  / 1000.0);
             notify_message_listeners(MessageIDs::GLOBAL_POSITION, &gps);
+            _gpsRawIntMessageAvailable = true;
             break;
         }
         case MAVLINK_MSG_ID_GPS_INPUT:
@@ -332,6 +336,43 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
             handleAttitudeTarget(msg);
             break;
         }
+        case MAVLINK_MSG_ID_ATTITUDE:
+        {
+            if (_receivingAttitudeQuaternion) {
+                return;
+            }
+
+            mavlink_attitude_t attitude;
+            mavlink_msg_attitude_decode(&msg, &attitude);
+
+            cout << "Attitude(" << attitude.roll << "," << attitude.pitch << ", " << attitude.yaw << ")" << endl;
+            break;
+        }
+        //Metrics typically displayed on a HUD for fixed wing aircraft.
+        case MAVLINK_MSG_ID_VFR_HUD:
+        {
+            mavlink_vfr_hud_t vfrHud;
+            mavlink_msg_vfr_hud_decode(&msg, &vfrHud);
+            /*cout << "airspeed: " << vfrHud.airspeed << endl;
+            cout << "groundSpeedFact: " << vfrHud.groundspeed << endl;
+            cout << "climbRateFact: " << vfrHud.climb << endl;
+            cout << "throttlePctFact: " << vfrHud.throttle << endl;*/
+            break;
+        }
+        case MAVLINK_MSG_ID_ALTITUDE:
+        {
+            mavlink_altitude_t altitude;
+            mavlink_msg_altitude_decode(&msg, &altitude);
+
+            // If data from GPS is available it takes precedence over ALTITUDE message
+            if (!_globalPositionIntMessageAvailable) {
+                cout << "altitude relative: " << altitude.altitude_relative << endl;
+                if (!_gpsRawIntMessageAvailable) {
+                    cout << "altitude_amsl: " << altitude.altitude_amsl << endl;
+                }
+            }
+            break;
+        }
         default:
         {
             //printf("Warning, did not handle message id %i\n", msg.msgid);
@@ -358,7 +399,7 @@ void MavlinkConnection::handleCommandAck(mavlink_message_t& message)
     mavlink_msg_command_ack_decode(&message, &ack);
 
     if (ack.command == MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES && ack.result != MAV_RESULT_ACCEPTED) {
-        cout<< "Vehicle responded to MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES with error(%d). Setting no capabilities." << ack.result << endl;
+        cout<< "Vehicle responded to MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES with error(" << ack.result << "). Setting no capabilities." << endl;
     }
 
     if (ack.command == MAV_CMD_REQUEST_PROTOCOL_VERSION) {
@@ -370,7 +411,7 @@ void MavlinkConnection::handleCommandAck(mavlink_message_t& message)
 //            }
         }
         else {
-            cout << "Vehicle responded to MAV_CMD_REQUEST_PROTOCOL_VERSION with error(%d)." << ack.result << endl;
+            cout << "Vehicle responded to MAV_CMD_REQUEST_PROTOCOL_VERSION with error(" << ack.result <<  ")." << endl;
         }
     }
 
@@ -395,19 +436,20 @@ void MavlinkConnection::handleCommandAck(mavlink_message_t& message)
     if (showError) {
         switch (ack.result) {
         case MAV_RESULT_TEMPORARILY_REJECTED:
-            cout << "%d command temporarily rejected" << ack.command << endl;
+            cout << ack.command << " command temporarily rejected" << endl;
             break;
         case MAV_RESULT_DENIED:
-            cout << "%d command denied" << ack.command << endl;
+            cout << ack.command << " command denied" << endl;
             break;
         case MAV_RESULT_UNSUPPORTED:
-            cout << "%d command not supported" << ack.command << endl;
+            cout << ack.command << " command not supported" << endl;
             break;
         case MAV_RESULT_FAILED:
-            cout << "%d command failed" << ack.command << endl;
+            cout << ack.command << " command failed" << endl;
             break;
         default:
             // Do nothing
+            cout << ack.command << ":" << ack.result << endl;
             break;
         }
     }
@@ -429,7 +471,7 @@ void MavlinkConnection::command_loop()
      for PX4 to allow a switch into offboard control.
      */
 
-    if (!writing_status)
+    if (writing_status)
     {
         cout << "write thread already running" << endl;
         return;
@@ -515,7 +557,7 @@ bool MavlinkConnection::wait_for_message(mavlink_message_t &msg)
             memset(&packet, 0, sizeof(packet));
             packet.custom_mode = 0;
             packet.type = MAV_TYPE_GCS;
-            packet.autopilot = MAV_AUTOPILOT_INVALID;
+            packet.autopilot = MAV_AUTOPILOT_GENERIC;
             packet.base_mode = 0;
             packet.system_status = MAV_STATE_ACTIVE;
             packet.mavlink_version = 3;
@@ -535,7 +577,22 @@ void MavlinkConnection::start()
     // start the main thread
     _running = true;
 
-// start the dispatch loop, either threaded or not
+    /* start the command loop
+    this is only needed when working with PX4 and we need to enforce
+    a certain rate of messages being sent
+   */
+    if (_using_px4)
+    {
+        _write_handle = new thread(&MavlinkConnection::command_loop, this);
+
+        // wait for it to be started
+        while (!writing_status)
+            usleep(2); // 10Hz
+
+        _write_handle_daemon = true;
+    }
+
+    // start the dispatch loop, either threaded or not
     if (_threaded)
     {
         _read_handle = new thread(&MavlinkConnection::dispatch_loop, this);
@@ -551,28 +608,20 @@ void MavlinkConnection::start()
         cout << "Found" << endl;
         
         _read_handle_daemon = true;
-//        _read_handle->join();
     }
     else
     {
         _read_handle = nullptr;
         dispatch_loop();
     }
-    
-    /* start the command loop
-     this is only needed when working with PX4 and we need to enforce
-     a certain rate of messages being sent
-    */
-    if (_using_px4)
+    if (_write_handle_daemon)
     {
-        _write_handle = new thread(&MavlinkConnection::command_loop, this);
-        
-        // wait for it to be started
-        while ( ! writing_status )
-            usleep(2); // 10Hz
-        
-        _write_handle_daemon = true;
-//        _write_handle->join();
+        _write_handle->join();
+    }
+    
+    if (_read_handle_daemon)
+    {
+        _read_handle->join();
     }
 }
 
@@ -770,10 +819,10 @@ void MavlinkConnection::cmd_position(float n, float e, float d, float heading)
 {
     // when using the simualtor, d is actually interpreted as altitude
     // therefore need to do a sign change on d
-    if (_using_px4)
+ /*   if (_using_px4)
     {
         d = -1.0 * d;
-    }
+    }*/
     cmd_position_target_local_ned_send(0, _target_system, _target_component, MAV_FRAME_LOCAL_NED, (uint16_t)(PositionMask::MASK_IGNORE_YAW_RATE | PositionMask::MASK_IGNORE_ACCELERATION | PositionMask::MASK_IGNORE_VELOCITY), n, e, d, 0, 0, 0, 0, 0, 0, heading, 0);
 }
     
@@ -803,7 +852,8 @@ void MavlinkConnection::takeoff(float n, float e, float d)
      since connection doesn't keep track of this info, have drone send it
      abstract away that part in the drone class
      */
-    cmd_position_target_local_ned_send(0, _target_system, _target_component, MAV_FRAME_LOCAL_NED, static_cast<uint16_t>(PositionMask::MASK_IS_LAND | PositionMask::MASK_IGNORE_YAW_RATE | PositionMask::MASK_IGNORE_YAW | PositionMask::MASK_IGNORE_ACCELERATION | PositionMask::MASK_IGNORE_VELOCITY), n, e, d, 0, 0, 0, 0, 0, 0, 0, 0);
+    send_long_command(MAV_CMD_NAV_TAKEOFF, -1, 0, 0, NAN, NAN, NAN, d);
+    //cmd_position_target_local_ned_send(0, _target_system, _target_component, MAV_FRAME_LOCAL_NED, static_cast<uint16_t>(PositionMask::MASK_IS_LAND | PositionMask::MASK_IGNORE_YAW_RATE | PositionMask::MASK_IGNORE_YAW | PositionMask::MASK_IGNORE_ACCELERATION | PositionMask::MASK_IGNORE_VELOCITY), n, e, d, 0, 0, 0, 0, 0, 0, 0, 0);
 }
 
 void MavlinkConnection::land(float n, float e)
@@ -871,12 +921,12 @@ void MavlinkConnection::cmd_offboard_control(bool flag)
     com.command          = MAV_CMD_NAV_GUIDED_ENABLE;
     com.confirmation     = true;
     com.param1           = (float) flag; // flag >0.5 => start, <0.5 => stop
-
+    
     // Encode
     mavlink_message_t message;
 //    mavlink_msg_command_long_encode_chan(_target_system, _target_component, _target_channel, &message, &com);
     mavlink_msg_command_long_encode(_target_system, _target_component, &message, &com);
 
     // Send the message
-    send_message(message);
+    send_message_immediately(message);
 }

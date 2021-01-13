@@ -128,10 +128,10 @@ bool MavSocket::recv_match(void* msg, bool blocking, int timeout)
     return false;
 }
 
-MavUDP::MavUDP(std::string dest_ip, unsigned short dest_port, bool input, bool broadcast, int source_system, int source_component, bool use_native): MavSocket(SOCK_DGRAM, IPPROTO_UDP){
+MavUDP::MavUDP(std::string remote_ip, unsigned short remote_port, unsigned short local_port, bool input, bool broadcast, int source_system, int source_component, bool use_native): MavSocket(SOCK_DGRAM, IPPROTO_UDP){
     int val = 1;
-    destination_addr = dest_ip;
-    destination_port = dest_port;
+    destination_addr = remote_ip;
+    destination_port = remote_port;
     setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, (char*)&val, sizeof(val));
     struct ip_mreq mreq;
     mreq.imr_multiaddr.s_addr = inet_addr("224.0.0.1");
@@ -145,7 +145,7 @@ MavUDP::MavUDP(std::string dest_ip, unsigned short dest_port, bool input, bool b
     memset(&addr, 0, sizeof(addr));  // Zero out address structure
     addr.sin_family = PF_INET;       // Internet address
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    addr.sin_port = htons(LOCAL_PORT);     // Assign port in network byte order
+    addr.sin_port = htons(local_port);     // Assign port in network byte order
 
     if (::bind(_socket, (sockaddr *) &addr, sizeof(sockaddr_in)) < 0)
     {
@@ -158,6 +158,7 @@ MavUDP::MavUDP(std::string dest_ip, unsigned short dest_port, bool input, bool b
     resolved_destination_addr = "";
     resolved_destination_port = 0;
     _connected = true;
+    cout << "bind success" << endl;
 }
 
 int MavUDP::recv(void *buffer, int bufferLen)
@@ -174,6 +175,7 @@ int MavUDP::recv(void *buffer, int bufferLen)
     }
 //    destination_addr = inet_ntoa(clntAddr.sin_addr);
 //    destination_port = ntohs(clntAddr.sin_port);
+    //cout << "recv from : " << inet_ntoa(clntAddr.sin_addr) << ":" << ntohs(clntAddr.sin_port) << endl;
     return (int)rtn;
 }
 
@@ -211,13 +213,13 @@ void MavUDP::write(const void *buffer, int bufferLen)
     }
 }
 
-MavTCP::MavTCP(std::string dest_ip, unsigned short  dest_port, bool input, bool broadcast, int source_system, int source_component, bool use_native): MavSocket(SOCK_STREAM, IPPROTO_TCP)
+MavTCP::MavTCP(std::string remote_ip, unsigned short remote_port, unsigned short local_port, bool input, bool broadcast, int source_system, int source_component, bool use_native): MavSocket(SOCK_STREAM, IPPROTO_TCP)
 {
     int val = 1;
     setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, (char*)&val, sizeof(val));
 
     sockaddr_in destAddr;
-    fillAddr(dest_ip, dest_port, destAddr);
+    fillAddr(remote_ip, remote_port, destAddr);
 
     // Try to connect to the given port
     if (::connect(_socket, (sockaddr*)&destAddr, sizeof(destAddr)) < 0) {

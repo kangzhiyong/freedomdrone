@@ -64,6 +64,7 @@ V3F NonlinearController::trajectory_control(vector<V3F> position_trajectory, vec
     }
     position_cmd = (position1 - position0) * (current_time - time0) / (time1 - time0) + position0;
     velocity_cmd = (position1 - position0) / (time1 - time0);
+    return position_cmd;
 }
 
 V3F NonlinearController::lateral_position_control(V3F local_position_cmd, V3F local_velocity_cmd, V3F local_position, V3F local_velocity, V3F acceleration_ff)

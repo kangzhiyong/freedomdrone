@@ -30,7 +30,10 @@ static bool initialized = false;
 #include "mavlink/common/mavlink.h"
 
 #define MAX_PACKET_SIZE 65467 // UDP protocol max message size
-#define LOCAL_PORT  14550
+#define LOCAL_PORT_NORMAL  14550
+#define LOCAL_PORT_ONBOARD 14540
+#define REMOTE_PORT_NORMAL 14570
+#define REMOTE_PORT_ONBOARD 14580
 #define DEST_PORT 14555
 #define DEST_IP "192.168.4.1"
 
@@ -52,7 +55,7 @@ class MavUDP: public MavSocket
 {
     //a UDP mavlink socket
 public:
-    MavUDP(std::string dest_ip, unsigned short dest_port, bool input=true, bool broadcast=false, int source_system=255, int source_component=0, bool use_native=true);
+    MavUDP(std::string remote_ip, unsigned short remote_port, unsigned short local_port, bool input=true, bool broadcast=false, int source_system=255, int source_component=0, bool use_native=true);
     int recv(void *buffer, int bufferLen);
     void write(const void *buffer, int bufferLen);
     bool connected()
@@ -75,7 +78,7 @@ class MavTCP: public MavSocket
 {
     //a TCP mavlink socket
 public:
-    MavTCP(std::string dest_ip, unsigned short dest_port, bool input = true, bool broadcast = false, int source_system = 255, int source_component = 0, bool use_native = true);
+    MavTCP(std::string remote_ip, unsigned short remote_port, unsigned short local_port, bool input = true, bool broadcast = false, int source_system = 255, int source_component = 0, bool use_native = true);
     ~MavTCP();
     int recv(void* buffer, int bufferLen);
     void write(const void* buffer, int bufferLen);

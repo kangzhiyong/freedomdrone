@@ -7,13 +7,12 @@
 
 #include <stdio.h>
 
-#include "ControlsFlyer.hpp"
+#include "BackyardFlyer.hpp"
 
 int main()
 {
-    MavlinkConnection conn("TCP", "127.0.0.1", 5760, false, false);
-    ControlsFlyer drone(&conn);
+    MavlinkConnection conn("UDP", "192.168.137.128", REMOTE_PORT_ONBOARD, LOCAL_PORT_ONBOARD, true, true);
+    BackyardFlyer drone(&conn);
     drone.start_drone();
-    drone.print_mission_score();
     return 0;
 }

@@ -472,7 +472,7 @@ void Drone::cmd_position( float north, float east, float altitude, float heading
         // connection cmd_position is defined as NED, so need to flip the sign
         // on altitude
         if (m_conn != nullptr) {
-            m_conn->cmd_position(north, east, -altitude, heading);
+            m_conn->cmd_position(north, east, altitude, heading);
         }
     } catch (...) {
         perror("cmd_position failed: ");
@@ -494,7 +494,7 @@ void Drone::cmd_position(V3F p, float heading)
         // connection cmd_position is defined as NED, so need to flip the sign
         // on altitude
         if (m_conn != nullptr) {
-            m_conn->cmd_position(p[0], p[1], -p[2], heading);
+            m_conn->cmd_position(p[0], p[1], p[2], heading);
         }
     }
     catch (...) {
@@ -611,6 +611,7 @@ void Drone::set_home_position( float longitude, float latitude, float altitude)
     // Set the drone's home position to these coordinates
     try {
         if (m_conn != nullptr) {
+            cout << "set home position: (" << latitude << "," << longitude << "," << altitude << ")" << endl;
             m_conn->set_home_position(latitude, longitude, altitude);
             _home_longitude = longitude;
             _home_latitude = latitude;
@@ -642,6 +643,13 @@ void Drone::set_home_as_current_position()
 
 void Drone::start()
 {
+    if (!m_bControlStatus)
+    {
+        cout << "cmd offboard on" << endl;
+        m_conn->cmd_offboard_control(true);
+        m_bControlStatus = true;
+    }
+
     // Starts the connection to the drone
     if (m_conn != nullptr) {
         m_conn->start();
@@ -650,6 +658,12 @@ void Drone::start()
 
 void Drone::stop()
 {
+    if (m_bControlStatus)
+    {
+        cout << "cmd offboard off" << endl;
+        m_conn->cmd_offboard_control(false);
+        m_bControlStatus = false;
+    }
     // Stops the connection to the drone
     if (m_conn != nullptr) {
         m_conn->stop();
@@ -659,6 +673,7 @@ void Drone::stop()
 void Drone::cmd_offboard_control(bool flag)
 {
     if (m_conn != nullptr) {
+        cout << "offboard mode change: " << flag << endl;
         m_conn->cmd_offboard_control(flag);
     }
 }

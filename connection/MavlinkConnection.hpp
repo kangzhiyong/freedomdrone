@@ -77,7 +77,7 @@ class MavlinkConnection
 {
 public:
     typedef void (Drone::*notify_message_callback)(MessageIDs, void *);
-    MavlinkConnection(std::string sock_type, std::string dest_ip, unsigned short dest_port, bool threaded = false, bool PX4 = false, float send_rate = 5, time_t timeout = 5);
+    MavlinkConnection(std::string sock_type, std::string remote_ip, unsigned short remote_port, unsigned short local_port, bool threaded = false, bool PX4 = false, float send_rate = 5, time_t timeout = 5);
     
     void notify_message_listeners(MessageIDs name, void *msg);
     
@@ -141,10 +141,10 @@ private:
     bool _write_handle_daemon{false};
     // management
     bool _running{false};
-    uint8_t _target_system{0};
-    uint8_t _target_component{0};
+    uint8_t _target_system{1};
+    uint8_t _target_component{ MAV_COMP_ID_ALL };
     uint8_t _target_channel{ 1 };
-    int autopilot_id{ 0 };
+    int autopilot_id{ MAV_COMP_ID_ALL };
 
     // PX4 management
     bool _using_px4{false};
@@ -160,4 +160,5 @@ private:
     bool            _globalPositionIntMessageAvailable{false};
     bool            _gpsRawIntMessageAvailable{false};
     uint32_t _mavlinkChannelsUsedBitMask;
+    bool    _receivingAttitudeQuaternion{ false };
 };

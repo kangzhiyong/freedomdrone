@@ -96,6 +96,8 @@ private:
     float _baro_time{0.0};
     float _baro_frequency{0.0};
 
+    bool m_bControlStatus{ false };
+
     typedef void (Drone::*update)(void *data);
     typedef void (Drone::*user_callback)();
     typedef map<MessageIDs, update> update_property_t;
@@ -104,6 +106,7 @@ private:
     update_property_t _update_property;
     user_callback_t _callbacks;
     MavlinkConnection *m_conn;
+
 public:
     Drone();
     Drone(MavlinkConnection *conn);

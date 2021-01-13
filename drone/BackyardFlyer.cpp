@@ -59,35 +59,44 @@ void BackyardFlyer::state_callback()
         {
             takeoff_transition();
         }
-        else if (flight_state == States::DISARMING && !armed() && !guided())
+        else if (flight_state == States::LANDING)
         {
-            manual_transition();
+            if (!armed() && !guided())
+            {
+                stop();
+                in_mission = false;
+            }
+        }
+        else if (flight_state == States::DISARMING)
+        {
+
         }
     }
 }
 
 void BackyardFlyer::calculate_box()
 {
-    cout << "Setting Home" << endl;
-    all_waypoints.push({ 10.0, 0.0, 3.0 });
-    all_waypoints.push({ 10.0, 10.0, 3.0 });
-    all_waypoints.push({ 0.0, 10.0, 3.0 });
-    all_waypoints.push({ 0.0, 0.0, 3.0 });
+    cout << "calculate_box" << endl;
+    V3F cp = global_position();
+    all_waypoints.push(cp + V3F({ 10.0, 0.0, 2.0 }));
+    all_waypoints.push(cp + V3F({ 10.0, 10.0, 2.0 }));
+    all_waypoints.push(cp + V3F({ 0.0, 10.0, 2.0 }));
+    all_waypoints.push(cp + V3F({ 0.0, 0.0, 2.0 }));
 }
 
 void BackyardFlyer::arming_transition()
 {
     cout << "arming transition\r\n" << endl;
-    take_control();
+    //take_control();
     arm();
-    set_home_position(global_position()[0], global_position()[1], global_position()[2]);
     flight_state = States::ARMING;
 }
 
 void BackyardFlyer::takeoff_transition()
 {
     cout << "takeoff transition\r\n" << endl;
-    float target_altitude = 3.0;
+    global_position().print();
+    float target_altitude = global_position()[2] + 10.0;
     target_position[2] = target_altitude;
     takeoff(target_altitude);
     flight_state = States::TAKEOFF;
@@ -114,7 +123,7 @@ void BackyardFlyer::disarming_transition()
 {
     cout << "disarm transition" << endl;
     disarm();
-    release_control();
+    //release_control();
     flight_state = States::DISARMING;
 }
 
