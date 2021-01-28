@@ -2,11 +2,16 @@
 #include <cmath>
 #include <ctime>
 #include <functional>
+#include <chrono>
 
+using std::chrono::steady_clock;
+using std::chrono::system_clock;
 using namespace std;
 
 #include "Point.hpp"
 #include "Mat3x3F.hpp"
+
+typedef std::chrono::time_point<std::chrono::steady_clock> dl_time_t;
 
 #ifndef M_PI
 #define M_PI       3.14159265358979323846   // pi
@@ -408,3 +413,24 @@ static void usleep(unsigned long usec)
 #include <unistd.h>
 #define msleep(msec) usleep(msec * 1000)
 #endif
+
+static dl_time_t steady_time()
+{
+    return steady_clock::now();
+}
+
+static double elapsed_s()
+{
+    auto now = steady_time().time_since_epoch();
+
+    return (now.count()) * steady_clock::period::num /
+        static_cast<double>(steady_clock::period::den);
+}
+
+static double elapsed_since_s(const dl_time_t& since)
+{
+    auto now = steady_time();
+
+    return ((now - since).count()) * steady_clock::period::num /
+        static_cast<double>(steady_clock::period::den);
+}

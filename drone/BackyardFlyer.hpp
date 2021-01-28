@@ -29,4 +29,5 @@ public:
     void disarming_transition();
     void manual_transition();
     void start_drone();
+    void command_ack_callback();
 };

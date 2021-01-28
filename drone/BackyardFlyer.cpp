@@ -7,13 +7,14 @@ BackyardFlyer::BackyardFlyer(MavlinkConnection* conn) : Drone(conn)
     register_callback(MessageIDs::LOCAL_POSITION, ((void (Drone::*)()) & BackyardFlyer::local_position_callback));
     register_callback(MessageIDs::LOCAL_VELOCITY, ((void (Drone::*)()) & BackyardFlyer::velocity_callback));
     register_callback(MessageIDs::STATE, ((void (Drone::*)()) & BackyardFlyer::state_callback));
+    register_callback(MessageIDs::COMMANDACKRESULT, ((void (Drone::*)()) & BackyardFlyer::command_ack_callback));
 }
 
 void BackyardFlyer::local_position_callback()
 {
     if (flight_state == States::TAKEOFF)
     {
-        if (1.0 * local_position()[2] > 0.95 * target_position[2])
+        if (abs(abs(local_position()[2]) - abs(target_position[2])) < 0.1)
         {
             calculate_box();
             waypoint_transition();
@@ -77,11 +78,11 @@ void BackyardFlyer::state_callback()
 void BackyardFlyer::calculate_box()
 {
     cout << "calculate_box" << endl;
-    V3F cp = global_position();
-    all_waypoints.push(cp + V3F({ 10.0, 0.0, 2.0 }));
-    all_waypoints.push(cp + V3F({ 10.0, 10.0, 2.0 }));
-    all_waypoints.push(cp + V3F({ 0.0, 10.0, 2.0 }));
-    all_waypoints.push(cp + V3F({ 0.0, 0.0, 2.0 }));
+    V3F cp = local_position();
+    all_waypoints.push(cp + V3F({ 10.0, 0.0, 0 }));
+    all_waypoints.push(cp + V3F({ 10.0, 10.0, 0 }));
+    all_waypoints.push(cp + V3F({ 0.0, 10.0, 0 }));
+    all_waypoints.push(cp + V3F({ 0.0, 0.0, 0 }));
 }
 
 void BackyardFlyer::arming_transition()
@@ -95,8 +96,8 @@ void BackyardFlyer::arming_transition()
 void BackyardFlyer::takeoff_transition()
 {
     cout << "takeoff transition\r\n" << endl;
-    global_position().print();
-    float target_altitude = global_position()[2] + 10.0;
+    local_position().print();
+    float target_altitude = local_position()[2] + 10.0;
     target_position[2] = target_altitude;
     takeoff(target_altitude);
     flight_state = States::TAKEOFF;
@@ -139,4 +140,15 @@ void BackyardFlyer::start_drone()
 {
     cout << "starting connection" << endl;
     start();
+}
+
+void BackyardFlyer::command_ack_callback()
+{
+    if (!m_bControlStatus && m_bTakeoffed)
+    {
+        cout << "cmd offboard on" << endl;
+        cmd_position(local_position()[0], local_position()[1], -abs(target_position[2]), 0);
+        getConnection()->make_command_flight_mode(FlightMode::Offboard);
+        m_bControlStatus = true;
+    }
 }

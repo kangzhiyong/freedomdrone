@@ -1,5 +1,13 @@
 #pragma once
 
+constexpr auto IGNORE_VX = (1 << 3);
+constexpr auto IGNORE_VY = (1 << 4);
+constexpr auto IGNORE_VZ = (1 << 5);
+constexpr auto IGNORE_AX = (1 << 6);
+constexpr auto IGNORE_AY = (1 << 7);
+constexpr auto IGNORE_AZ = (1 << 8);
+constexpr auto IGNORE_YAW_RATE = (1 << 11);
+
 enum class ConnectionType
 {
     /*
@@ -53,4 +61,44 @@ enum class AttitudeMask
 {
     MASK_IGNORE_ATTITUDE = 0b10000000,
     MASK_IGNORE_RATES = 0b00000111
+};
+
+enum class FlightMode {
+    Unknown,
+    Ready,
+    Takeoff,
+    Hold,
+    Mission,
+    ReturnToLaunch,
+    Land,
+    Offboard,
+    FollowMe,
+    Manual,
+    Altctl,
+    Posctl,
+    Acro,
+    Rattitude,
+    Stabilized,
+};
+
+enum class PX4_CUSTOM_MAIN_MODE {
+    PX4_CUSTOM_MAIN_MODE_MANUAL = 1,
+    PX4_CUSTOM_MAIN_MODE_ALTCTL,
+    PX4_CUSTOM_MAIN_MODE_POSCTL,
+    PX4_CUSTOM_MAIN_MODE_AUTO,
+    PX4_CUSTOM_MAIN_MODE_ACRO,
+    PX4_CUSTOM_MAIN_MODE_OFFBOARD,
+    PX4_CUSTOM_MAIN_MODE_STABILIZED,
+    PX4_CUSTOM_MAIN_MODE_RATTITUDE
+};
+
+enum class PX4_CUSTOM_SUB_MODE_AUTO {
+    PX4_CUSTOM_SUB_MODE_AUTO_READY = 1,
+    PX4_CUSTOM_SUB_MODE_AUTO_TAKEOFF,
+    PX4_CUSTOM_SUB_MODE_AUTO_LOITER,
+    PX4_CUSTOM_SUB_MODE_AUTO_MISSION,
+    PX4_CUSTOM_SUB_MODE_AUTO_RTL,
+    PX4_CUSTOM_SUB_MODE_AUTO_LAND,
+    PX4_CUSTOM_SUB_MODE_AUTO_RTGS,
+    PX4_CUSTOM_SUB_MODE_AUTO_FOLLOW_TARGET
 };

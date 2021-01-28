@@ -177,7 +177,8 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
             mavlink_msg_heartbeat_decode(&msg, &hrt_msg);
 
             uint32_t timestamp = 0.0;
-            uint8_t motors_armed = (hrt_msg.base_mode & MAV_MODE_FLAG_SAFETY_ARMED) != 0;
+            _armed = ((hrt_msg.base_mode & MAV_MODE_FLAG_SAFETY_ARMED) ? true : false);
+            _hitl_enabled = ((hrt_msg.base_mode & MAV_MODE_FLAG_HIL_ENABLED) ? true : false);
 
             // determine if want to broadcast all current mode types
             // not just boolean on manual
@@ -190,7 +191,7 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
             {
                 guided_mode = true;
             }
-            StateMessage state(timestamp, motors_armed, guided_mode, hrt_msg.system_status);
+            StateMessage state(timestamp, _armed, guided_mode, hrt_msg.system_status);
             notify_message_listeners(MessageIDs::STATE, &state);
             break;
         }
@@ -366,7 +367,7 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
 
             // If data from GPS is available it takes precedence over ALTITUDE message
             if (!_globalPositionIntMessageAvailable) {
-                cout << "altitude relative: " << altitude.altitude_relative << endl;
+                //cout << "altitude relative: " << altitude.altitude_relative << endl;
                 if (!_gpsRawIntMessageAvailable) {
                     cout << "altitude_amsl: " << altitude.altitude_amsl << endl;
                 }
@@ -397,6 +398,9 @@ void MavlinkConnection::handleCommandAck(mavlink_message_t& message)
     bool showError = true;
     mavlink_command_ack_t ack;
     mavlink_msg_command_ack_decode(&message, &ack);
+
+    ArcResultMessage ackMsg(ack.command, ack.result);
+    notify_message_listeners(MessageIDs::COMMANDACKRESULT, &ackMsg);
 
     if (ack.command == MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES && ack.result != MAV_RESULT_ACCEPTED) {
         cout<< "Vehicle responded to MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES with error(" << ack.result << "). Setting no capabilities." << endl;
@@ -447,9 +451,11 @@ void MavlinkConnection::handleCommandAck(mavlink_message_t& message)
         case MAV_RESULT_FAILED:
             cout << ack.command << " command failed" << endl;
             break;
+        case MAV_RESULT_ACCEPTED:
+            break;
         default:
             // Do nothing
-            cout << ack.command << ":" << ack.result << endl;
+            //cout << ack.command << ":" << ack.result << endl;
             break;
         }
     }
@@ -479,13 +485,20 @@ void MavlinkConnection::command_loop()
 
     mavlink_set_position_target_local_ned_t packet;
     memset(&packet, 0, sizeof(packet));
-    packet.type_mask = MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_VELOCITY & MAVLINK_MSG_SET_POSITION_TARGET_LOCAL_NED_YAW_RATE;
+    packet.type_mask = IGNORE_VX | IGNORE_VY | IGNORE_VZ | IGNORE_AX | IGNORE_AY | IGNORE_AZ | IGNORE_YAW_RATE;
     packet.target_system = _target_system;
     packet.target_component = autopilot_id;
     packet.coordinate_frame = MAV_FRAME_LOCAL_NED;
+    packet.x = 0.0;
+    packet.y = 0.0;
+    packet.z = 0.0;
     packet.vx       = 0.0;
     packet.vy       = 0.0;
     packet.vz       = 0.0;
+    packet.afx = 0.0;
+    packet.afy = 0.0;
+    packet.afz = 0.0;
+    packet.yaw = 0.0;
     packet.yaw_rate = 0.0;
     
     mavlink_message_t high_rate_command;
@@ -494,6 +507,7 @@ void MavlinkConnection::command_loop()
     send_message_immediately(high_rate_command);
     writing_status = true;
     
+    dl_time_t last_ping_time{};
     time_t last_write_time = time(nullptr);
     while(_running)
     {
@@ -528,6 +542,22 @@ void MavlinkConnection::command_loop()
         }
         last_write_time = current_time;
 
+        //if (elapsed_since_s(last_ping_time) >= _ping_interval_s) {
+        //    uint64_t now = static_cast<uint64_t>(elapsed_s() * 1e6);
+        //    mavlink_message_t message;
+        //    memset(&message, 0, sizeof(mavlink_message_t));
+        //    mavlink_msg_ping_pack(
+        //        _target_system,
+        //        _target_component,
+        //        &message,
+        //        now,
+        //        0,
+        //        0,
+        //        0); // to all
+        //    send_message_immediately(message);
+        //    last_ping_time = steady_time();
+        //}
+
         // continually want to send the high rate command
         send_message_immediately(high_rate_command);
     }
@@ -553,18 +583,28 @@ bool MavlinkConnection::wait_for_message(mavlink_message_t &msg)
         if (msg.msgid == MAVLINK_MSG_ID_HEARTBEAT)
         {
             // send -> type, autopilot, base mode, custom mode, system status
-            mavlink_heartbeat_t packet;
+            /*mavlink_heartbeat_t packet;
             memset(&packet, 0, sizeof(packet));
             packet.custom_mode = 0;
             packet.type = MAV_TYPE_GCS;
             packet.autopilot = MAV_AUTOPILOT_GENERIC;
             packet.base_mode = 0;
-            packet.system_status = MAV_STATE_ACTIVE;
-            packet.mavlink_version = 3;
+            packet.system_status = 0;
+            packet.mavlink_version = 3;*/
             
             mavlink_message_t outmsg;
-            mavlink_msg_heartbeat_encode(_target_system, _target_component, &outmsg, &packet);
-            send_message(outmsg);
+            //mavlink_msg_heartbeat_encode(_target_system, _target_component, &outmsg, &packet);
+
+            mavlink_msg_heartbeat_pack(
+                _target_system,
+                _target_component,
+                &outmsg,
+                MAV_TYPE_ONBOARD_CONTROLLER,
+                MAV_AUTOPILOT_GENERIC,
+                0,
+                0,
+                0);
+            send_message_immediately(outmsg);
         }
 
         return true;
@@ -614,6 +654,7 @@ void MavlinkConnection::start()
         _read_handle = nullptr;
         dispatch_loop();
     }
+
     if (_write_handle_daemon)
     {
         _write_handle->join();
@@ -782,9 +823,24 @@ void MavlinkConnection::cmd_moment(float roll_moment, float pitch_moment, float 
     cmd_attitude_target_send(t * 1000, _target_system, _target_component, mask, 0.0, 0.0, 0.0, roll_moment, pitch_moment, yaw_moment, thrust);
 }
 
-void MavlinkConnection::cmd_position_target_local_ned_send(time_t time_boot_ms, uint8_t target_system, uint8_t target_component, uint8_t coordinate_frame, uint16_t type_mask, float x, float y, float z, float vx, float vy, float vz, float afx, float afy, float afz, float yaw, float yaw_rate)
+void MavlinkConnection::cmd_position_target_local_ned_send(time_t time_boot_ms, uint8_t target_system, uint8_t target_component, uint8_t coordinate_frame, uint16_t type_mask, float n, float e, float d, float vx, float vy, float vz, float afx, float afy, float afz, float yaw, float yaw_rate)
 {
-    mavlink_set_position_target_local_ned_t packet;
+    mavlink_message_t msg;
+    mavlink_msg_set_position_target_local_ned_pack(
+        target_system,
+        target_component,
+        &msg,
+        elapsed_s() * 1e3,
+        target_system,
+        target_component,
+        MAV_FRAME_LOCAL_NED,
+        IGNORE_VX | IGNORE_VY | IGNORE_VZ | IGNORE_AX | IGNORE_AY | IGNORE_AZ | IGNORE_YAW_RATE,
+        n, e, d,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        yaw * M_RAD_TO_DEG,
+        0.0
+    );
+    /*mavlink_set_position_target_local_ned_t packet;
     memset(&packet, 0, sizeof(packet));
     packet.time_boot_ms = (uint32_t)time_boot_ms;
     packet.x = x;
@@ -805,7 +861,7 @@ void MavlinkConnection::cmd_position_target_local_ned_send(time_t time_boot_ms, 
 
     mavlink_message_t msg;
     memset(&msg, 0, sizeof(mavlink_message_t));
-    mavlink_msg_set_position_target_local_ned_encode(target_system, target_component, &msg, &packet);
+    mavlink_msg_set_position_target_local_ned_encode(target_system, target_component, &msg, &packet);*/
 
     send_message(msg);
 }
@@ -823,7 +879,8 @@ void MavlinkConnection::cmd_position(float n, float e, float d, float heading)
     {
         d = -1.0 * d;
     }*/
-    cmd_position_target_local_ned_send(0, _target_system, _target_component, MAV_FRAME_LOCAL_NED, (uint16_t)(PositionMask::MASK_IGNORE_YAW_RATE | PositionMask::MASK_IGNORE_ACCELERATION | PositionMask::MASK_IGNORE_VELOCITY), n, e, d, 0, 0, 0, 0, 0, 0, heading, 0);
+    uint16_t mask = IGNORE_VX | IGNORE_VY | IGNORE_VZ | IGNORE_AX | IGNORE_AY | IGNORE_AZ | IGNORE_YAW_RATE;
+    cmd_position_target_local_ned_send(elapsed_s() *1e3, _target_system, _target_component, MAV_FRAME_LOCAL_NED, mask, n, e, d, 0, 0, 0, 0, 0, 0, heading, 0);
 }
     
 void MavlinkConnection::cmd_controls(float *controls, time_t t)
@@ -852,8 +909,8 @@ void MavlinkConnection::takeoff(float n, float e, float d)
      since connection doesn't keep track of this info, have drone send it
      abstract away that part in the drone class
      */
-    send_long_command(MAV_CMD_NAV_TAKEOFF, -1, 0, 0, NAN, NAN, NAN, d);
-    //cmd_position_target_local_ned_send(0, _target_system, _target_component, MAV_FRAME_LOCAL_NED, static_cast<uint16_t>(PositionMask::MASK_IS_LAND | PositionMask::MASK_IGNORE_YAW_RATE | PositionMask::MASK_IGNORE_YAW | PositionMask::MASK_IGNORE_ACCELERATION | PositionMask::MASK_IGNORE_VELOCITY), n, e, d, 0, 0, 0, 0, 0, 0, 0, 0);
+    send_long_command(MAV_CMD_NAV_TAKEOFF, NAN, NAN, NAN, NAN, NAN, NAN, NAN);
+    cmd_position(n, e, d, 0);
 }
 
 void MavlinkConnection::land(float n, float e)
@@ -861,7 +918,7 @@ void MavlinkConnection::land(float n, float e)
     // for mavlink to PX4 need to specify the NED location for landing
     // since connection doesn't keep track of this info, have drone send it
     // abstract away that part in the drone class
-    cmd_position_target_local_ned_send(0, _target_system, _target_component, MAV_FRAME_LOCAL_NED, (uint16_t)(PositionMask::MASK_IS_TAKEOFF | PositionMask::MASK_IGNORE_YAW_RATE | PositionMask::MASK_IGNORE_YAW | PositionMask::MASK_IGNORE_ACCELERATION | PositionMask::MASK_IGNORE_VELOCITY), n, e, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    send_long_command(MAV_CMD_NAV_LAND, NAN, NAN, NAN, NAN, NAN, NAN, NAN);
 }
 
 void MavlinkConnection::set_home_position(float lat, float lon, float alt)
@@ -929,4 +986,64 @@ void MavlinkConnection::cmd_offboard_control(bool flag)
 
     // Send the message
     send_message_immediately(message);
+}
+
+void MavlinkConnection::make_command_flight_mode(FlightMode flight_mode)
+{
+    /*const uint8_t flag_safety_armed = is_armed() ? MAV_MODE_FLAG_SAFETY_ARMED : 0;
+    const uint8_t flag_hitl_enabled = _hitl_enabled ? MAV_MODE_FLAG_HIL_ENABLED : 0;
+
+    const uint8_t mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | flag_safety_armed | flag_hitl_enabled;*/
+    const uint8_t mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+    // Note: the safety flag is not needed in future versions of the PX4 Firmware
+    //       but want to be rather safe than sorry.
+    PX4_CUSTOM_MAIN_MODE custom_mode = PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_AUTO;
+    PX4_CUSTOM_SUB_MODE_AUTO custom_sub_mode = PX4_CUSTOM_SUB_MODE_AUTO(0);
+
+    switch (flight_mode) {
+    case FlightMode::Hold:
+        custom_sub_mode = PX4_CUSTOM_SUB_MODE_AUTO::PX4_CUSTOM_SUB_MODE_AUTO_LOITER;
+        break;
+    case FlightMode::ReturnToLaunch:
+        custom_sub_mode = PX4_CUSTOM_SUB_MODE_AUTO::PX4_CUSTOM_SUB_MODE_AUTO_RTL;
+        break;
+    case FlightMode::Takeoff:
+        custom_sub_mode = PX4_CUSTOM_SUB_MODE_AUTO::PX4_CUSTOM_SUB_MODE_AUTO_TAKEOFF;
+        break;
+    case FlightMode::Land:
+        custom_sub_mode = PX4_CUSTOM_SUB_MODE_AUTO::PX4_CUSTOM_SUB_MODE_AUTO_LAND;
+        break;
+    case FlightMode::Mission:
+        custom_sub_mode = PX4_CUSTOM_SUB_MODE_AUTO::PX4_CUSTOM_SUB_MODE_AUTO_MISSION;
+        break;
+    case FlightMode::FollowMe:
+        custom_sub_mode = PX4_CUSTOM_SUB_MODE_AUTO::PX4_CUSTOM_SUB_MODE_AUTO_FOLLOW_TARGET;
+        break;
+    case FlightMode::Offboard:
+        custom_mode = PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_OFFBOARD;
+        break;
+    case FlightMode::Manual:
+        custom_mode = PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_MANUAL;
+        break;
+    case FlightMode::Posctl:
+        custom_mode = PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_POSCTL;
+        break;
+    case FlightMode::Altctl:
+        custom_mode = PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_ALTCTL;
+        break;
+    case FlightMode::Rattitude:
+        custom_mode = PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_RATTITUDE;
+        break;
+    case FlightMode::Acro:
+        custom_mode = PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_ACRO;
+        break;
+    case FlightMode::Stabilized:
+        custom_mode = PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_STABILIZED;
+        break;
+    default:
+        cout << "Unknown Flight mode." << endl;
+        return;
+    }
+
+    send_long_command(MAV_CMD_DO_SET_MODE, float(mode), float(custom_mode), float(custom_sub_mode));
 }

@@ -273,3 +273,27 @@ private:
     int16_t _ymag;  //Y Magnetic field (raw)
     int16_t _zmag;  //Z Magnetic field (raw)
 };
+
+class ArcResultMessage : public MessageBase
+{
+    /*
+    command ack message
+    */
+public:
+    ArcResultMessage(uint16_t cmd, uint8_t ret)
+    {
+        _command = cmd;
+        _result = ret;
+    }
+    uint16_t command()
+    {
+        return _command;
+    }
+    uint8_t result()
+    {
+        return _result;
+    }
+private:
+    uint16_t _command;
+    uint8_t _result;
+};

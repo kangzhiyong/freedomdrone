@@ -9,6 +9,8 @@
 using namespace std;
 
 #include "Drone.hpp"
+#include "MavUtils.hpp"
+#include "mavlink/ardupilotmega/ardupilotmega.h"
 
 Drone::Drone(MavlinkConnection *conn)
 {
@@ -25,7 +27,8 @@ Drone::Drone(MavlinkConnection *conn)
     _update_property[MessageIDs::ATTITUDE] = &Drone::_update_attitude;
     _update_property[MessageIDs::GPS_INPUT_SENSOR] = &Drone::_update_from_gps_sensor;
     _update_property[MessageIDs::RAW_IMU_SENSOR] = &Drone::_update_from_imu_sensor;
-    
+    _update_property[MessageIDs::COMMANDACKRESULT] = &Drone::_update_from_command_ack;
+
     // set the internal callbacks list to an empty map
     _callbacks.clear();
     
@@ -472,7 +475,7 @@ void Drone::cmd_position( float north, float east, float altitude, float heading
         // connection cmd_position is defined as NED, so need to flip the sign
         // on altitude
         if (m_conn != nullptr) {
-            m_conn->cmd_position(north, east, altitude, heading);
+            m_conn->cmd_position(north, east, -abs(altitude), heading);
         }
     } catch (...) {
         perror("cmd_position failed: ");
@@ -507,7 +510,7 @@ void Drone::takeoff(float target_altitude)
     // Command the drone to takeoff to the target_alt (in meters)
     try {
         if (m_conn != nullptr) {
-            m_conn->takeoff(local_position()[0], local_position()[1], target_altitude);
+            m_conn->takeoff(local_position()[0], local_position()[1], -abs(target_altitude));
         }
     } catch (...) {
         perror("takeoff failed: ");
@@ -643,13 +646,6 @@ void Drone::set_home_as_current_position()
 
 void Drone::start()
 {
-    if (!m_bControlStatus)
-    {
-        cout << "cmd offboard on" << endl;
-        m_conn->cmd_offboard_control(true);
-        m_bControlStatus = true;
-    }
-
     // Starts the connection to the drone
     if (m_conn != nullptr) {
         m_conn->start();
@@ -691,3 +687,21 @@ void Drone::_update_from_imu_sensor(void* msg)
     _gyroMeas = V3F(imuMsg.xgyro(), imuMsg.ygyro(), imuMsg.zgyro());
     _magMeas = V3F(imuMsg.xmag(), imuMsg.ymag(), imuMsg.zmag());
 } 
+
+void Drone::_update_from_command_ack(void* msg)
+{
+    ArcResultMessage ackMsg = *(ArcResultMessage*)msg;
+    switch (ackMsg.result())
+    {
+    case MAV_RESULT_ACCEPTED:
+        switch (ackMsg.command())
+        {
+        case MAV_CMD_NAV_TAKEOFF:
+            m_bTakeoffed = true;
+        default:
+            break;
+        }
+    default:
+        break;
+    }
+}

@@ -11,6 +11,7 @@ using namespace std;
 #include "MavSocket.hpp"
 #include "MessageIDs.hpp"
 #include "MessageTypes.hpp"
+#include "MavUtils.hpp"
 
 /**
  * Defines for mavlink_set_position_target_local_ned_t.type_mask
@@ -132,6 +133,8 @@ public:
     void handleCommandAck(mavlink_message_t& message);
     int reserveMavlinkChannel(void);
     void handleAttitudeTarget(mavlink_message_t& message);
+    void make_command_flight_mode(FlightMode flight_mode);
+    bool is_armed() const { return _armed; }
 private:
     MavSocket *_master;
     queue<mavlink_message_t> _out_msg_queue;
@@ -161,4 +164,7 @@ private:
     bool            _gpsRawIntMessageAvailable{false};
     uint32_t _mavlinkChannelsUsedBitMask;
     bool    _receivingAttitudeQuaternion{ false };
+    std::atomic<bool> _armed{ false };
+    std::atomic<bool> _hitl_enabled{ false };
+    static constexpr double _ping_interval_s = 5.0;
 };

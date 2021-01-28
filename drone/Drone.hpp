@@ -96,8 +96,6 @@ private:
     float _baro_time{0.0};
     float _baro_frequency{0.0};
 
-    bool m_bControlStatus{ false };
-
     typedef void (Drone::*update)(void *data);
     typedef void (Drone::*user_callback)();
     typedef map<MessageIDs, update> update_property_t;
@@ -178,8 +176,11 @@ public:
     void _update_from_gps_sensor(void* msg);
     void _update_from_imu_sensor(void* msg);
     void cmd_offboard_control(bool flag);
+    void _update_from_command_ack(void* msg);
 
     V3F _posMeas, _velMeas;
     V3F _accelMeas, _gyroMeas;
     V3F _magMeas;
+    bool m_bControlStatus{ false };
+    bool m_bTakeoffed{ false };
 };
