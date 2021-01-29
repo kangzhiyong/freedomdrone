@@ -22,7 +22,8 @@ void BackyardFlyer::local_position_callback()
     }
     else if (flight_state == States::WAYPOINT)
     {
-        if ((target_position - local_position()).mag() < 1.0)
+        V3F t({ target_position[0], target_position[1], target_position[2] });
+        if ((t - local_position()).mag3() < 1.0)
         {
             if (all_waypoints.size() > 0)
             {
@@ -78,11 +79,20 @@ void BackyardFlyer::state_callback()
 void BackyardFlyer::calculate_box()
 {
     cout << "calculate_box" << endl;
-    V3F cp = local_position();
-    all_waypoints.push(cp + V3F({ 10.0, 0.0, 0 }));
-    all_waypoints.push(cp + V3F({ 10.0, 10.0, 0 }));
-    all_waypoints.push(cp + V3F({ 0.0, 10.0, 0 }));
-    all_waypoints.push(cp + V3F({ 0.0, 0.0, 0 }));
+    //V4F cp = local_position();
+    //all_waypoints.push(cp + V3F({ 10.0, 0.0, 0 }));
+    //all_waypoints.push(cp + V3F({ 10.0, 10.0, 0 }));
+    //all_waypoints.push(cp + V3F({ 0.0, 10.0, 0 }));
+    //all_waypoints.push(cp + V3F({ 0.0, 0.0, 0 }));
+    const float radius = 10.0f;
+    const float step = 0.01f;
+    for (float angle = 0.0f; angle <= 2.0f * M_PI; angle += step) {
+        float x = radius * cosf(angle);
+        float y = radius * sinf(angle);
+
+        V4F pos({ x, y, -10.0f, 90.0f });
+        all_waypoints.push(pos);
+    }
 }
 
 void BackyardFlyer::arming_transition()
@@ -109,7 +119,7 @@ void BackyardFlyer::waypoint_transition()
     target_position = all_waypoints.front();
     all_waypoints.pop();
     target_position.print("target_position");
-    cmd_position(target_position[0], target_position[1], target_position[2], 0.0);
+    cmd_position(target_position);
     flight_state = States::WAYPOINT;
 }
 

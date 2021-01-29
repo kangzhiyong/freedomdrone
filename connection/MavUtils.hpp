@@ -1,5 +1,8 @@
 #pragma once
 
+constexpr auto IGNORE_X = (1 << 0);
+constexpr auto IGNORE_Y = (1 << 1);
+constexpr auto IGNORE_Z = (1 << 2);
 constexpr auto IGNORE_VX = (1 << 3);
 constexpr auto IGNORE_VY = (1 << 4);
 constexpr auto IGNORE_VZ = (1 << 5);

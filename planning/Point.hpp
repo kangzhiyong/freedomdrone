@@ -182,6 +182,22 @@ public:
         std::cout<< ")" << std::endl;
     }
 
+    std::string str()
+    {
+        int offset = 0;
+        char s[128] = {};
+        offset += sprintf(s, "(");
+        for (size_t i = 0; i < dimensions; ++i)
+        {
+            offset += sprintf(s + offset, "%f", get(i));
+            if (i != (dimensions - 1))
+            {
+                offset += sprintf(s + offset, ",");
+            }
+        }
+        offset += sprintf(s + offset, ")");
+        return s;
+    }
     bool operator <(const Point<coordinate_type, dimensions>& d) const
     {
         return distance({0, 0, 0}) < d.distance({0, 0, 0});
@@ -202,6 +218,21 @@ public:
         return dist;
     }
     
+    inline coordinate_type mag3() const
+    {
+        return sqrt(magSq3());
+    }
+
+    inline coordinate_type magSq3() const
+    {
+        float dist = 0;
+        for (size_t i = 0; i < 3; ++i)
+        {
+            dist += pow(coords_[i], 2);
+        }
+        return dist;
+    }
+
     inline Point<coordinate_type, dimensions> norm()
     {
         Point<coordinate_type, dimensions> res;

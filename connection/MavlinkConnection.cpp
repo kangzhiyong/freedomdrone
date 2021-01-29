@@ -346,7 +346,7 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
             mavlink_attitude_t attitude;
             mavlink_msg_attitude_decode(&msg, &attitude);
 
-            cout << "Attitude(" << attitude.roll << "," << attitude.pitch << ", " << attitude.yaw << ")" << endl;
+            //cout << "Attitude(" << attitude.roll << "," << attitude.pitch << ", " << attitude.yaw << ")" << endl;
             break;
         }
         //Metrics typically displayed on a HUD for fixed wing aircraft.
@@ -823,52 +823,40 @@ void MavlinkConnection::cmd_moment(float roll_moment, float pitch_moment, float 
     cmd_attitude_target_send(t * 1000, _target_system, _target_component, mask, 0.0, 0.0, 0.0, roll_moment, pitch_moment, yaw_moment, thrust);
 }
 
-void MavlinkConnection::cmd_position_target_local_ned_send(time_t time_boot_ms, uint8_t target_system, uint8_t target_component, uint8_t coordinate_frame, uint16_t type_mask, float n, float e, float d, float vx, float vy, float vz, float afx, float afy, float afz, float yaw, float yaw_rate)
+void MavlinkConnection::cmd_velocity(float vn, float ve, float vd, float heading)
 {
+    uint16_t mask = IGNORE_X | IGNORE_Y | IGNORE_Z | IGNORE_AX | IGNORE_AY | IGNORE_AZ | IGNORE_YAW_RATE;
     mavlink_message_t msg;
     mavlink_msg_set_position_target_local_ned_pack(
-        target_system,
-        target_component,
+        _target_system,
+        _target_component,
         &msg,
         elapsed_s() * 1e3,
-        target_system,
-        target_component,
+        _target_system,
+        _target_component,
         MAV_FRAME_LOCAL_NED,
-        IGNORE_VX | IGNORE_VY | IGNORE_VZ | IGNORE_AX | IGNORE_AY | IGNORE_AZ | IGNORE_YAW_RATE,
-        n, e, d,
-        0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-        yaw * M_RAD_TO_DEG,
-        0.0
+        mask, 0, 0, 0, vn, ve, vd, 0, 0, 0, heading * M_RAD_TO_DEG, 0
     );
-    /*mavlink_set_position_target_local_ned_t packet;
-    memset(&packet, 0, sizeof(packet));
-    packet.time_boot_ms = (uint32_t)time_boot_ms;
-    packet.x = x;
-    packet.y = y;
-    packet.z = z;
-    packet.vx = vx;
-    packet.vy = vy;
-    packet.vz = vz;
-    packet.afx = afx;
-    packet.afy = afy;
-    packet.afz = afz;
-    packet.yaw = yaw;
-    packet.yaw_rate = yaw_rate;
-    packet.type_mask = type_mask;
-    packet.target_system = target_system;
-    packet.target_component = autopilot_id;
-    packet.coordinate_frame = coordinate_frame;
-
-    mavlink_message_t msg;
-    memset(&msg, 0, sizeof(mavlink_message_t));
-    mavlink_msg_set_position_target_local_ned_encode(target_system, target_component, &msg, &packet);*/
 
     send_message(msg);
 }
 
-void MavlinkConnection::cmd_velocity(float vn, float ve, float vd, float heading)
+void MavlinkConnection::cmd_acceleration(float afx, float afy, float afz, float heading)
 {
-    cmd_position_target_local_ned_send(0, _target_system, _target_component, MAV_FRAME_LOCAL_NED, (uint16_t)(PositionMask::MASK_IGNORE_YAW_RATE | PositionMask::MASK_IGNORE_ACCELERATION | PositionMask::MASK_IGNORE_POSITION), 0, 0, 0, vn, ve, vd, 0, 0, 0, heading, 0);
+    uint16_t mask = IGNORE_X | IGNORE_Y | IGNORE_Z | IGNORE_VX | IGNORE_VY | IGNORE_VZ | IGNORE_YAW_RATE;
+    mavlink_message_t msg;
+    mavlink_msg_set_position_target_local_ned_pack(
+        _target_system,
+        _target_component,
+        &msg,
+        elapsed_s() * 1e3,
+        _target_system,
+        _target_component,
+        MAV_FRAME_LOCAL_NED,
+        mask, 0, 0, 0, 0, 0, 0, afx, afy, afz, heading * M_RAD_TO_DEG, 0
+    );
+
+    send_message(msg);
 }
 
 void MavlinkConnection::cmd_position(float n, float e, float d, float heading)
@@ -880,9 +868,26 @@ void MavlinkConnection::cmd_position(float n, float e, float d, float heading)
         d = -1.0 * d;
     }*/
     uint16_t mask = IGNORE_VX | IGNORE_VY | IGNORE_VZ | IGNORE_AX | IGNORE_AY | IGNORE_AZ | IGNORE_YAW_RATE;
-    cmd_position_target_local_ned_send(elapsed_s() *1e3, _target_system, _target_component, MAV_FRAME_LOCAL_NED, mask, n, e, d, 0, 0, 0, 0, 0, 0, heading, 0);
+    mavlink_message_t msg;
+    mavlink_msg_set_position_target_local_ned_pack(
+        _target_system,
+        _target_component,
+        &msg,
+        elapsed_s() * 1e3,
+        _target_system,
+        _target_component,
+        MAV_FRAME_LOCAL_NED,
+        mask, n, e, d, 0, 0, 0, 0, 0, 0, heading * M_RAD_TO_DEG, 0
+    );
+
+    send_message(msg);
 }
-    
+
+void MavlinkConnection::cmd_position(V4F p)
+{
+    cmd_position(p[0], p[1], p[2], p[3]);
+}
+
 void MavlinkConnection::cmd_controls(float *controls, time_t t)
 {
     mavlink_set_actuator_control_target_t packet;
@@ -910,7 +915,6 @@ void MavlinkConnection::takeoff(float n, float e, float d)
      abstract away that part in the drone class
      */
     send_long_command(MAV_CMD_NAV_TAKEOFF, NAN, NAN, NAN, NAN, NAN, NAN, NAN);
-    cmd_position(n, e, d, 0);
 }
 
 void MavlinkConnection::land(float n, float e)
@@ -928,17 +932,17 @@ void MavlinkConnection::set_home_position(float lat, float lon, float alt)
 
 void MavlinkConnection::local_position_target(float n, float e, float d, time_t t)
 {
-    cmd_position_target_local_ned_send(t, _target_system, _target_component, MAV_FRAME_LOCAL_NED, 0b1111111111111000, n, e, d, 0, 0, 0, 0, 0, 0, 0, 0);
+    cmd_position(n, e, d, 0.0);
 }
 
 void MavlinkConnection::local_velocity_target(float vn, float ve, float vd, time_t t)
 {
-    cmd_position_target_local_ned_send(t, _target_system, _target_component, MAV_FRAME_LOCAL_NED, 0b1111111111000111, 0, 0, 0, vn, ve, vd, 0, 0, 0, 0, 0);
+    cmd_velocity(vn, ve, vd, 0);
 }
 
 void MavlinkConnection::local_acceleration_target(float an, float ae, float ad, time_t t)
 {
-    cmd_position_target_local_ned_send(t, _target_system, _target_component, MAV_FRAME_LOCAL_NED, 0b1111111000111111, 0, 0, 0, 0, 0, 0, an, ae, ad, 0, 0);
+    cmd_acceleration(an, ae, ad, 0);
 }
 
 void MavlinkConnection::attitude_target(float roll, float pitch, float yaw, time_t t)

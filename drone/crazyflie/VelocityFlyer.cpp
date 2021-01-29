@@ -6,14 +6,25 @@ VelocityFlyer::VelocityFlyer(MavlinkConnection* conn) : Drone(conn)
     register_callback(MessageIDs::LOCAL_POSITION, ((void (Drone::*)()) & VelocityFlyer::local_position_callback));
     register_callback(MessageIDs::LOCAL_VELOCITY, ((void (Drone::*)()) & VelocityFlyer::velocity_callback));
     register_callback(MessageIDs::STATE, ((void (Drone::*)()) & VelocityFlyer::state_callback));
+    register_callback(MessageIDs::COMMANDACKRESULT, ((void (Drone::*)()) & VelocityFlyer::command_ack_callback));
+}
 
+void VelocityFlyer::command_ack_callback()
+{
+    if (!m_bControlStatus && m_bTakeoffed)
+    {
+        cout << "cmd offboard on" << endl;
+        cmd_position(local_position()[0], local_position()[1], -abs(target_position[2]), 0);
+        getConnection()->make_command_flight_mode(FlightMode::Offboard);
+        m_bControlStatus = true;
+    }
 }
 
 void VelocityFlyer::local_position_callback()
 {
     if (flight_state == States::TAKEOFF)
     {
-        if (-1.0 * local_position()[2] > -0.95 * target_position[2])
+        if (abs(abs(local_position()[2]) - abs(target_position[2])) < 0.1)
         {
             calculate_box();
             waypoint_transition();
@@ -39,7 +50,7 @@ void VelocityFlyer::local_position_callback()
         # worry about your crazyflie flying away too quickly.
         #
         ########################################################################################*/
-        check_and_increment_waypoint();
+        //check_and_increment_waypoint();
         // run the outer loop controller(position controller->to velocity command)
         V3F vel_cmd = run_outer_controller();
         cmd_velocity(vel_cmd[0], vel_cmd[1], vel_cmd[2], 0.0);
@@ -113,26 +124,25 @@ V3F VelocityFlyer::run_outer_controller()
     */
 
     V3F lateral_vel_cmd = _outer_controller.lateral_position_control(target_position, local_position(), target_velocity);
-    float hdot_cmd = _outer_controller.altitude_control(-target_position[2], -local_position()[2]);
-
+    float hdot_cmd = _outer_controller.altitude_control(abs(target_position[2]), abs(local_position()[2]));
+    cout << local_position().str() << " " << target_position.str() << " " << hdot_cmd << endl;
     return { lateral_vel_cmd[0], lateral_vel_cmd[1], -hdot_cmd };
 }
 
 void VelocityFlyer::calculate_box()
 {
     cout << "Setting Home" << endl;
-    all_waypoints.push({ 0, 5, 3 });
-    all_waypoints.push({ 5, 5, 3 });
-    all_waypoints.push({ 5, 0, 3 });
-    all_waypoints.push({ 0, 0, 3 });
+    all_waypoints.push({ 0, 5, TAKEOFF_ALTITUDE });
+    all_waypoints.push({ 5, 5, TAKEOFF_ALTITUDE });
+    all_waypoints.push({ 5, 0, TAKEOFF_ALTITUDE });
+    all_waypoints.push({ 0, 0, TAKEOFF_ALTITUDE });
 }
 
 void VelocityFlyer::arming_transition()
 {
     cout << "arming transition\r\n" << endl;
-    take_control();
     arm();
-    set_home_as_current_position();
+    //set_home_as_current_position();
     flight_state = States::ARMING;
 }
 
@@ -177,7 +187,6 @@ void VelocityFlyer::disarming_transition()
 {
     cout << "disarm transition" << endl;
     disarm();
-    release_control();
     flight_state = States::DISARMING;
 }
 

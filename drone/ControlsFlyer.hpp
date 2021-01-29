@@ -10,7 +10,7 @@ using  namespace::std;
 #include "BaseQuadEstimator.hpp"
 #include "SearchAlgorithm.hpp"
 
-#define TAKEOFF_ALTITUDE 0.5
+#define TAKEOFF_ALTITUDE 10
 #define RATE_100_HZ 100
 #define PREDICT_RATE RATE_100_HZ // this is slower than the IMU update rate of 500Hz
 
@@ -35,6 +35,7 @@ protected:
     V3F body_rate_target;
     int waypoint_number;
     time_t _start_time;
+    bool in_planning{ false };
 public:
     ControlsFlyer(MavlinkConnection *conn);
     void position_controller();
@@ -60,6 +61,7 @@ public:
     void find_closest_node(vector<V3F> nodes, V3F p, V3F& p_min);
     void send_waypoints(vector<V3F> points);
     void plan_path();
+    void command_ack_callback();
 
     clock_t lastPrediction;
     clock_t nextPrediction;

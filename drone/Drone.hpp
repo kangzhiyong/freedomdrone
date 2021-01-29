@@ -156,7 +156,7 @@ public:
     void take_control();
     void release_control();
     void cmd_position( float north, float east, float altitude, float heading);
-    void cmd_position(V3F p, float heading);
+    void cmd_position(V4F p);
     void takeoff(float target_altitude);
     void land();
     void cmd_attitude( float roll, float pitch, float yaw, float thrust);

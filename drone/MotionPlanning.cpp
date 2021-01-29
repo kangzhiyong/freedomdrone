@@ -7,14 +7,14 @@ MotionPlanning::MotionPlanning(MavlinkConnection* conn) : Drone(conn)
     register_callback(MessageIDs::LOCAL_POSITION, ((void (Drone::*)()) & MotionPlanning::local_position_callback));
     register_callback(MessageIDs::LOCAL_VELOCITY, ((void (Drone::*)()) & MotionPlanning::velocity_callback));
     register_callback(MessageIDs::STATE, ((void (Drone::*)()) & MotionPlanning::state_callback));
-
+    register_callback(MessageIDs::COMMANDACKRESULT, ((void (Drone::*)()) & MotionPlanning::command_ack_callback));
 }
 
 void MotionPlanning::local_position_callback()
 {
     if (flight_state == States::TAKEOFF)
     {
-        if (-1.0 * local_position()[2] > 0.95 * target_position[2])
+        if (abs(abs(local_position()[2]) - abs(target_position[2])) < 0.1)
         {
             waypoint_transition();
         }
@@ -53,15 +53,19 @@ void MotionPlanning::state_callback()
     {
         if (flight_state == States::MANUAL)
         {
-            arming_transition();
+            if (!in_planning)
+            {
+                new thread(&MotionPlanning::plan_path, this);
+                in_planning = true;
+            }
         }
         else if (flight_state == States::ARMING && armed())
         {
-            plan_path();
+            takeoff_transition();
         }
         else if (flight_state == States::PLANNING)
         {
-            takeoff_transition();
+            arming_transition();
         }
         else if (flight_state == States::DISARMING && !armed() && !guided())
         {
@@ -75,12 +79,14 @@ void MotionPlanning::arming_transition()
     flight_state = States::ARMING;
     cout << "arming transition\r\n" << endl;
     arm();
-    take_control();
 }
 
 void MotionPlanning::takeoff_transition()
 {
     cout << "takeoff transition\r\n" << endl;
+    local_position().print();
+    float target_altitude = local_position()[2] + 10.0;
+    target_position[2] = target_altitude;
     takeoff(target_position[2]);
     flight_state = States::TAKEOFF;
 }
@@ -111,7 +117,6 @@ void MotionPlanning::disarming_transition()
     flight_state = States::DISARMING;
     cout << "disarm transition" << endl;
     disarm();
-    release_control();
 }
 
 void MotionPlanning::manual_transition()
@@ -173,14 +178,15 @@ void MotionPlanning::plan_path()
     FreeData<float> data(path, ",");
     float lat0 = data.getLat();
     float lon0 = data.getLon();
-    set_home_position(lon0, lat0, 0);
+    //set_home_position(lon0, lat0, 0);
     _update_local_position(global_to_local(global_position(), global_home()));
 
     data.extract_polygons(safety_distance);
     data.sample(1000);
     data.create_graph(10);
     V3F start = local_position();
-    V3F goal = global_to_local({ -122.396428, 37.795128, target_altitude }, global_home());
+    V3F goal({ 10, 10, 10 });
+    //V3F goal = global_to_local({ -122.396428, 37.795128, target_altitude }, global_home());
     cout << "start and goal" << endl;
     start.print();
     goal.print();
@@ -200,17 +206,40 @@ void MotionPlanning::plan_path()
     GirdCellType goal_grid(goal_new);
     SearchAlgorithm a_start_graph(start_grid, goal_grid);
     a_start_graph.a_start_graph(graph);
-
+    cout << "star graph end" << endl;
     vector<V3F> path_points_prune;
     vector<V3F> path_points = a_start_graph.get_path_points();
+    cout << "get path points end" << path_points.size() << endl;
     if (path_points.size() > 0)
     {
         a_start_graph.prune_path_by_collinearity(path_points, path_points_prune);
+        cout << "prune end" << endl;
         send_waypoints(path_points_prune);
         for (int i = 0; i < path_points_prune.size(); i++) {
             path_points_prune[i].print();
             all_waypoints.push({ path_points_prune[i][0], path_points_prune[i][1], path_points_prune[i][2] });
         }
         flight_state = States::PLANNING;
+    }
+    else
+    {
+        in_planning = false;
+    }
+    //V3F cp = local_position();
+    //all_waypoints.push(cp + V3F({ 10.0, 0.0, 10 }));
+    //all_waypoints.push(cp + V3F({ 10.0, 10.0, 10 }));
+    //all_waypoints.push(cp + V3F({ 0.0, 10.0, 10 }));
+    //all_waypoints.push(cp + V3F({ 0.0, 0.0, 10 }));
+    //flight_state = States::PLANNING;
+}
+
+void MotionPlanning::command_ack_callback()
+{
+    if (!m_bControlStatus && m_bTakeoffed)
+    {
+        cout << "cmd offboard on" << endl;
+        cmd_position(local_position()[0], local_position()[1], -abs(target_position[2]), 0);
+        getConnection()->make_command_flight_mode(FlightMode::Offboard);
+        m_bControlStatus = true;
     }
 }

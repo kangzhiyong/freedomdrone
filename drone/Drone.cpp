@@ -128,7 +128,7 @@ void Drone::_update_global_home(void *msg)
     GlobalFrameMessage gfm = *(GlobalFrameMessage *)msg;
     _home_longitude = gfm.longitude();
     _home_latitude = gfm.latitude();
-    _home_altitude = gfm.altitude();
+    _home_altitude = abs(gfm.altitude());
     if ((gfm.getTime() - _home_position_time) < 0.0)
     {
         _home_position_frequency = 1.0 / (gfm.getTime() - _home_position_time);
@@ -138,7 +138,7 @@ void Drone::_update_global_home(void *msg)
 
 V3F Drone::local_position()
 {
-    return {_north, _east, _down};
+    return { _north, _east, _down};
 }
 
 time_t Drone::local_position_time()
@@ -151,7 +151,7 @@ void Drone::_update_local_position(void *msg)
     LocalFrameMessage lfm = *(LocalFrameMessage *)msg;
     _north = lfm.north();
     _east = lfm.east();
-    _down = lfm.down();
+    _down = abs(lfm.down());
     if ((lfm.getTime() - _local_position_time) > 0.0)
     {
         _local_position_frequency = 1.0 / (lfm.getTime() - _local_position_time);
@@ -482,7 +482,7 @@ void Drone::cmd_position( float north, float east, float altitude, float heading
     }
 }
 
-void Drone::cmd_position(V3F p, float heading)
+void Drone::cmd_position(V4F p)
 {
     /*
     Command the local position and drone heading.
@@ -497,7 +497,7 @@ void Drone::cmd_position(V3F p, float heading)
         // connection cmd_position is defined as NED, so need to flip the sign
         // on altitude
         if (m_conn != nullptr) {
-            m_conn->cmd_position(p[0], p[1], p[2], heading);
+            m_conn->cmd_position(p);
         }
     }
     catch (...) {
@@ -602,7 +602,7 @@ void Drone::cmd_velocity( float velocity_north, float velocity_east, float veloc
     */
     try {
         if (m_conn != nullptr) {
-            m_conn->cmd_velocity(velocity_north, velocity_east, velocity_down, heading);
+            m_conn->cmd_velocity(velocity_north, velocity_east, -abs(velocity_down), heading);
         }
     } catch (...) {
         perror("cmd_velocity failed: ");

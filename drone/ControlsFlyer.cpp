@@ -13,6 +13,7 @@ ControlsFlyer::ControlsFlyer(MavlinkConnection* conn) : UnityDrone(conn)
     register_callback(MessageIDs::RAW_GYROSCOPE, ((void (Drone::*)()) & ControlsFlyer::gyro_callback));
     register_callback(MessageIDs::GPS_INPUT_SENSOR, ((void (Drone::*)()) & ControlsFlyer::gps_sensor_callback));
     register_callback(MessageIDs::RAW_IMU_SENSOR, ((void (Drone::*)()) & ControlsFlyer::imu_sensor_callback));
+    register_callback(MessageIDs::COMMANDACKRESULT, ((void (Drone::*)()) & ControlsFlyer::command_ack_callback));
 
     lastPrediction = nextPrediction = clock();
     estimator.reset(new QuadEstimatorEKF());
@@ -62,15 +63,15 @@ void ControlsFlyer::local_position_callback()
 {
     if (flight_state == States::TAKEOFF)
     {
-        if (-1.0 * local_position()[2] > 0.95 * target_position[2])
+        if (abs(abs(local_position()[2]) - abs(target_position[2])) < 0.1)
         {
-            _start_time = time(0);
+            //_start_time = time(0);
              //calculate_box();
 //            load_test_trajectory(position_trajectory, time_trajectory, yaw_trajectory);
 //            for (int i = 0; i < position_trajectory.size(); i++) {
 //                all_waypoints.push(position_trajectory[i]);
 //            }
-            plan_path();
+            //plan_path();
             waypoint_number = -1;
             waypoint_transition();
         }
@@ -88,7 +89,7 @@ void ControlsFlyer::local_position_callback()
 //                landing_transition();
 //            }
 //        }
-        check_and_increment_waypoint();
+        //check_and_increment_waypoint();
     }
 }
 
@@ -140,6 +141,16 @@ void ControlsFlyer::state_callback()
     {
         if (flight_state == States::MANUAL)
         {
+            calculate_box();
+            flight_state = States::PLANNING;
+            /*if (!in_planning)
+            {
+                new thread(&ControlsFlyer::plan_path, this);
+                in_planning = true;
+            }*/
+        }
+        else if (flight_state == States::PLANNING)
+        {
             arming_transition();
         }
         else if (flight_state == States::ARMING && armed())
@@ -155,19 +166,20 @@ void ControlsFlyer::state_callback()
 
 void ControlsFlyer::calculate_box()
 {
-    cout << "Setting Home" << endl;
-    all_waypoints.push({10.0, 0.0, -3.0});
-    all_waypoints.push({10.0, 10.0, -3.0});
-    all_waypoints.push({0.0, 10.0, -3.0});
-    all_waypoints.push({0.0, 0.0, -3.0});
+    cout << "calculate_box" << endl;
+    //V3F cp = local_position();
+    V3F cp({ 0, 0, TAKEOFF_ALTITUDE });
+    all_waypoints.push(cp + V3F({ 10.0, 0.0, 0 }));
+    all_waypoints.push(cp + V3F({ 10.0, 10.0, 0 }));
+    all_waypoints.push(cp + V3F({ 0.0, 10.0, 0 }));
+    all_waypoints.push(cp + V3F({ 0.0, 0.0, 0 }));
 }
 
 void ControlsFlyer::arming_transition()
 {
     cout << "arming transition\r\n" << endl;
-    take_control();
     arm();
-    set_home_as_current_position();
+    //set_home_as_current_position();
     flight_state = States::ARMING;
 }
 
@@ -276,7 +288,8 @@ void ControlsFlyer::plan_path()
     data.sample(1000);
     data.create_graph(10);
     V3F start = local_position();
-    V3F goal = global_to_local({ -122.396428, 37.795128, target_altitude }, global_home());
+    V3F goal({ 10, 10, 10 });
+    //V3F goal = global_to_local({ -122.396428, 37.795128, target_altitude }, global_home());
     cout << "start and goal" << endl;
     start.print();
     goal.print();
@@ -309,6 +322,10 @@ void ControlsFlyer::plan_path()
         }
         flight_state = States::PLANNING;
     }
+    else
+    {
+        in_planning = false;
+    }
 }
 
 void ControlsFlyer::gps_sensor_callback()
@@ -330,4 +347,15 @@ void ControlsFlyer::imu_sensor_callback()
         nextPrediction = osTick + (1.0f / PREDICT_RATE) * 1000;
     }
     controller.UpdateEstimates(estimator->EstimatedPosition(), estimator->EstimatedVelocity(), estimator->EstimatedAttitude(), estimator->EstimatedOmega());
+}
+
+void ControlsFlyer::command_ack_callback()
+{
+    if (!m_bControlStatus && m_bTakeoffed)
+    {
+        cout << "cmd offboard on" << endl;
+        cmd_position(local_position()[0], local_position()[1], -abs(target_position[2]), 0);
+        getConnection()->make_command_flight_mode(FlightMode::Offboard);
+        m_bControlStatus = true;
+    }
 }

@@ -14,6 +14,7 @@ protected:
     CallBackFunc m_pCallBackFunc{ nullptr };
     V3F target_position{ 0, 0, 0 };
     bool in_mission{ true };
+    bool in_planning{ false };
 public:
     MotionPlanning(MavlinkConnection* conn);
     void local_position_callback();
@@ -29,6 +30,7 @@ public:
     void find_closest_node(vector<V3F> nodes, V3F p, V3F &p_min);
     void send_waypoints(vector<V3F> points);
     void plan_path();
+    void command_ack_callback();
 };
 
 class MSGPoint

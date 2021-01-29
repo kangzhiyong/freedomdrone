@@ -10,11 +10,11 @@ using  namespace::std;
 class BackyardFlyer : public Drone
 {
 protected:
-    queue<V3F> all_waypoints;
+    queue<V4F> all_waypoints;
     vector<States> check_state;
     States flight_state{ States::MANUAL };
     CallBackFunc m_pCallBackFunc{ nullptr };
-    V3F target_position{ 0, 0, 0 };
+    V4F target_position{ 0, 0, 0, 0 };
     bool in_mission{ true };
 public:
     BackyardFlyer(MavlinkConnection* conn);

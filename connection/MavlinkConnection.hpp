@@ -12,6 +12,7 @@ using namespace std;
 #include "MessageIDs.hpp"
 #include "MessageTypes.hpp"
 #include "MavUtils.hpp"
+#include "Point.hpp"
 
 /**
  * Defines for mavlink_set_position_target_local_ned_t.type_mask
@@ -107,9 +108,10 @@ public:
     void cmd_attitude(float roll, float pitch, float yaw, float thrust);
     void cmd_attitude_rate(float roll_rate, float pitch_rate, float yaw_rate, float thrust);
     void cmd_moment(float roll_moment, float pitch_moment, float yaw_moment, float thrust, time_t t=0.0);
-    void cmd_position_target_local_ned_send(time_t time_boot_ms, uint8_t target_system, uint8_t target_component, uint8_t coordinate_frame, uint16_t type_mask, float x, float y, float z, float vx, float vy, float vz, float afx, float afy, float afz, float yaw, float yaw_rate);
     void cmd_velocity(float vn, float ve, float vd, float heading);
     void cmd_position(float n, float e, float d, float heading);
+    void cmd_acceleration(float vn, float ve, float vd, float heading);
+    void cmd_position(V4F p);
     void cmd_controls(float *controls, time_t t=0);
     void takeoff(float n, float e, float d);
     void land(float n, float e);
