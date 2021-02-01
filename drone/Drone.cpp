@@ -105,7 +105,7 @@ void Drone::_update_global_position(void *msg)
     GlobalFrameMessage gfm = *(GlobalFrameMessage *)msg;
     _longitude = gfm.longitude();
     _latitude = gfm.latitude();
-    _altitude = gfm.altitude();
+    _altitude = -abs(gfm.altitude());
     if ((gfm.getTime() - _global_position_time) > 0.0)
     {
         _global_position_frequency = 1.0 / (gfm.getTime() - _global_position_time);
@@ -128,7 +128,7 @@ void Drone::_update_global_home(void *msg)
     GlobalFrameMessage gfm = *(GlobalFrameMessage *)msg;
     _home_longitude = gfm.longitude();
     _home_latitude = gfm.latitude();
-    _home_altitude = abs(gfm.altitude());
+    _home_altitude = -abs(gfm.altitude());
     if ((gfm.getTime() - _home_position_time) < 0.0)
     {
         _home_position_frequency = 1.0 / (gfm.getTime() - _home_position_time);
@@ -151,7 +151,7 @@ void Drone::_update_local_position(void *msg)
     LocalFrameMessage lfm = *(LocalFrameMessage *)msg;
     _north = lfm.north();
     _east = lfm.east();
-    _down = abs(lfm.down());
+    _down = -abs(lfm.down());
     if ((lfm.getTime() - _local_position_time) > 0.0)
     {
         _local_position_frequency = 1.0 / (lfm.getTime() - _local_position_time);
@@ -475,7 +475,7 @@ void Drone::cmd_position( float north, float east, float altitude, float heading
         // connection cmd_position is defined as NED, so need to flip the sign
         // on altitude
         if (m_conn != nullptr) {
-            m_conn->cmd_position(north, east, -abs(altitude), heading);
+            m_conn->cmd_position(north, east, altitude, heading);
         }
     } catch (...) {
         perror("cmd_position failed: ");
@@ -510,7 +510,7 @@ void Drone::takeoff(float target_altitude)
     // Command the drone to takeoff to the target_alt (in meters)
     try {
         if (m_conn != nullptr) {
-            m_conn->takeoff(local_position()[0], local_position()[1], -abs(target_altitude));
+            m_conn->takeoff(local_position()[0], local_position()[1], target_altitude);
         }
     } catch (...) {
         perror("takeoff failed: ");
@@ -602,7 +602,7 @@ void Drone::cmd_velocity( float velocity_north, float velocity_east, float veloc
     */
     try {
         if (m_conn != nullptr) {
-            m_conn->cmd_velocity(velocity_north, velocity_east, -abs(velocity_down), heading);
+            m_conn->cmd_velocity(velocity_north, velocity_east, velocity_down, heading);
         }
     } catch (...) {
         perror("cmd_velocity failed: ");

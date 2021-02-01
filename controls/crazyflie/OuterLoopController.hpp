@@ -21,8 +21,8 @@ public:
     OuterLoopController()
     {
         // define all the gains that will be needed
-        _kp_pos = 0.4;  // gain for lateral position error
-        _kp_alt = 0.1; // gain for altitude error
+        _kp_pos = 10.25;  // gain for lateral position error
+        _kp_alt = 0.3; // gain for altitude error
 
         // some limits to use
         _v_max = 0.3;     // the maximum horizontal velocity in[m / s]
@@ -46,12 +46,11 @@ public:
         */
 
         // compute a[Vn, Ve] command
-        //PointType pos_error = pos_cmd - pos;
-        //PointType lateral_vel_cmd = pos_error * _kp_pos + vel_cmd;
-        //lateral_vel_cmd = clip(lateral_vel_cmd, -_v_max, _v_max);
+        PointType pos_error = pos_cmd - pos;
+        PointType lateral_vel_cmd = pos_error * _kp_pos + vel_cmd;
+        lateral_vel_cmd = clip(lateral_vel_cmd, -_v_max, _v_max);
 
-        //return lateral_vel_cmd;
-        return { 0, 0, 0 };
+        return lateral_vel_cmd;
     }
 
     coordinate_type altitude_control(coordinate_type alt_cmd, coordinate_type alt, coordinate_type hdot_cmd = 0.0)

@@ -11,11 +11,13 @@ VelocityFlyer::VelocityFlyer(MavlinkConnection* conn) : Drone(conn)
 
 void VelocityFlyer::command_ack_callback()
 {
-    if (!m_bControlStatus && m_bTakeoffed)
+    if (!m_bControlStatus /*&& m_bTakeoffed*/)
     {
+        std::this_thread::sleep_for(std::chrono::seconds(5));
         cout << "cmd offboard on" << endl;
-        cmd_position(local_position()[0], local_position()[1], -abs(target_position[2]), 0);
+        //cmd_position(local_position()[0], local_position()[1], TAKEOFF_ALTITUDE, 0);
         getConnection()->make_command_flight_mode(FlightMode::Offboard);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
         m_bControlStatus = true;
     }
 }
@@ -35,7 +37,7 @@ void VelocityFlyer::local_position_callback()
         # `self.land()` and `self.takeoff()` functions in their respective transition functions
         # and by removing those states from this elif line.
     */
-    else if (flight_state == States::WAYPOINT /*|| flight_state == States::TAKEOFF || flight_state == States::LANDING*/)
+    if (flight_state == States::WAYPOINT || flight_state == States::TAKEOFF || flight_state == States::LANDING)
     {
         /*  # DEBUG
             # print("curr pos: ({:.2f}, {:.2f}, {:.2f}), desired pos: ({:.2f}, {:.2f}, {:.2f})".format(
@@ -50,10 +52,11 @@ void VelocityFlyer::local_position_callback()
         # worry about your crazyflie flying away too quickly.
         #
         ########################################################################################*/
-        //check_and_increment_waypoint();
+        check_and_increment_waypoint();
         // run the outer loop controller(position controller->to velocity command)
         V3F vel_cmd = run_outer_controller();
         cmd_velocity(vel_cmd[0], vel_cmd[1], vel_cmd[2], 0.0);
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 }
 
@@ -124,8 +127,8 @@ V3F VelocityFlyer::run_outer_controller()
     */
 
     V3F lateral_vel_cmd = _outer_controller.lateral_position_control(target_position, local_position(), target_velocity);
-    float hdot_cmd = _outer_controller.altitude_control(abs(target_position[2]), abs(local_position()[2]));
-    cout << local_position().str() << " " << target_position.str() << " " << hdot_cmd << endl;
+    float hdot_cmd = _outer_controller.altitude_control(-target_position[2], -local_position()[2]);
+    cout << target_position.str() << " " << local_position().str() << " " << lateral_vel_cmd.str() << " " << hdot_cmd << endl;
     return { lateral_vel_cmd[0], lateral_vel_cmd[1], -hdot_cmd };
 }
 
@@ -133,8 +136,8 @@ void VelocityFlyer::calculate_box()
 {
     cout << "Setting Home" << endl;
     all_waypoints.push({ 0, 5, TAKEOFF_ALTITUDE });
-    all_waypoints.push({ 5, 5, TAKEOFF_ALTITUDE });
-    all_waypoints.push({ 5, 0, TAKEOFF_ALTITUDE });
+    //all_waypoints.push({ 5, 5, TAKEOFF_ALTITUDE });
+    //all_waypoints.push({ 5, 0, TAKEOFF_ALTITUDE });
     all_waypoints.push({ 0, 0, TAKEOFF_ALTITUDE });
 }
 
@@ -155,7 +158,7 @@ void VelocityFlyer::takeoff_transition()
     /*# NOTE: the current configuration has the controller command everything from takeoff to landing
     # to let the drone handle takeoff, uncomment the follow and change the conditions accordingly
     # in the velocity callback*/
-    takeoff(target_altitude);
+    //takeoff(target_altitude);
     flight_state = States::TAKEOFF;
 }
 
@@ -179,7 +182,8 @@ void VelocityFlyer::landing_transition()
     /*# NOTE: the current configuration has the controller command everything from takeoff to landing
     # to let the crazyflie handle landing, uncomment the followand change the conditions accordingly
     # in the velocity callback*/
-    land();
+    //land();
+    target_position = { 0, 0, 0 };
     flight_state = States::LANDING;
 }
 

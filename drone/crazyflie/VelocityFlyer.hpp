@@ -7,7 +7,7 @@ using  namespace::std;
 #include "Drone.hpp"
 #include "OuterLoopController.hpp"
 
-#define TAKEOFF_ALTITUDE 10
+#define TAKEOFF_ALTITUDE -10
 
 class VelocityFlyer : public Drone
 {

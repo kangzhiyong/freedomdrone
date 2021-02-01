@@ -655,6 +655,9 @@ void MavlinkConnection::start()
         dispatch_loop();
     }
 
+    // Wait for system to connect via heartbeat.
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
     if (_write_handle_daemon)
     {
         _write_handle->join();
