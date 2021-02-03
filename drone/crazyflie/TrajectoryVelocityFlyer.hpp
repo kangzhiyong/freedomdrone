@@ -6,7 +6,7 @@ using  namespace::std;
 #include "Drone.hpp"
 
 #include "OuterLoopController.hpp"
-#define TAKEOFF_ALTITUDE 0.5
+#define TAKEOFF_ALTITUDE -10
 
 class TrajectoryHandler
 {
@@ -53,5 +53,6 @@ public:
     void disarming_transition();
     void manual_transition();
     void start_drone();
+    void command_ack_callback();
 };
 

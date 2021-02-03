@@ -38,6 +38,10 @@ void TrajectoryHandler::get_next_point(float inflight_time, V3F& position_cmd, V
     */
 
     // get the index of the trajectory with the closest time
+    if ((_rel_times.size() <= 0) || (_positions.size() <= 0))
+    {
+        return;
+    }
     vector<float> rel_times = _rel_times;
     for (int i = 0; i < rel_times.size(); i++) {
         cout << rel_times[i] << " " << inflight_time << endl;
@@ -102,7 +106,7 @@ void TrajectoryHandler::get_next_point(float inflight_time, V3F& position_cmd, V
 bool TrajectoryHandler::is_trajectory_completed(float inflight_time)
 {
     //check if the trajectory has been completed
-    return (inflight_time > _rel_times[_rel_times.size() - 1]);
+    return ((_rel_times.size() > 0)?(inflight_time > _rel_times[_rel_times.size() - 1]):1);
 }
 
 TrajectoryVelocityFlyer::TrajectoryVelocityFlyer(MavlinkConnection* conn) : Drone(conn)
@@ -111,20 +115,33 @@ TrajectoryVelocityFlyer::TrajectoryVelocityFlyer(MavlinkConnection* conn) : Dron
     register_callback(MessageIDs::LOCAL_POSITION, ((void (Drone::*)()) & TrajectoryVelocityFlyer::local_position_callback));
     register_callback(MessageIDs::LOCAL_VELOCITY, ((void (Drone::*)()) & TrajectoryVelocityFlyer::velocity_callback));
     register_callback(MessageIDs::STATE, ((void (Drone::*)()) & TrajectoryVelocityFlyer::state_callback));
-    string path = "../../data/line_traj.txt";
+    register_callback(MessageIDs::COMMANDACKRESULT, ((void (Drone::*)()) & TrajectoryVelocityFlyer::command_ack_callback));
+    string path = "../../data/traj/line_traj.txt";
 #ifdef WIN32
-    path = "../../../data/line_traj.txt";
+    path = "../../../data/traj/line_traj.txt";
 #endif
     _traj_handler._load_trajectory(path);
+}
+
+void TrajectoryVelocityFlyer::command_ack_callback()
+{
+    if (!m_bControlStatus /*&& m_bTakeoffed*/)
+    {
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+        cout << "cmd offboard on" << endl;
+        getConnection()->make_command_flight_mode(FlightMode::Offboard);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        m_bControlStatus = true;
+    }
 }
 
 void TrajectoryVelocityFlyer::local_position_callback()
 {
     if (flight_state == States::TAKEOFF)
     {
-        if (abs(1.0 * local_position()[2]) > abs(0.95 * target_position[2]))
+        _start_time = time(0);
+        if (-1.0 * local_position()[2] > -0.95 * target_position[2])
         {
-            _start_time = time(0);
             waypoint_transition();
         }
     }
@@ -133,7 +150,7 @@ void TrajectoryVelocityFlyer::local_position_callback()
         # `self.land()` and `self.takeoff()` functions in their respective transition functions
         # and by removing those states from this elif line.
     */
-    else if (flight_state == States::WAYPOINT /*|| flight_state == States::TAKEOFF || flight_state == States::LANDING*/)
+    if (flight_state == States::WAYPOINT || flight_state == States::TAKEOFF || flight_state == States::LANDING)
     {
         /*  # DEBUG
             # print("curr pos: ({:.2f}, {:.2f}, {:.2f}), desired pos: ({:.2f}, {:.2f}, {:.2f})".format(
@@ -152,18 +169,23 @@ void TrajectoryVelocityFlyer::local_position_callback()
 
         // get the current in flight time
         time_t rel_time = time(0) - _start_time;
-        // check if trajectory is completed
-        if (_traj_handler.is_trajectory_completed((float)rel_time))
-        {
-            landing_transition();
-            return;
-        }
+        //// check if trajectory is completed
+        //if (_traj_handler.is_trajectory_completed((float)rel_time))
+        //{
+        //    cout << "trajectory_completed" << endl;
+        //    landing_transition();
+        //    return;
+        //}
+        //cout << target_position.str() << local_position().str() << " " << (target_position - local_position()).mag() << endl;
         // set the target position and velocity from the trajectory
-        _traj_handler.get_next_point(rel_time, target_position, target_velocity);
+        if ((target_position - local_position()).mag() < 0.2)
+        {
+            _traj_handler.get_next_point(rel_time, target_position, target_velocity);
+        }
         // run the outer loop controller(position controller->to velocity command)
         V3F vel_cmd = run_outer_controller();
-
         cmd_velocity(vel_cmd[0], vel_cmd[1], vel_cmd[2], 0.0);
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 }
 
@@ -218,9 +240,8 @@ V3F TrajectoryVelocityFlyer::run_outer_controller()
 void TrajectoryVelocityFlyer::arming_transition()
 {
     cout << "arming transition\r\n" << endl;
-    take_control();
     arm();
-    set_home_as_current_position();
+    //set_home_as_current_position();
     flight_state = States::ARMING;
 }
 
@@ -233,7 +254,7 @@ void TrajectoryVelocityFlyer::takeoff_transition()
     /*# NOTE: the current configuration has the controller command everything from takeoff to landing
     # to let the drone handle takeoff, uncomment the follow and change the conditions accordingly
     # in the velocity callback*/
-    takeoff(target_altitude);
+    //takeoff(target_altitude);
     flight_state = States::TAKEOFF;
 }
 
@@ -248,7 +269,7 @@ void TrajectoryVelocityFlyer::landing_transition()
     /*# NOTE: the current configuration has the controller command everything from takeoff to landing
     # to let the crazyflie handle landing, uncomment the followand change the conditions accordingly
     # in the velocity callback*/
-    land();
+    //land();
     flight_state = States::LANDING;
 }
 
@@ -256,7 +277,6 @@ void TrajectoryVelocityFlyer::disarming_transition()
 {
     cout << "disarm transition" << endl;
     disarm();
-    release_control();
     flight_state = States::DISARMING;
 }
 
