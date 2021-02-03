@@ -9,7 +9,7 @@ using  namespace::std;
 #include "OuterLoopController.hpp"
 #include "InnerLoopController.hpp"
 
-#define TAKEOFF_ALTITUDE 0.5
+#define TAKEOFF_ALTITUDE -10
 
 class AttitudeFlyer : public Drone
 {
@@ -52,4 +52,5 @@ public:
     void disarming_transition();
     void manual_transition();
     void start_drone();
+    void command_ack_callback();
 };

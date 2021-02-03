@@ -10,6 +10,11 @@ constexpr auto IGNORE_AX = (1 << 6);
 constexpr auto IGNORE_AY = (1 << 7);
 constexpr auto IGNORE_AZ = (1 << 8);
 constexpr auto IGNORE_YAW_RATE = (1 << 11);
+constexpr auto IGNORE_BODY_ROLL_RATE = (1 << 0);
+constexpr auto IGNORE_BODY_PITCH_RATE = (1 << 1);
+constexpr auto IGNORE_BODY_YAW_RATE = (1 << 2);
+constexpr auto IGNORE_ATTITUDE = (1 << 7);
+constexpr auto IGNORE_THROTTLE = (1 << 6);
 
 enum class ConnectionType
 {

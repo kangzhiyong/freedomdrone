@@ -6,7 +6,19 @@ AttitudeFlyer::AttitudeFlyer(MavlinkConnection* conn) : Drone(conn)
     register_callback(MessageIDs::LOCAL_POSITION, ((void (Drone::*)()) & AttitudeFlyer::local_position_callback));
     register_callback(MessageIDs::LOCAL_VELOCITY, ((void (Drone::*)()) & AttitudeFlyer::velocity_callback));
     register_callback(MessageIDs::STATE, ((void (Drone::*)()) & AttitudeFlyer::state_callback));
+    register_callback(MessageIDs::COMMANDACKRESULT, ((void (Drone::*)()) & AttitudeFlyer::command_ack_callback));
+}
 
+void AttitudeFlyer::command_ack_callback()
+{
+    if (!m_bControlStatus /*&& m_bTakeoffed*/)
+    {
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+        cout << "cmd offboard on" << endl;
+        getConnection()->make_command_flight_mode(FlightMode::Offboard);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        m_bControlStatus = true;
+    }
 }
 
 void AttitudeFlyer::local_position_callback()
@@ -24,7 +36,7 @@ void AttitudeFlyer::local_position_callback()
         # `self.land()` and `self.takeoff()` functions in their respective transition functions
         # and by removing those states from this elif line.
     */
-    else if (flight_state == States::WAYPOINT || flight_state == States::TAKEOFF || flight_state == States::LANDING)
+    if (flight_state == States::WAYPOINT || flight_state == States::TAKEOFF || flight_state == States::LANDING)
     {
         /*  # DEBUG
             # print("curr pos: ({:.2f}, {:.2f}, {:.2f}), desired pos: ({:.2f}, {:.2f}, {:.2f})".format(
@@ -40,7 +52,7 @@ void AttitudeFlyer::local_position_callback()
         #
         # self.check_and_increment_waypoint()
         ########################################################################################*/
-
+        check_and_increment_waypoint();
         // run the outer loop controller(position controller->to velocity command)
         _velocity_cmd = run_outer_controller();
 
@@ -59,7 +71,6 @@ void AttitudeFlyer::velocity_callback()
             disarming_transition();
         }
     }
-
     /*# NOTE : this will run your controller during takeoff and landing.
       # to disable that functionality, you will need to remove those conditions from this if statement
     */
@@ -67,7 +78,6 @@ void AttitudeFlyer::velocity_callback()
     {
         // run the inner loop controller
         V3F cmd = run_inner_controller();
-
         // NOTE: yaw control is not implemented, just commanding 0 yaw;
         cmd_attitude(cmd[0], cmd[1], 0.0, cmd[2]);
     }
@@ -103,6 +113,7 @@ void AttitudeFlyer::check_and_increment_waypoint()
 
      /*# NOTE: depending on how aggressive of paths you are flying, and how reliably you want
      # them to be flown, you may want to add the vertical axis to the distance check.*/
+
     if ((target_position - local_position()).mag() < 0.2)
     {
         if (all_waypoints.size() > 0)
@@ -150,19 +161,19 @@ V3F AttitudeFlyer::run_inner_controller()
 
 void AttitudeFlyer::calculate_box()
 {
-    cout << "Setting Home" << endl;
-    //    all_waypoints.push({ 0, 5, 3 });
-    //    all_waypoints.push({ 5, 5, 3 });
-    //    all_waypoints.push({ 5, 0, 3 });
-    all_waypoints.push({ 0, 0, -1 });
+    cout << "calculate_box" << endl;
+    all_waypoints.push({ 0, 5, TAKEOFF_ALTITUDE });
+    all_waypoints.push({ 5, 5, TAKEOFF_ALTITUDE });
+    all_waypoints.push({ 5, 0, TAKEOFF_ALTITUDE });
+    all_waypoints.push({ 0, 0, TAKEOFF_ALTITUDE });
+    all_waypoints.push({ 0, 0, 0 });
 }
 
 void AttitudeFlyer::arming_transition()
 {
     cout << "arming transition\r\n" << endl;
-    take_control();
     arm();
-    set_home_as_current_position();
+    //set_home_as_current_position();
     flight_state = States::ARMING;
 }
 
@@ -200,13 +211,13 @@ void AttitudeFlyer::landing_transition()
     # in the velocity callback
     # land()*/
     flight_state = States::LANDING;
+    //cout << target_position.str() << local_position().str() << local_velocity().str() << " " << local_velocity().mag() << endl;
 }
 
 void AttitudeFlyer::disarming_transition()
 {
     cout << "disarm transition" << endl;
     disarm();
-    release_control();
     flight_state = States::DISARMING;
 }
 

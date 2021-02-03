@@ -7,7 +7,7 @@ implementation of the inner loop controller which controls velocity through atti
 
 #define	DRONE_M	0.031			// [kg]
 #define	GRAVITY_MAG 9.81      // [m / s ^ 2]->magnitude only
-#define	MAX_THRUST_N 0.63     // the maximum amount of thrust the crazyflie can generate in[N] - DO NOT EDIT
+#define	MAX_THRUST_N 0.5     // the maximum amount of thrust the crazyflie can generate in[N] - DO NOT EDIT
 
 template<typename coordinate_type>
 class InnerLoopController
@@ -17,9 +17,9 @@ public:
 	InnerLoopController()
 	{
         _kp_vel = 0.14;
-        _kp_hdot = 1.0;
+        _kp_hdot = 80;
         _bank_max = 20 * M_DEG_TO_RAD;
-        _haccel_max = 1.2;
+        _haccel_max = 3;
 	}
 
     PointType velocity_control(PointType vel_cmd, PointType vel)
@@ -52,6 +52,7 @@ public:
         // compute acceleration and then thrust for vertical
         coordinate_type accel_cmd = _kp_hdot * (hdot_cmd - hdot);
         accel_cmd = clip(accel_cmd, -_haccel_max, _haccel_max);
+        //cout << accel_cmd << " " << hdot_cmd << " " << hdot << endl;
         coordinate_type thrust_cmd_N = DRONE_M * (accel_cmd + GRAVITY_MAG) / (cos(pitch_cmd) * cos(roll_cmd)); // positive up
         // need to normalize the thrust
         coordinate_type thrust_cmd = thrust_cmd_N / MAX_THRUST_N;

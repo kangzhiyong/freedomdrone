@@ -193,6 +193,8 @@ void MavlinkConnection::dispatch_message(mavlink_message_t msg)
             }
             StateMessage state(timestamp, _armed, guided_mode, hrt_msg.system_status);
             notify_message_listeners(MessageIDs::STATE, &state);
+            _target_system = msg.sysid;
+            _target_component = msg.compid;
             break;
         }
         case MAVLINK_MSG_ID_LOCAL_POSITION_NED:
@@ -753,12 +755,12 @@ void MavlinkConnection::send_long_command(uint16_t command_type, float param1, f
     packet.param7 = param7;
     packet.command = command_type;
     packet.target_system = _target_system;
-    packet.target_component = autopilot_id;
+    packet.target_component = _target_component;
     packet.confirmation = true; //may want this as an input.... used for repeat messages
     
     mavlink_message_t msg;
     memset(&msg, 0, sizeof(mavlink_message_t));
-    mavlink_msg_command_long_encode(_target_system, _target_component, &msg, &packet);
+    mavlink_msg_command_long_encode(_own_system, _own_component, &msg, &packet);
     send_message(msg);
 }
 
@@ -782,108 +784,80 @@ void MavlinkConnection::release_control()
     send_long_command(MAV_CMD_DO_SET_MODE, MAV_MODE_FLAG_CUSTOM_MODE_ENABLED, (float)MainMode::PX4_MODE_MANUAL, 0);
 }
 
-void MavlinkConnection::cmd_attitude_target_send(time_t time_boot_ms, uint8_t target_system, uint8_t target_component, uint16_t type_mask, float roll, float pitch, float yaw, float body_roll_rate, float body_pitch_rate, float body_yaw_rate, float thrust)
-{
-    mavlink_set_attitude_target_t packet;
-    memset(&packet, 0, sizeof(packet));
-    packet.time_boot_ms = (uint32_t)time_boot_ms;
-    packet.body_roll_rate = body_roll_rate;
-    packet.body_pitch_rate = body_pitch_rate;
-    packet.body_yaw_rate = body_yaw_rate;
-    packet.thrust = thrust;
-    packet.target_system = target_system;
-    packet.target_component = autopilot_id;
-    packet.type_mask = type_mask;
-    
+void MavlinkConnection::cmd_attitude_target_send(uint16_t type_mask, float roll, float pitch, float yaw, float body_roll_rate, float body_pitch_rate, float body_yaw_rate, float thrust)
+{  
     // convert the attitude to a quaternion
+    uint32_t time_boot_ms = elapsed_s() * 1e3;
     FrameMessage frame_msg(time_boot_ms, roll, pitch, yaw);
-    memset(packet.q, 0, sizeof(double) * 4);
-    packet.q[0] = frame_msg.q0();
-    packet.q[1] = frame_msg.q1();
-    packet.q[2] = frame_msg.q2();
-    packet.q[3] = frame_msg.q3();
-    
     mavlink_message_t msg;
-    memset(&msg, 0, sizeof(mavlink_message_t));
-    mavlink_msg_set_attitude_target_encode(target_system, target_component, &msg, &packet);
+    mavlink_msg_set_attitude_target_pack(
+        _own_system,
+        _own_component,
+        &msg,
+        time_boot_ms,
+        _target_system,
+        _target_component,
+        type_mask,
+        frame_msg.q(),
+        body_roll_rate,
+        body_pitch_rate,
+        body_yaw_rate,
+        thrust);
+
     send_message(msg);
 }
 
 void MavlinkConnection::cmd_attitude(float roll, float pitch, float yaw, float thrust)
 {
-    cmd_attitude_target_send(0, _target_system, _target_component, (uint16_t)AttitudeMask::MASK_IGNORE_RATES, roll, pitch, yaw, 0, 0, 0, thrust);
+    uint16_t type_mask = IGNORE_BODY_ROLL_RATE | IGNORE_BODY_PITCH_RATE | IGNORE_BODY_YAW_RATE;
+    cmd_attitude_target_send(type_mask, roll, pitch, yaw, 0, 0, 0, thrust);
 }
 
 void MavlinkConnection::cmd_attitude_rate(float roll_rate, float pitch_rate, float yaw_rate, float thrust)
 {
-    cmd_attitude_target_send(0, _target_system, _target_component, (uint16_t)AttitudeMask::MASK_IGNORE_ATTITUDE, 0.0, 0.0, 0.0, roll_rate, pitch_rate, yaw_rate, thrust);
+    uint16_t type_mask = IGNORE_ATTITUDE;
+    cmd_attitude_target_send(type_mask, 0.0, 0.0, 0.0, roll_rate, pitch_rate, yaw_rate, thrust);
 }
 
 void MavlinkConnection::cmd_moment(float roll_moment, float pitch_moment, float yaw_moment, float thrust, time_t t)
 {
-    //TODO: Give this it's own mask
-    float mask = 0b10000000;
-    cmd_attitude_target_send(t * 1000, _target_system, _target_component, mask, 0.0, 0.0, 0.0, roll_moment, pitch_moment, yaw_moment, thrust);
+    uint16_t type_mask = IGNORE_ATTITUDE;
+    cmd_attitude_target_send(type_mask, 0.0, 0.0, 0.0, roll_moment, pitch_moment, yaw_moment, thrust);
+}
+
+void MavlinkConnection::msg_set_position_target_local_ned_pack(uint16_t mask, float n, float e, float d, float vn, float ve, float vd, float an, float ae, float ad, float heading)
+{
+    mavlink_message_t msg;
+    mavlink_msg_set_position_target_local_ned_pack(
+        _own_system,
+        _own_component,
+        &msg,
+        elapsed_s() * 1e3,
+        _target_system,
+        _target_component,
+        MAV_FRAME_LOCAL_NED,
+        mask, 0, 0, 0, vn, ve, vd, 0, 0, 0, heading * M_DEG_TO_RAD, 0
+    );
+
+    send_message(msg);
 }
 
 void MavlinkConnection::cmd_velocity(float vn, float ve, float vd, float heading)
 {
     uint16_t mask = IGNORE_X | IGNORE_Y | IGNORE_Z | IGNORE_AX | IGNORE_AY | IGNORE_AZ | IGNORE_YAW_RATE;
-    mavlink_message_t msg;
-    mavlink_msg_set_position_target_local_ned_pack(
-        _target_system,
-        _target_component,
-        &msg,
-        elapsed_s() * 1e3,
-        _target_system,
-        _target_component,
-        MAV_FRAME_LOCAL_NED,
-        mask, 0, 0, 0, vn, ve, vd, 0, 0, 0, heading * M_RAD_TO_DEG, 0
-    );
-
-    send_message(msg);
+    msg_set_position_target_local_ned_pack(mask, 0, 0, 0, vn, ve, vd, 0, 0, 0, heading);
 }
 
-void MavlinkConnection::cmd_acceleration(float afx, float afy, float afz, float heading)
+void MavlinkConnection::cmd_acceleration(float ax, float ay, float az, float heading)
 {
     uint16_t mask = IGNORE_X | IGNORE_Y | IGNORE_Z | IGNORE_VX | IGNORE_VY | IGNORE_VZ | IGNORE_YAW_RATE;
-    mavlink_message_t msg;
-    mavlink_msg_set_position_target_local_ned_pack(
-        _target_system,
-        _target_component,
-        &msg,
-        elapsed_s() * 1e3,
-        _target_system,
-        _target_component,
-        MAV_FRAME_LOCAL_NED,
-        mask, 0, 0, 0, 0, 0, 0, afx, afy, afz, heading * M_RAD_TO_DEG, 0
-    );
-
-    send_message(msg);
+    msg_set_position_target_local_ned_pack(mask, 0, 0, 0, 0, 0, 0, ax, ay , az, heading);
 }
 
 void MavlinkConnection::cmd_position(float n, float e, float d, float heading)
 {
-    // when using the simualtor, d is actually interpreted as altitude
-    // therefore need to do a sign change on d
- /*   if (_using_px4)
-    {
-        d = -1.0 * d;
-    }*/
     uint16_t mask = IGNORE_VX | IGNORE_VY | IGNORE_VZ | IGNORE_AX | IGNORE_AY | IGNORE_AZ | IGNORE_YAW_RATE;
-    mavlink_message_t msg;
-    mavlink_msg_set_position_target_local_ned_pack(
-        _target_system,
-        _target_component,
-        &msg,
-        elapsed_s() * 1e3,
-        _target_system,
-        _target_component,
-        MAV_FRAME_LOCAL_NED,
-        mask, n, e, d, 0, 0, 0, 0, 0, 0, heading * M_RAD_TO_DEG, 0
-    );
-
-    send_message(msg);
+    msg_set_position_target_local_ned_pack(mask, n, e, d, 0, 0, 0, 0, 0, 0, heading);
 }
 
 void MavlinkConnection::cmd_position(V4F p)
@@ -905,7 +879,7 @@ void MavlinkConnection::cmd_controls(float *controls, time_t t)
     mav_array_memcpy(packet.controls, controls, sizeof(float)*8);
     
     mavlink_message_t msg;
-    mavlink_msg_set_actuator_control_target_encode(_target_system, _target_component, &msg, &packet);
+    mavlink_msg_set_actuator_control_target_encode(_own_system, _own_component, &msg, &packet);
     
     send_message(msg);
 }
@@ -950,12 +924,14 @@ void MavlinkConnection::local_acceleration_target(float an, float ae, float ad, 
 
 void MavlinkConnection::attitude_target(float roll, float pitch, float yaw, time_t t)
 {
-    cmd_attitude_target_send(t, _target_system, _target_component, 0b01111111, roll, pitch, yaw, 0, 0, 0, 0);
+    uint16_t type_mask = IGNORE_BODY_ROLL_RATE | IGNORE_BODY_PITCH_RATE | IGNORE_BODY_YAW_RATE| IGNORE_THROTTLE;
+    cmd_attitude_target_send(type_mask, roll, pitch, yaw, 0, 0, 0, 0);
 }
 
 void MavlinkConnection::body_rate_target(float p, float q, float r, time_t t)
 {
-    cmd_attitude_target_send(t, _target_system, _target_component, 0b11111000, 0, 0, 0, p, q, r, 0);
+    uint16_t type_mask = IGNORE_ATTITUDE | IGNORE_THROTTLE;
+    cmd_attitude_target_send(type_mask, 0, 0, 0, p, q, r, 0);
 }
 
 void MavlinkConnection::set_sub_mode(int sub_mode)
@@ -989,7 +965,7 @@ void MavlinkConnection::cmd_offboard_control(bool flag)
     // Encode
     mavlink_message_t message;
 //    mavlink_msg_command_long_encode_chan(_target_system, _target_component, _target_channel, &message, &com);
-    mavlink_msg_command_long_encode(_target_system, _target_component, &message, &com);
+    mavlink_msg_command_long_encode(_own_system, _own_component, &message, &com);
 
     // Send the message
     send_message_immediately(message);

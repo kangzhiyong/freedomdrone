@@ -104,13 +104,14 @@ public:
     void disarm();
     void take_control();
     void release_control();
-    void cmd_attitude_target_send(time_t time_boot_ms, uint8_t target_system, uint8_t target_component, uint16_t type_mask, float roll, float pitch, float yaw, float body_roll_rate, float body_pitch_rate, float body_yaw_rate, float thrust);
+    void cmd_attitude_target_send(uint16_t type_mask, float roll, float pitch, float yaw, float body_roll_rate, float body_pitch_rate, float body_yaw_rate, float thrust);
     void cmd_attitude(float roll, float pitch, float yaw, float thrust);
     void cmd_attitude_rate(float roll_rate, float pitch_rate, float yaw_rate, float thrust);
     void cmd_moment(float roll_moment, float pitch_moment, float yaw_moment, float thrust, time_t t=0.0);
+    void msg_set_position_target_local_ned_pack(uint16_t mask, float n = 0, float e = 0, float d = 0, float vn = 0, float ve = 0, float vd = 0, float an = 0, float ae = 0, float ad = 0, float heading = 0);
     void cmd_velocity(float vn, float ve, float vd, float heading);
     void cmd_position(float n, float e, float d, float heading);
-    void cmd_acceleration(float vn, float ve, float vd, float heading);
+    void cmd_acceleration(float an, float ae, float ad, float heading);
     void cmd_position(V4F p);
     void cmd_controls(float *controls, time_t t=0);
     void takeoff(float n, float e, float d);
@@ -146,6 +147,8 @@ private:
     bool _write_handle_daemon{false};
     // management
     bool _running{false};
+    uint8_t _own_system{ 1 };
+    uint8_t _own_component{ MAV_COMP_ID_ALL };
     uint8_t _target_system{1};
     uint8_t _target_component{ MAV_COMP_ID_ALL };
     uint8_t _target_channel{ 1 };

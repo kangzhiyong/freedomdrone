@@ -152,6 +152,10 @@ public:
     float q1();
     float q2();
     float q3();
+    float* q()
+    {
+        return _q;
+    }
     vector<float> euler_angles();
     vector<float> quaternions();
     
@@ -163,6 +167,7 @@ private:
     float _q1;
     float _q2;
     float _q3;
+    float _q[4];
 };
 
 class DistanceSensorMessage: public MessageBase

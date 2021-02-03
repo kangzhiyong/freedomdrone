@@ -6,6 +6,7 @@
 //
 
 #include "MessageTypes.hpp"
+#include "DroneUtils.hpp"
 
 MessageBase::MessageBase(int64_t t)
 {
@@ -148,26 +149,26 @@ FrameMessage::FrameMessage(int64_t time, float roll, float pitch, float yaw): Me
     _pitch = pitch;
     _yaw = yaw;
 
-    float sp = sin(pitch / 2.0);
-    float cp = cos(pitch / 2.0);
-    float sr = sin(roll / 2.0);
-    float cr = cos(roll / 2.0);
-    float sy = sin(yaw / 2.0);
-    float cy = cos(yaw / 2.0);
+    const double cos_phi_2 = cos(double(roll) / 2.0);
+    const double sin_phi_2 = sin(double(roll) / 2.0);
+    const double cos_theta_2 = cos(double(pitch) / 2.0);
+    const double sin_theta_2 = sin(double(pitch) / 2.0);
+    const double cos_psi_2 = cos(double(yaw) / 2.0);
+    const double sin_psi_2 = sin(double(yaw) / 2.0);
 
-    _q0 = cr * cp * cy + sr * sp * sy;
-    _q1 = sr * cp * cy - cr * sp * sy;
-    _q2 = cr * sp * cy + sr * cp * sy;
-    _q3 = cr * cp * sy - sr * sp * cy;
+    _q[0] = float(cos_phi_2 * cos_theta_2 * cos_psi_2 + sin_phi_2 * sin_theta_2 * sin_psi_2);
+    _q[1] = float(sin_phi_2 * cos_theta_2 * cos_psi_2 - cos_phi_2 * sin_theta_2 * sin_psi_2);
+    _q[2] = float(cos_phi_2 * sin_theta_2 * cos_psi_2 + sin_phi_2 * cos_theta_2 * sin_psi_2);
+    _q[3] = float(cos_phi_2 * cos_theta_2 * sin_psi_2 - sin_phi_2 * sin_theta_2 * cos_psi_2);
 }
 
 FrameMessage::FrameMessage(int64_t time, float q0, float q1, float q2, float q3): MessageBase(time)
 {
     
-    _q0 = q0;
-    _q1 = q1;
-    _q2 = q2;
-    _q3 = q3;
+    _q[0] = q0;
+    _q[1] = q1;
+    _q[2] = q2;
+    _q[3] = q3;
 
     _roll = atan2(2.0 * (q0 * q1 + q2 * q3), 1.0 - 2.0 * (pow(q1, 2) + pow(q2, 2)));
     _pitch = asin(2.0 * (q0 * q2 - q3 * q1));
@@ -195,25 +196,25 @@ float FrameMessage::yaw()
 float FrameMessage::q0()
 {
     //float: 0th element of quaternion
-    return _q0;
+    return _q[0];
 }
 
 float FrameMessage::q1()
 {
     //float: 1st element of quaternion
-    return _q1;
+    return _q[1];
 }
 
 float FrameMessage::q2()
 {
     //float: 2nd element of quaternion
-    return _q2;
+    return _q[2];
 }
 
 float FrameMessage::q3()
 {
     //float: 3rd element of quaternion
-    return _q3;
+    return _q[3];
 }
 
 vector<float> FrameMessage::euler_angles()
