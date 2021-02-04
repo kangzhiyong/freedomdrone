@@ -7,12 +7,12 @@
 
 #include <stdio.h>
 
-#include "TrajectoryVelocityFlyer.hpp"
+#include "ControlsFlyer.hpp"
 
 int main()
 {
     MavlinkConnection conn("UDP", "192.168.137.128", REMOTE_PORT_ONBOARD, LOCAL_PORT_ONBOARD, true, true);
-    TrajectoryVelocityFlyer drone(&conn);
+    ControlsFlyer drone(&conn);
     drone.start_drone();
     return 0;
 }

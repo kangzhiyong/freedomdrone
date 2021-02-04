@@ -10,7 +10,7 @@ using  namespace::std;
 #include "BaseQuadEstimator.hpp"
 #include "SearchAlgorithm.hpp"
 
-#define TAKEOFF_ALTITUDE 10
+#define TAKEOFF_ALTITUDE -10
 #define RATE_100_HZ 100
 #define PREDICT_RATE RATE_100_HZ // this is slower than the IMU update rate of 500Hz
 
@@ -26,6 +26,7 @@ protected:
     vector<States> check_state;
     V3F local_position_target{0, 0, 0};
     V3F local_velocity_target{0, 0, 0};
+    V3F _attitude_target{ 0, 0, 0 };
     vector<V3F> position_trajectory;
     vector<float> yaw_trajectory;
     vector<float> time_trajectory;

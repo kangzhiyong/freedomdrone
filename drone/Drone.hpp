@@ -157,7 +157,7 @@ public:
     void release_control();
     void cmd_position( float north, float east, float altitude, float heading);
     void cmd_position(V4F p);
-    void takeoff(float target_altitude);
+    void takeoff();
     void land();
     void cmd_attitude( float roll, float pitch, float yaw, float thrust);
     void cmd_attitude_rate( float roll_rate, float pitch_rate, float yaw_rate, float thrust);
@@ -181,6 +181,7 @@ public:
     V3F _posMeas, _velMeas;
     V3F _accelMeas, _gyroMeas;
     V3F _magMeas;
-    bool m_bControlStatus{ false };
+    //bool m_bControlStatus{ false };
     bool m_bTakeoffed{ false };
+    bool m_bControlStatus{ false };
 };

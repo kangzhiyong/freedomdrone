@@ -47,6 +47,12 @@ typedef std::chrono::time_point<std::chrono::steady_clock> dl_time_t;
 #define M_RAD_TO_DEG (180.0 / M_PI)
 #define CONSTANTS_RADIUS_OF_EARTH 6371000 // meters (m)
 
+#define	DRONE_M	0.031			// [kg]
+#define	GRAVITY_MAG 9.81      // [m / s ^ 2]->magnitude only
+#define	MAX_THRUST_N 0.5     // the maximum amount of thrust the crazyflie can generate in[N] - DO NOT EDIT
+#define MAX_THRUST 10.0
+#define MAX_TORQUE 1
+
 static const float epsilon = std::numeric_limits<float>::epsilon();
 
 class ZoneNode

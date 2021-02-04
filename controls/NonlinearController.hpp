@@ -3,11 +3,6 @@
 #include "Point.hpp"
 #include "Quaternion.hpp"
 
-#define DRONE_MASS_KG 0.5
-#define GRAVITY  -9.81
-#define MAX_THRUST 10.0
-#define MAX_TORQUE 1
-
 extern V3F MOI;
 
 class NonlinearController

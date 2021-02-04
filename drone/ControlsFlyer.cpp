@@ -11,8 +11,8 @@ ControlsFlyer::ControlsFlyer(MavlinkConnection* conn) : UnityDrone(conn)
     register_callback(MessageIDs::STATE, ((void (Drone::*)()) & ControlsFlyer::state_callback));
     register_callback(MessageIDs::ATTITUDE, ((void (Drone::*)()) & ControlsFlyer::attitude_callback));
     register_callback(MessageIDs::RAW_GYROSCOPE, ((void (Drone::*)()) & ControlsFlyer::gyro_callback));
-    register_callback(MessageIDs::GPS_INPUT_SENSOR, ((void (Drone::*)()) & ControlsFlyer::gps_sensor_callback));
-    register_callback(MessageIDs::RAW_IMU_SENSOR, ((void (Drone::*)()) & ControlsFlyer::imu_sensor_callback));
+    //register_callback(MessageIDs::GPS_INPUT_SENSOR, ((void (Drone::*)()) & ControlsFlyer::gps_sensor_callback));
+    //register_callback(MessageIDs::RAW_IMU_SENSOR, ((void (Drone::*)()) & ControlsFlyer::imu_sensor_callback));
     register_callback(MessageIDs::COMMANDACKRESULT, ((void (Drone::*)()) & ControlsFlyer::command_ack_callback));
 
     lastPrediction = nextPrediction = clock();
@@ -21,19 +21,22 @@ ControlsFlyer::ControlsFlyer(MavlinkConnection* conn) : UnityDrone(conn)
 
 void ControlsFlyer::position_controller()
 {
-//    float curr_time = time(0) - _start_time;
-//    controller.trajectory_control(position_trajectory, yaw_trajectory, time_trajectory, curr_time, local_position_target, local_velocity_target, yaw_target);
+    float curr_time = time(0) - _start_time;
+    controller.trajectory_control(position_trajectory, yaw_trajectory, time_trajectory, curr_time, local_position_target, local_velocity_target, yaw_target);
+    _attitude_target = {0, 0, yaw_target};
     V3F acceleration_cmd = controller.lateral_position_control(local_position_target, local_velocity_target,
-                                                               controller.estPos, controller.estVel, { 0, 0, 0 });
+                                                               local_position(), local_velocity(), { 0, 0, 0 });
     local_acceleration_target = V3F({acceleration_cmd[0], acceleration_cmd[1], 0.0});
 }
 
 void ControlsFlyer::attitude_controller()
 {
-    thrust_cmd = controller.altitude_control(local_position_target[2], local_velocity_target[2],
-                                             controller.estPos.z(), controller.estVel.z(), controller.estAtt, GRAVITY);
-    V3F roll_pitch_rate_cmd = controller.roll_pitch_controller(local_acceleration_target, controller.estAtt, thrust_cmd);
-    float yawrate_cmd = controller.yaw_control(yaw_target, controller.estAtt.Yaw());
+    thrust_cmd = controller.altitude_control(-local_position_target[2], -local_velocity_target[2],
+                                             -local_position()[2], -local_velocity()[2], 
+                                            SLR::Quaternion<float>::FromEuler123_RPY(attitude()[0], attitude()[1], attitude()[2]), GRAVITY_MAG);
+    V3F roll_pitch_rate_cmd = controller.roll_pitch_controller(local_acceleration_target, 
+                                            SLR::Quaternion<float>::FromEuler123_RPY(attitude()[0], attitude()[1], attitude()[2]), thrust_cmd);
+    float yawrate_cmd = controller.yaw_control(_attitude_target[2], attitude()[2]);
     body_rate_target = V3F({roll_pitch_rate_cmd[0], roll_pitch_rate_cmd[1], yawrate_cmd});
 }
 
@@ -63,34 +66,45 @@ void ControlsFlyer::local_position_callback()
 {
     if (flight_state == States::TAKEOFF)
     {
-        if (abs(abs(local_position()[2]) - abs(target_position[2])) < 0.1)
+        if (getConnection()->landedState() == LandedState::InAir)
         {
-            //_start_time = time(0);
-             //calculate_box();
-//            load_test_trajectory(position_trajectory, time_trajectory, yaw_trajectory);
-//            for (int i = 0; i < position_trajectory.size(); i++) {
-//                all_waypoints.push(position_trajectory[i]);
-//            }
-            //plan_path();
-            waypoint_number = -1;
-            waypoint_transition();
+            if (!m_bControlStatus)
+            {
+                std::this_thread::sleep_for(std::chrono::seconds(5));
+                cout << "cmd offboard on" << endl;
+                //cmd_position(target_position[0], target_position[1], target_position[2], 0);
+                getConnection()->make_command_flight_mode(FlightMode::Offboard);
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+                m_bControlStatus = true;
+            }
+            if (-1.0 * local_position()[2] > -0.9 * target_position[2])
+            {
+                _start_time = time(0);
+                //calculate_box();
+                load_test_trajectory(position_trajectory, time_trajectory, yaw_trajectory);
+                for (int i = 0; i < position_trajectory.size(); i++) {
+                    all_waypoints.push(position_trajectory[i]);
+                }
+                waypoint_number = -1;
+                waypoint_transition();
+            }
         }
     }
-    else if (flight_state == States::WAYPOINT)
-    {
-//        if (time_trajectory.size() > 0 && waypoint_number >= 0 && ((time(0) - _start_time) > time_trajectory[waypoint_number]))
-//        {
-//            if (all_waypoints.size() > 0)
-//            {
-//                waypoint_transition();
-//            }
-//            else if (local_velocity().mag() < 1.0)
-//            {
-//                landing_transition();
-//            }
-//        }
-        //check_and_increment_waypoint();
-    }
+    //else if (flight_state == States::WAYPOINT)
+    //{
+    //    if (time_trajectory.size() > 0 && waypoint_number >= 0 && ((time(0) - _start_time) > time_trajectory[waypoint_number]))
+    //    {
+    //        if (all_waypoints.size() > 0)
+    //        {
+    //            waypoint_transition();
+    //        }
+    //        else if (local_velocity().mag() < 1.0)
+    //        {
+    //            landing_transition();
+    //        }
+    //    }
+    //    check_and_increment_waypoint();
+    //}
 }
 
 void ControlsFlyer::check_and_increment_waypoint()
@@ -141,16 +155,6 @@ void ControlsFlyer::state_callback()
     {
         if (flight_state == States::MANUAL)
         {
-            calculate_box();
-            flight_state = States::PLANNING;
-            /*if (!in_planning)
-            {
-                new thread(&ControlsFlyer::plan_path, this);
-                in_planning = true;
-            }*/
-        }
-        else if (flight_state == States::PLANNING)
-        {
             arming_transition();
         }
         else if (flight_state == States::ARMING && armed())
@@ -188,7 +192,8 @@ void ControlsFlyer::takeoff_transition()
     cout << "takeoff transition\r\n" << endl;
     float target_altitude = TAKEOFF_ALTITUDE;
     target_position[2] = target_altitude;
-    takeoff(target_altitude);
+    getConnection()->msg_param_set(TAKEOFF_ALT_PARAM, -TAKEOFF_ALTITUDE);
+    takeoff();
     flight_state = States::TAKEOFF;
 }
 
@@ -202,8 +207,6 @@ void ControlsFlyer::waypoint_transition()
     waypoint_number = waypoint_number + 1;
     target_position = all_waypoints.front();
     all_waypoints.pop();
-    target_position.print("target_position");
-    set_local_position_target(target_position);
     flight_state = States::WAYPOINT;
 }
 
@@ -218,7 +221,6 @@ void ControlsFlyer::disarming_transition()
 {
     cout << "disarm transition" << endl;
     disarm();
-    release_control();
     flight_state = States::DISARMING;
 }
 
@@ -351,11 +353,12 @@ void ControlsFlyer::imu_sensor_callback()
 
 void ControlsFlyer::command_ack_callback()
 {
-    if (!m_bControlStatus && m_bTakeoffed)
-    {
-        cout << "cmd offboard on" << endl;
-        cmd_position(local_position()[0], local_position()[1], -abs(target_position[2]), 0);
-        getConnection()->make_command_flight_mode(FlightMode::Offboard);
-        m_bControlStatus = true;
-    }
+    //if (!m_bControlStatus && m_bTakeoffed)
+    //{
+    //    std::this_thread::sleep_for(std::chrono::seconds(1));
+    //    cout << "cmd offboard on" << endl;
+    //    getConnection()->make_command_flight_mode(FlightMode::Offboard);
+    //    std::this_thread::sleep_for(std::chrono::seconds(1));
+    //    m_bControlStatus = true;
+    //}
 }

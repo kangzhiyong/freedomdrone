@@ -125,8 +125,10 @@ float NonlinearController::altitude_control(float altitude_cmd, float vertical_v
     hdot_cmd = clip(hdot_cmd, -max_descent_rate, max_ascent_rate);
     float acceleration_cmd = acceleration_ff + Kp_hdot * (hdot_cmd - vertical_velocity);
 
-    float thrust = -DRONE_MASS_KG * acceleration_cmd / R(2, 2);
-    thrust = clip(thrust, (float)-MAX_THRUST, (float)MAX_THRUST);
+    float thrust = DRONE_M * acceleration_cmd / R(2, 2);
+    thrust = clip(thrust, (float)-MAX_THRUST_N, (float)MAX_THRUST_N);
+    // need to normalize the thrust
+    thrust /= MAX_THRUST_N;
     return thrust;
 }
 
@@ -145,15 +147,23 @@ V3F NonlinearController::roll_pitch_controller(V3F acceleration_cmd, SLR::Quater
     */
     //Calculate rotation matrix
     Mat3x3F R = attitude.RotationMatrix_IwrtB();
-    float c_d = thrust_cmd / DRONE_MASS_KG;
-    V3F target_R = acceleration_cmd / c_d;
-    target_R = -clip(target_R, -max_tilt, max_tilt);
-    float b_x_c_dot = Kp_roll * (R(0, 2) - target_R[0]);
-    float b_y_c_dot = Kp_pitch * (R(1, 2) - target_R[1]);
+    float c_d = thrust_cmd / DRONE_M;
     V3F pqrCmd;
-    pqrCmd[0] = (1 / R(2, 2)) * (-R(1, 0) * b_x_c_dot + R(0, 0) * b_y_c_dot);
-    pqrCmd[1] = (1 / R(2, 2)) * (-R(1, 1) * b_x_c_dot + R(0, 1) * b_y_c_dot);
-    pqrCmd[2] = 0;
+    if (thrust_cmd > 0.0)
+    {
+        V3F target_R = acceleration_cmd / c_d;
+        target_R = -clip(target_R, -max_tilt, max_tilt);
+        float b_x_c_dot = Kp_roll * (R(0, 2) - target_R[0]);
+        float b_y_c_dot = Kp_pitch * (R(1, 2) - target_R[1]);
+        pqrCmd[0] = (1 / R(2, 2)) * (-R(1, 0) * b_x_c_dot + R(0, 0) * b_y_c_dot);
+        pqrCmd[1] = (1 / R(2, 2)) * (-R(1, 1) * b_x_c_dot + R(0, 1) * b_y_c_dot);
+        pqrCmd[2] = 0;
+    }
+    else
+    {
+        cout << "negative thrust command" << endl;
+        pqrCmd = {0, 0, 0};
+    }
     return pqrCmd;
 }
 

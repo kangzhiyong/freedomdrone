@@ -15,6 +15,9 @@ constexpr auto IGNORE_BODY_PITCH_RATE = (1 << 1);
 constexpr auto IGNORE_BODY_YAW_RATE = (1 << 2);
 constexpr auto IGNORE_ATTITUDE = (1 << 7);
 constexpr auto IGNORE_THROTTLE = (1 << 6);
+static constexpr auto TAKEOFF_ALT_PARAM = "MIS_TAKEOFF_ALT";
+static constexpr auto MAX_SPEED_PARAM = "MPC_XY_CRUISE";
+static constexpr auto RTL_RETURN_ALTITUDE_PARAM = "RTL_RETURN_ALT";
 
 enum class ConnectionType
 {
@@ -109,4 +112,15 @@ enum class PX4_CUSTOM_SUB_MODE_AUTO {
     PX4_CUSTOM_SUB_MODE_AUTO_LAND,
     PX4_CUSTOM_SUB_MODE_AUTO_RTGS,
     PX4_CUSTOM_SUB_MODE_AUTO_FOLLOW_TARGET
+};
+
+/**
+ * @brief Landed State enumeration.
+ */
+enum class LandedState {
+    Unknown, /**< @brief Landed state is unknown. */
+    OnGround, /**< @brief The vehicle is on the ground. */
+    InAir, /**< @brief The vehicle is in the air. */
+    TakingOff, /**< @brief The vehicle is taking off. */
+    Landing, /**< @brief The vehicle is landing. */
 };

@@ -5,10 +5,6 @@ implementation of the inner loop controller which controls velocity through atti
 #include "DroneUtils.hpp"
 #include "Point.hpp"
 
-#define	DRONE_M	0.031			// [kg]
-#define	GRAVITY_MAG 9.81      // [m / s ^ 2]->magnitude only
-#define	MAX_THRUST_N 0.5     // the maximum amount of thrust the crazyflie can generate in[N] - DO NOT EDIT
-
 template<typename coordinate_type>
 class InnerLoopController
 {

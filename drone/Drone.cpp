@@ -505,12 +505,12 @@ void Drone::cmd_position(V4F p)
     }
 }
 
-void Drone::takeoff(float target_altitude)
+void Drone::takeoff()
 {
     // Command the drone to takeoff to the target_alt (in meters)
     try {
         if (m_conn != nullptr) {
-            m_conn->takeoff(local_position()[0], local_position()[1], target_altitude);
+            m_conn->takeoff();
         }
     } catch (...) {
         perror("takeoff failed: ");
@@ -654,12 +654,12 @@ void Drone::start()
 
 void Drone::stop()
 {
-    if (m_bControlStatus)
-    {
-        cout << "cmd offboard off" << endl;
-        m_conn->cmd_offboard_control(false);
-        m_bControlStatus = false;
-    }
+    //if (m_bControlStatus)
+    //{
+    //    cout << "cmd offboard off" << endl;
+    //    m_conn->cmd_offboard_control(false);
+    //    m_bControlStatus = false;
+    //}
     // Stops the connection to the drone
     if (m_conn != nullptr) {
         m_conn->stop();

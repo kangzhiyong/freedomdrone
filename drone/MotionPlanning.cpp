@@ -87,7 +87,7 @@ void MotionPlanning::takeoff_transition()
     local_position().print();
     float target_altitude = local_position()[2] + 10.0;
     target_position[2] = target_altitude;
-    takeoff(target_position[2]);
+    takeoff(/*target_position[2]*/);
     flight_state = States::TAKEOFF;
 }
 
@@ -235,11 +235,11 @@ void MotionPlanning::plan_path()
 
 void MotionPlanning::command_ack_callback()
 {
-    if (!m_bControlStatus && m_bTakeoffed)
-    {
-        cout << "cmd offboard on" << endl;
-        cmd_position(local_position()[0], local_position()[1], -abs(target_position[2]), 0);
-        getConnection()->make_command_flight_mode(FlightMode::Offboard);
-        m_bControlStatus = true;
-    }
+    //if (!m_bControlStatus && m_bTakeoffed)
+    //{
+    //    cout << "cmd offboard on" << endl;
+    //    cmd_position(local_position()[0], local_position()[1], -abs(target_position[2]), 0);
+    //    getConnection()->make_command_flight_mode(FlightMode::Offboard);
+    //    m_bControlStatus = true;
+    //}
 }

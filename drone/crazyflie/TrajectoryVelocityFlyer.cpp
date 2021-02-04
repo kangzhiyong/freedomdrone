@@ -125,14 +125,14 @@ TrajectoryVelocityFlyer::TrajectoryVelocityFlyer(MavlinkConnection* conn) : Dron
 
 void TrajectoryVelocityFlyer::command_ack_callback()
 {
-    if (!m_bControlStatus /*&& m_bTakeoffed*/)
-    {
-        std::this_thread::sleep_for(std::chrono::seconds(5));
-        cout << "cmd offboard on" << endl;
-        getConnection()->make_command_flight_mode(FlightMode::Offboard);
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-        m_bControlStatus = true;
-    }
+    //if (!m_bControlStatus /*&& m_bTakeoffed*/)
+    //{
+    //    std::this_thread::sleep_for(std::chrono::seconds(5));
+    //    cout << "cmd offboard on" << endl;
+    //    getConnection()->make_command_flight_mode(FlightMode::Offboard);
+    //    std::this_thread::sleep_for(std::chrono::seconds(1));
+    //    m_bControlStatus = true;
+    //}
 }
 
 void TrajectoryVelocityFlyer::local_position_callback()

@@ -11,15 +11,15 @@ VelocityFlyer::VelocityFlyer(MavlinkConnection* conn) : Drone(conn)
 
 void VelocityFlyer::command_ack_callback()
 {
-    if (!m_bControlStatus /*&& m_bTakeoffed*/)
-    {
-        std::this_thread::sleep_for(std::chrono::seconds(5));
-        cout << "cmd offboard on" << endl;
-        //cmd_position(local_position()[0], local_position()[1], TAKEOFF_ALTITUDE, 0);
-        getConnection()->make_command_flight_mode(FlightMode::Offboard);
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-        m_bControlStatus = true;
-    }
+    //if (!m_bControlStatus /*&& m_bTakeoffed*/)
+    //{
+    //    std::this_thread::sleep_for(std::chrono::seconds(5));
+    //    cout << "cmd offboard on" << endl;
+    //    //cmd_position(local_position()[0], local_position()[1], TAKEOFF_ALTITUDE, 0);
+    //    getConnection()->make_command_flight_mode(FlightMode::Offboard);
+    //    std::this_thread::sleep_for(std::chrono::seconds(1));
+    //    m_bControlStatus = true;
+    //}
 }
 
 void VelocityFlyer::local_position_callback()

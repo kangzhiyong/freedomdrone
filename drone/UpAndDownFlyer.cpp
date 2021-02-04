@@ -54,7 +54,7 @@ void UpAndDownFlyer::takeoff_transition()
     cout << "takeoff transition\r\n" << endl;
     float target_altitude = 3.0;
     target_position[2] = target_altitude;
-    takeoff(target_altitude);
+    takeoff(/*target_altitude*/);
     flight_state = States::TAKEOFF;
 }
 
