@@ -43,7 +43,7 @@ void ControlsFlyer::attitude_controller()
 void ControlsFlyer::bodyrate_controller()
 {
     V3F moment_cmd = controller.body_rate_control(body_rate_target, gyro_raw());
-    cout << moment_cmd.str() << " " << thrust_cmd << " " << local_position().str() << local_velocity().str() << endl;
+    //cout << moment_cmd.str() << " " << thrust_cmd << " " << local_position().str() << local_velocity().str() << endl;
     //std::this_thread::sleep_for(std::chrono::milliseconds(5));
     cmd_moment(moment_cmd[0], moment_cmd[1], moment_cmd[2], thrust_cmd);
 }
@@ -78,13 +78,13 @@ void ControlsFlyer::local_position_callback()
                 std::this_thread::sleep_for(std::chrono::seconds(1));
                 m_bControlStatus = true;
             }
-            if (-1.0 * local_position()[2] > -0.9 * target_position[2])
+            if (-1.0 * local_position()[2] > -0.95 * target_position[2])
             {
                 _start_time = time(0);
-                load_test_trajectory(position_trajectory, time_trajectory, yaw_trajectory);
-                for (int i = 0; i < position_trajectory.size(); i++) {
-                    all_waypoints.push(position_trajectory[i]);
-                }
+                //load_test_trajectory(position_trajectory, time_trajectory, yaw_trajectory);
+                //for (int i = 0; i < position_trajectory.size(); i++) {
+                //    all_waypoints.push(position_trajectory[i]);
+                //}
                 waypoint_number = -1;
                 waypoint_transition();
             }
@@ -155,11 +155,19 @@ void ControlsFlyer::state_callback()
     {
         if (flight_state == States::MANUAL)
         {
-            arming_transition();
+            if (!in_planning)
+            {
+                new thread(&ControlsFlyer::plan_path, this);
+                in_planning = true;
+            }
         }
         else if (flight_state == States::ARMING && armed())
         {
             takeoff_transition();
+        }
+        else if (flight_state == States::PLANNING)
+        {
+            arming_transition();
         }
         else if (flight_state == States::DISARMING && !armed() && !guided())
         {
@@ -207,6 +215,7 @@ void ControlsFlyer::waypoint_transition()
     waypoint_number = waypoint_number + 1;
     target_position = all_waypoints.front();
     all_waypoints.pop();
+    target_position.print();
     flight_state = States::WAYPOINT;
 }
 
@@ -283,14 +292,14 @@ void ControlsFlyer::plan_path()
     FreeData<float> data(path, ",");
     float lat0 = data.getLat();
     float lon0 = data.getLon();
-    set_home_position(lon0, lat0, 0);
+    //set_home_position(lon0, lat0, 0);
     _update_local_position(global_to_local(global_position(), global_home()));
 
     data.extract_polygons(safety_distance);
     data.sample(1000);
     data.create_graph(10);
     V3F start = local_position();
-    V3F goal({ 10, 10, 10 });
+    V3F goal({ 100, 100, 10 });
     //V3F goal = global_to_local({ -122.396428, 37.795128, target_altitude }, global_home());
     cout << "start and goal" << endl;
     start.print();
@@ -318,10 +327,23 @@ void ControlsFlyer::plan_path()
     {
         a_start_graph.prune_path_by_collinearity(path_points, path_points_prune);
         send_waypoints(path_points_prune);
+        float t = 0;
         for (int i = 0; i < path_points_prune.size(); i++) {
+            path_points_prune[i][2] = -path_points_prune[i][2];
             path_points_prune[i].print();
             all_waypoints.push({ path_points_prune[i][0], path_points_prune[i][1], path_points_prune[i][2] });
+
+            position_trajectory.push_back(path_points_prune[i]);
+            t += 0.02;
+            time_trajectory.push_back(t);
         }
+
+        for (size_t i = 0; i < (position_trajectory.size() - 1); i++)
+        {
+            yaw_trajectory.push_back(atan2(position_trajectory[i + 1][1] - position_trajectory[i][1], position_trajectory[i + 1][0] - position_trajectory[i][0]));
+        }
+        yaw_trajectory.push_back(yaw_trajectory[yaw_trajectory.size() - 1]);
+
         flight_state = States::PLANNING;
     }
     else

@@ -323,7 +323,7 @@ public:
         m_vSamplePoints.clear();
         VCoordType xs = uniform(m_dNorthMin, m_dNorthMax, num);
         VCoordType ys = uniform(m_dEastMin, m_dEastMax, num);
-        VCoordType zs = uniform((float)0.0, (float)20, num);
+        VCoordType zs = uniform((float)10.0, (float)30, num);
         for (int i = 0; i < num; i++) {
             if (!collides(xs[i], ys[i], zs[i])) {
                 m_vSamplePoints.push_back({xs[i], ys[i], zs[i]});
