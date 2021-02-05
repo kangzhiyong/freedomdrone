@@ -9,6 +9,7 @@ using  namespace::std;
 #include "NonlinearController.hpp"
 #include "BaseQuadEstimator.hpp"
 #include "SearchAlgorithm.hpp"
+#include "Trajector.h"
 
 #define TAKEOFF_ALTITUDE -10
 #define RATE_100_HZ 100
@@ -63,10 +64,14 @@ public:
     void send_waypoints(vector<V3F> points);
     void plan_path();
     void command_ack_callback();
+    TrajectoryPoint GetNextTrajectoryPoint(float mission_time);
 
     clock_t lastPrediction;
     clock_t nextPrediction;
     shared_ptr<BaseQuadEstimator> estimator;
+    Trajectory trajectory;
+    V3F _trajectoryOffset;
+    TrajectoryPoint curTrajPoint;
 };
 
 class MSGPoint

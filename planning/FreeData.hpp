@@ -8,6 +8,7 @@ using namespace std;
 #include "DroneUtils.hpp"
 #include "KDTree.hpp"
 #include "FreeGraph.hpp"
+#include "MavUtils.hpp"
 
 template<typename coordinate_type>
 class FreeData
@@ -16,9 +17,9 @@ public:
     typedef vector<coordinate_type> VCoordType;
     typedef vector<string> VString;
 
-    static vector<Point<coordinate_type, 4>> loadtxt(string fileName, string delimiter)
+    static vector<TrajectoryPoint> loadtxt(string fileName, string delimiter)
     {
-        vector<Point<coordinate_type, 4>> points;
+        vector<TrajectoryPoint> traj;
         fstream file;
         file.open(fileName.c_str());
         if (file.is_open())
@@ -27,17 +28,32 @@ public:
             string str;
             while (getline(file, str))
             {
-                VString strList = split(str, delimiter);
-                if (strList.size() >= 4) {
-                    points.push_back({(float)atof(strList[0].c_str()), (float)atof(strList[1].c_str()), (float)atof(strList[2].c_str()), (float)atof(strList[3].c_str())});
+                std::size_t firstNonWS = str.find_first_not_of("\n\t ");
+
+                // Ignore comments
+                if (firstNonWS == std::string::npos || s[firstNonWS] == '#' || firstNonWS == '/')
+                {
+                    return;
                 }
+
+                TrajectoryPoint traj_pt;
+
+                V3F ypr; // Helper variable to read in yaw, pitch and roll
+                sscanf(s.c_str(), "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f", &traj_pt.time,
+                    &traj_pt.position.x, &traj_pt.position.y, &traj_pt.position.z,
+                    &traj_pt.velocity.x, &traj_pt.velocity.y, &traj_pt.velocity.z,
+                    &ypr[0], &ypr[1], &ypr[2], &traj_pt.omega.x, &traj_pt.omega.y, &traj_pt.omega.z);
+
+                // Convert yaw, pitch, and roll to an attitude quaternion
+                traj_pt.attitude = Quaternion<float>::FromEulerYPR(ypr[0], ypr[1], ypr[2]);
+                traj.push_back(traj_pt);
             }
         }
         else
         {
             printf("Data file open failed!\r\n");
         }
-        return points;
+        return traj;
     }
     FreeData(std::string fileName, std::string delimiter)
     {

@@ -30,6 +30,9 @@ public:
         coords_[1] = y;
         coords_[2] = z;
     }
+
+    inline Point<coordinate_type, dimensions> operator+=(const Point<coordinate_type, dimensions> b) { *this = *this + b; return *this; }
+
     void operator=( const Point<coordinate_type, dimensions> &p)
     {
         size_t n = min(dimensions, p.count());

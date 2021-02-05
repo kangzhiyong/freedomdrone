@@ -1,5 +1,8 @@
 #pragma once
 
+#include "Quaternion.hpp"
+using namespace SLR;
+
 constexpr auto IGNORE_X = (1 << 0);
 constexpr auto IGNORE_Y = (1 << 1);
 constexpr auto IGNORE_Z = (1 << 2);
@@ -123,4 +126,23 @@ enum class LandedState {
     InAir, /**< @brief The vehicle is in the air. */
     TakingOff, /**< @brief The vehicle is taking off. */
     Landing, /**< @brief The vehicle is landing. */
+};
+
+struct TrajectoryPoint {
+    float time;
+    V3F position;
+    V3F velocity;
+    V3F omega;
+    V3F accel;
+    Quaternion<float> attitude;
+
+    // Initialise all fields to zero when declared
+    TrajectoryPoint() :
+        time(0.f),
+        position(0.f, 0.f, 0.f),
+        velocity(0.f, 0.f, 0.f),
+        omega(0.f, 0.f, 0.f),
+        attitude(0.f, 0.f, 0.f, 0.f)
+    {
+    }
 };

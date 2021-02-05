@@ -53,6 +53,8 @@ typedef std::chrono::time_point<std::chrono::steady_clock> dl_time_t;
 #define MAX_THRUST 10.0
 #define MAX_TORQUE 1
 
+#define ONBOARD_TS 0.002 // Controller update dt in [s]. TODO AS PARAM!
+
 static const float epsilon = std::numeric_limits<float>::epsilon();
 
 class ZoneNode

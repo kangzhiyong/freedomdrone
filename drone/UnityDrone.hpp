@@ -26,7 +26,6 @@ public:
     void set_threshold_vertical(float threshold);
     clock_t threshold_time();
     void set_threshold_time(clock_t threshold);
-    void load_test_trajectory(vector<V3F>& position_trajectory, vector<float>& time_trajectory, vector<float>& yaw_trajectory);
     float calculate_horizontal_error();
     float calculate_vertical_error();
     void print_mission_score();

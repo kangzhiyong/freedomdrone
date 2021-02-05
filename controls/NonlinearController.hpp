@@ -21,6 +21,8 @@ private:
     float Kp_q{ 20 }; //10,
     float Kp_r{ 5 }; //10,
 
+    float Ki_alt{ 0 };
+
     float max_tilt{ 1.0 };
     float max_ascent_rate{ 5 };
     float max_descent_rate{ 2 };
@@ -33,7 +35,7 @@ public:
     V3F trajectory_control(vector<V3F> position_trajectory, vector<float> yaw_trajectory, vector<float> time_trajectory,
                                float current_time, V3F& position_cmd, V3F& velocity_cmd, float& yaw_cmd);
     V3F lateral_position_control(V3F local_position_cmd, V3F local_velocity_cmd, V3F local_position, V3F local_velocity, V3F acceleration_ff);
-    float altitude_control(float altitude_cmd, float vertical_velocity_cmd, float altitude, float vertical_velocity, SLR::Quaternion<float> attitude, float acceleration_ff = 0.0);
+    float altitude_control(float altitude_cmd, float vertical_velocity_cmd, float altitude, float vertical_velocity, SLR::Quaternion<float> attitude, float acceleration_ff = 0.0, float dt=0);
     V3F roll_pitch_controller(V3F acceleration_cmd, SLR::Quaternion<float> attitude, float thrust_cmd);
     V3F body_rate_control(V3F body_rate_cmd, V3F body_rate);
     float yaw_control(float yaw_cmd, float yaw);

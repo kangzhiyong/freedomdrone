@@ -104,7 +104,7 @@ V3F NonlinearController::lateral_position_control(V3F local_position_cmd, V3F lo
     return acceleration_cmd;
 }
 
-float NonlinearController::altitude_control(float altitude_cmd, float vertical_velocity_cmd, float altitude, float vertical_velocity, SLR::Quaternion<float> attitude, float acceleration_ff)
+float NonlinearController::altitude_control(float altitude_cmd, float vertical_velocity_cmd, float altitude, float vertical_velocity, SLR::Quaternion<float> attitude, float acceleration_ff, float dt)
 {
     /*Generate vertical acceleration (thrust) command
 
@@ -118,12 +118,13 @@ float NonlinearController::altitude_control(float altitude_cmd, float vertical_v
         Returns : thrust command for the vehicle(+up)
     */
     Mat3x3F R = attitude.RotationMatrix_IwrtB();
-
-    float hdot_cmd = Kp_alt * (altitude_cmd - altitude) + vertical_velocity_cmd;
+    float e = altitude_cmd - altitude;
+    float hdot_cmd = Kp_alt * e + vertical_velocity_cmd;
 
     // Limit the ascent / descent rate
     hdot_cmd = clip(hdot_cmd, -max_descent_rate, max_ascent_rate);
-    float acceleration_cmd = acceleration_ff + Kp_hdot * (hdot_cmd - vertical_velocity);
+    integrated_altitude_error += e * dt;
+    float acceleration_cmd = acceleration_ff + Kp_hdot * (hdot_cmd - vertical_velocity) + Ki_alt * integrated_altitude_error;
 
     float thrust = DRONE_M * acceleration_cmd / R(2, 2);
     thrust = clip(thrust, (float)-MAX_THRUST_N, (float)MAX_THRUST_N);

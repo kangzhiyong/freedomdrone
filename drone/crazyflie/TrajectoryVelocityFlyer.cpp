@@ -18,13 +18,13 @@ void TrajectoryHandler::_load_trajectory(string filename)
     */
 
     // load the data in
-    vector<V4F> data = FreeData<float>::loadtxt(filename, ",");
-    for (int i = 0; i < data.size(); i++) {
-        // first element in each row is the relative time for the trajectroy part
-        _rel_times.push_back(data[i][0]);
-        // elements 2, 3, and 4 are the [N, E, D] position for the timestamp
-        _positions.push_back({ data[i][1], data[i][2], data[i][3] });
-    }
+    //vector<V4F> data = FreeData<float>::loadtxt(filename, ",");
+    //for (int i = 0; i < data.size(); i++) {
+    //    // first element in each row is the relative time for the trajectroy part
+    //    _rel_times.push_back(data[i][0]);
+    //    // elements 2, 3, and 4 are the [N, E, D] position for the timestamp
+    //    _positions.push_back({ data[i][1], data[i][2], data[i][3] });
+    //}
 }
 void TrajectoryHandler::get_next_point(float inflight_time, V3F& position_cmd, V3F& velocity_cmd)
 {

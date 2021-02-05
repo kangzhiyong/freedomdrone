@@ -135,31 +135,6 @@ void UnityDrone::set_threshold_time(clock_t threshold)
     }
 }
 
-void UnityDrone::load_test_trajectory(vector<V3F>& position_trajectory, vector<float>& time_trajectory, vector<float>& yaw_trajectory)
-{
-    /*Loads the test_trajectory.txt
-
-    Args :
-        time_mult : a multiplier to decrease the total time of the trajectory
-    */
-    string path = "../../../../data/traj/test_trajectory.txt";
-#ifdef WIN32
-    path = "../../../data/traj/CircleNoFF.txt";
-#endif
-    vector<V4F> data = FreeData<float>::loadtxt(path, ",");
-    for (size_t i = 0; i < data.size(); i++)
-    {
-        position_trajectory.push_back({data[i][1], data[i][2], data[i][3]});
-        time_trajectory.push_back(data[i][0]);
-    }
-
-    for (size_t i = 0; i < (position_trajectory.size() - 1); i++)
-    {
-        yaw_trajectory.push_back(atan2(position_trajectory[i + 1][1] - position_trajectory[i][1], position_trajectory[i + 1][0] - position_trajectory[i][0]));
-    }
-    yaw_trajectory.push_back(yaw_trajectory[yaw_trajectory.size() - 1]);
-}
-
 float UnityDrone::calculate_horizontal_error()
 {
     //Calcuate the error beteween the local position and target local position

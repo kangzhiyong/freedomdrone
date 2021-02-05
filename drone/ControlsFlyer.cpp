@@ -11,40 +11,50 @@ ControlsFlyer::ControlsFlyer(MavlinkConnection* conn) : UnityDrone(conn)
     register_callback(MessageIDs::STATE, ((void (Drone::*)()) & ControlsFlyer::state_callback));
     register_callback(MessageIDs::ATTITUDE, ((void (Drone::*)()) & ControlsFlyer::attitude_callback));
     register_callback(MessageIDs::RAW_GYROSCOPE, ((void (Drone::*)()) & ControlsFlyer::gyro_callback));
-    //register_callback(MessageIDs::GPS_INPUT_SENSOR, ((void (Drone::*)()) & ControlsFlyer::gps_sensor_callback));
-    //register_callback(MessageIDs::RAW_IMU_SENSOR, ((void (Drone::*)()) & ControlsFlyer::imu_sensor_callback));
+    register_callback(MessageIDs::GPS_INPUT_SENSOR, ((void (Drone::*)()) & ControlsFlyer::gps_sensor_callback));
+    register_callback(MessageIDs::RAW_IMU_SENSOR, ((void (Drone::*)()) & ControlsFlyer::imu_sensor_callback));
     register_callback(MessageIDs::COMMANDACKRESULT, ((void (Drone::*)()) & ControlsFlyer::command_ack_callback));
 
     lastPrediction = nextPrediction = clock();
     estimator.reset(new QuadEstimatorEKF());
+    string path = "../../../../data/traj/test_trajectory.txt";
+#ifdef WIN32
+    path = "../../../data/traj/CircleNoFF.txt";
+#endif
+    trajectory.ReadFile(path);
+}
+
+TrajectoryPoint ControlsFlyer::GetNextTrajectoryPoint(float mission_time)
+{
+    TrajectoryPoint pt = trajectory.NextTrajectoryPoint(mission_time);
+    pt.position += _trajectoryOffset;
+    return pt;
 }
 
 void ControlsFlyer::position_controller()
 {
     float curr_time = time(0) - _start_time;
-    controller.trajectory_control(position_trajectory, yaw_trajectory, time_trajectory, curr_time, local_position_target, local_velocity_target, yaw_target);
+    curTrajPoint = GetNextTrajectoryPoint(curr_time);
+    //controller.trajectory_control(position_trajectory, yaw_trajectory, time_trajectory, curr_time, local_position_target, local_velocity_target, yaw_target);
     _attitude_target = {0, 0, yaw_target};
-    V3F acceleration_cmd = controller.lateral_position_control(local_position_target, local_velocity_target,
-                                                               local_position(), local_velocity(), { 0, 0, 0 });
+    V3F acceleration_cmd = controller.lateral_position_control(curTrajPoint.position, curTrajPoint.velocity,
+                                                               controller.estPos, controller.estVel, curTrajPoint.accel);
     local_acceleration_target = V3F({acceleration_cmd[0], acceleration_cmd[1], 0.0});
 }
 
 void ControlsFlyer::attitude_controller()
 {
-    thrust_cmd = controller.altitude_control(-local_position_target[2], -local_velocity_target[2],
-                                             -local_position()[2], -local_velocity()[2], 
-                                            SLR::Quaternion<float>::FromEuler123_RPY(attitude()[0], attitude()[1], attitude()[2]), GRAVITY_MAG);
+    thrust_cmd = controller.altitude_control(curTrajPoint.position.z(), curTrajPoint.velocity.z(),
+                                            controller.estPos.z(), controller.estVel.z(), controller.estAtt, curTrajPoint.accel.z(), ONBOARD_TS);
     V3F roll_pitch_rate_cmd = controller.roll_pitch_controller(local_acceleration_target, 
-                                            SLR::Quaternion<float>::FromEuler123_RPY(attitude()[0], attitude()[1], attitude()[2]), thrust_cmd);
-    float yawrate_cmd = controller.yaw_control(_attitude_target[2], attitude()[2]);
+                                                               controller.estAtt, thrust_cmd);
+    float yawrate_cmd = controller.yaw_control(curTrajPoint.attitude.Yaw(), controller.estAtt.Yaw());
     body_rate_target = V3F({roll_pitch_rate_cmd[0], roll_pitch_rate_cmd[1], yawrate_cmd});
 }
 
 void ControlsFlyer::bodyrate_controller()
 {
     V3F moment_cmd = controller.body_rate_control(body_rate_target, gyro_raw());
-    //cout << moment_cmd.str() << " " << thrust_cmd << " " << local_position().str() << local_velocity().str() << endl;
-    //std::this_thread::sleep_for(std::chrono::milliseconds(5));
     cmd_moment(moment_cmd[0], moment_cmd[1], moment_cmd[2], thrust_cmd);
 }
 
@@ -81,17 +91,17 @@ void ControlsFlyer::local_position_callback()
             if (-1.0 * local_position()[2] > -0.95 * target_position[2])
             {
                 _start_time = time(0);
-                //load_test_trajectory(position_trajectory, time_trajectory, yaw_trajectory);
-                //for (int i = 0; i < position_trajectory.size(); i++) {
-                //    all_waypoints.push(position_trajectory[i]);
-                //}
-                waypoint_number = -1;
                 waypoint_transition();
             }
         }
     }
     else if (flight_state == States::WAYPOINT)
     {
+        V3F landPoint = position_trajectory[position_trajectory.size() - 1];
+        if ((landPoint - local_position()).mag() < 0.2)
+        {
+            landing_transition();
+        }
         //if (time_trajectory.size() > 0 && waypoint_number >= 0 && ((time(0) - _start_time) > time_trajectory[waypoint_number]))
         //{
         //    if (all_waypoints.size() > 0)
@@ -103,7 +113,7 @@ void ControlsFlyer::local_position_callback()
         //        landing_transition();
         //    }
         //}
-        check_and_increment_waypoint();
+        //check_and_increment_waypoint();
     }
 }
 
@@ -208,14 +218,6 @@ void ControlsFlyer::takeoff_transition()
 void ControlsFlyer::waypoint_transition()
 {
     //cout << "waypoint transition" << endl;
-    if (all_waypoints.size() <= 0)
-    {
-        return;
-    }
-    waypoint_number = waypoint_number + 1;
-    target_position = all_waypoints.front();
-    all_waypoints.pop();
-    target_position.print();
     flight_state = States::WAYPOINT;
 }
 
