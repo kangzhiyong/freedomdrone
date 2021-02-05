@@ -49,7 +49,7 @@ typedef std::chrono::time_point<std::chrono::steady_clock> dl_time_t;
 
 #define	DRONE_M	0.031			// [kg]
 #define	GRAVITY_MAG 9.81      // [m / s ^ 2]->magnitude only
-#define	MAX_THRUST_N 0.5     // the maximum amount of thrust the crazyflie can generate in[N] - DO NOT EDIT
+#define	MAX_THRUST_N 0.63     // the maximum amount of thrust the crazyflie can generate in[N] - DO NOT EDIT
 #define MAX_THRUST 10.0
 #define MAX_TORQUE 1
 

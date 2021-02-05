@@ -144,7 +144,7 @@ void UnityDrone::load_test_trajectory(vector<V3F>& position_trajectory, vector<f
     */
     string path = "../../../../data/traj/test_trajectory.txt";
 #ifdef WIN32
-    path = "../../../data/traj/test_trajectory.txt";
+    path = "../../../data/traj/CircleNoFF.txt";
 #endif
     vector<V4F> data = FreeData<float>::loadtxt(path, ",");
     for (size_t i = 0; i < data.size(); i++)

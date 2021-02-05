@@ -43,6 +43,8 @@ void ControlsFlyer::attitude_controller()
 void ControlsFlyer::bodyrate_controller()
 {
     V3F moment_cmd = controller.body_rate_control(body_rate_target, gyro_raw());
+    cout << moment_cmd.str() << " " << thrust_cmd << " " << local_position().str() << local_velocity().str() << endl;
+    //std::this_thread::sleep_for(std::chrono::milliseconds(5));
     cmd_moment(moment_cmd[0], moment_cmd[1], moment_cmd[2], thrust_cmd);
 }
 
@@ -72,7 +74,6 @@ void ControlsFlyer::local_position_callback()
             {
                 std::this_thread::sleep_for(std::chrono::seconds(5));
                 cout << "cmd offboard on" << endl;
-                //cmd_position(target_position[0], target_position[1], target_position[2], 0);
                 getConnection()->make_command_flight_mode(FlightMode::Offboard);
                 std::this_thread::sleep_for(std::chrono::seconds(1));
                 m_bControlStatus = true;
@@ -80,7 +81,6 @@ void ControlsFlyer::local_position_callback()
             if (-1.0 * local_position()[2] > -0.9 * target_position[2])
             {
                 _start_time = time(0);
-                //calculate_box();
                 load_test_trajectory(position_trajectory, time_trajectory, yaw_trajectory);
                 for (int i = 0; i < position_trajectory.size(); i++) {
                     all_waypoints.push(position_trajectory[i]);
@@ -90,21 +90,21 @@ void ControlsFlyer::local_position_callback()
             }
         }
     }
-    //else if (flight_state == States::WAYPOINT)
-    //{
-    //    if (time_trajectory.size() > 0 && waypoint_number >= 0 && ((time(0) - _start_time) > time_trajectory[waypoint_number]))
-    //    {
-    //        if (all_waypoints.size() > 0)
-    //        {
-    //            waypoint_transition();
-    //        }
-    //        else if (local_velocity().mag() < 1.0)
-    //        {
-    //            landing_transition();
-    //        }
-    //    }
-    //    check_and_increment_waypoint();
-    //}
+    else if (flight_state == States::WAYPOINT)
+    {
+        //if (time_trajectory.size() > 0 && waypoint_number >= 0 && ((time(0) - _start_time) > time_trajectory[waypoint_number]))
+        //{
+        //    if (all_waypoints.size() > 0)
+        //    {
+        //        waypoint_transition();
+        //    }
+        //    else if (local_velocity().mag() < 1.0)
+        //    {
+        //        landing_transition();
+        //    }
+        //}
+        check_and_increment_waypoint();
+    }
 }
 
 void ControlsFlyer::check_and_increment_waypoint()
