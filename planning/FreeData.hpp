@@ -40,9 +40,9 @@ public:
 
                 V3F ypr; // Helper variable to read in yaw, pitch and roll
                 sscanf(s.c_str(), "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f", &traj_pt.time,
-                    &traj_pt.position.x, &traj_pt.position.y, &traj_pt.position.z,
-                    &traj_pt.velocity.x, &traj_pt.velocity.y, &traj_pt.velocity.z,
-                    &ypr[0], &ypr[1], &ypr[2], &traj_pt.omega.x, &traj_pt.omega.y, &traj_pt.omega.z);
+                    &traj_pt.position[0], &traj_pt.position[1], &traj_pt.position[2],
+                    &traj_pt.velocity[0], &traj_pt.velocity[1], &traj_pt.velocity[2],
+                    &ypr[0], &ypr[1], &ypr[2], &traj_pt.omega[0], &traj_pt.omega[1], &traj_pt.omega[2]);
 
                 // Convert yaw, pitch, and roll to an attitude quaternion
                 traj_pt.attitude = Quaternion<float>::FromEulerYPR(ypr[0], ypr[1], ypr[2]);
@@ -55,6 +55,48 @@ public:
         }
         return traj;
     }
+
+    static bool load_test_trajectory(vector<V3F> &position_trajectory, vector<float> &time_trajectory, vector<float> &yaw_trajectory, float time_mult=1.0)
+    {
+        time_t curr_time = time(0);
+        vector<TrajectoryPoint> traj;
+        fstream file;
+        file.open("../../../data/traj/test_trajectory.txt");
+        if (file.is_open())
+        {
+            int i = 1;
+            string str;
+            while (getline(file, str))
+            {
+                std::size_t firstNonWS = str.find_first_not_of("\n\t ");
+
+                // Ignore comments
+                if (firstNonWS == std::string::npos || str[firstNonWS] == '#' || firstNonWS == '/')
+                {
+                    continue;
+                }
+
+                V3F position; // Helper variable to read in yaw, pitch and roll
+                float _time;
+                sscanf(str.c_str(), "%f,%f,%f,%f", &_time, &position[0], &position[1], &position[2]);
+
+                position_trajectory.push_back(position);
+                time_trajectory.push_back(_time * time_mult + curr_time);
+            }
+
+            for (size_t i = 0; i < position_trajectory.size() - 1; i++)
+            {
+                yaw_trajectory.push_back(atan2f(position_trajectory[i + 1][1] - position_trajectory[i][1], position_trajectory[i + 1][0] - position_trajectory[i][0]));
+            }
+            yaw_trajectory.push_back(yaw_trajectory[position_trajectory.size() - 2]);
+        }
+        else
+        {
+            printf("Data file open failed!\r\n");
+        }
+        return true;
+    }
+
     FreeData(std::string fileName, std::string delimiter)
     {
         fstream file;

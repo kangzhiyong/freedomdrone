@@ -31,6 +31,14 @@ public:
         coords_[2] = z;
     }
 
+    //Point(const float b[4])
+    //{
+    //    coords_[0] = b[0];
+    //    coords_[1] = b[1];
+    //    coords_[2] = b[2];
+    //    coords_[3] = b[3];
+    //}
+
     inline Point<coordinate_type, dimensions> operator+=(const Point<coordinate_type, dimensions> b) { *this = *this + b; return *this; }
 
     void operator=( const Point<coordinate_type, dimensions> &p)

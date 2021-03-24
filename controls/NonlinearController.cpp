@@ -133,6 +133,35 @@ float NonlinearController::altitude_control(float altitude_cmd, float vertical_v
     return thrust;
 }
 
+float NonlinearController::altitude_control(float altitude_cmd, float vertical_velocity_cmd, float altitude, float vertical_velocity, V3F attitude, float acceleration_ff, float dt)
+{
+    /*Generate vertical acceleration (thrust) command
+
+    Args :
+        altitude_cmd : desired vertical position(+up)
+        vertical_velocity_cmd : desired vertical velocity(+up)
+        altitude : vehicle vertical position(+up)
+        vertical_velocity : vehicle vertical velocity(+up)
+        acceleration_ff : feedforward acceleration command(+up)
+
+        Returns : thrust command for the vehicle(+up)
+    */
+    float R33 = cos(attitude[0]) * cos(attitude[1]);
+    float e = altitude_cmd - altitude;
+    float hdot_cmd = Kp_alt * e + vertical_velocity_cmd;
+
+    // Limit the ascent / descent rate
+    hdot_cmd = clip(hdot_cmd, -max_descent_rate, max_ascent_rate);
+    integrated_altitude_error += e * dt;
+    float acceleration_cmd = acceleration_ff + Kp_hdot * (hdot_cmd - vertical_velocity) + Ki_alt * integrated_altitude_error;
+
+    float thrust = DRONE_M * acceleration_cmd / R33;
+    thrust = clip(thrust, (float)-MAX_THRUST_N, (float)MAX_THRUST_N);
+    // need to normalize the thrust
+    thrust /= MAX_THRUST_N;
+    return thrust;
+}
+
 V3F NonlinearController::roll_pitch_controller(V3F acceleration_cmd, SLR::Quaternion<float> attitude, float thrust_cmd)
 {
     /* Generate the rollrate and pitchrate commands in the body frame
@@ -164,6 +193,41 @@ V3F NonlinearController::roll_pitch_controller(V3F acceleration_cmd, SLR::Quater
     {
         cout << "negative thrust command" << endl;
         pqrCmd = {0, 0, 0};
+    }
+    return pqrCmd;
+}
+
+V3F NonlinearController::roll_pitch_controller(V3F acceleration_cmd, V3F attitude, float thrust_cmd)
+{
+    /* Generate the rollrate and pitchrate commands in the body frame
+
+    Args :
+        target_acceleration : 2 - element numpy array
+        (north_acceleration_cmd, east_acceleration_cmd) in m / s ^ 2
+        attitude : 3 - element numpy array(roll, pitch, yaw) in radians
+        thrust_cmd : vehicle thruts command in Newton
+
+        Returns : 2 - element numpy array, desired rollrate(p) and
+        pitchrate(q) commands in radians / s
+    */
+    //Calculate rotation matrix
+    Mat3x3F R = SLR::Quaternion<float>::FromEuler123_RPY(attitude[0], attitude[1], attitude[2]).RotationMatrix_IwrtB();
+    float c_d = thrust_cmd / DRONE_M;
+    V3F pqrCmd;
+    if (thrust_cmd > 0.0)
+    {
+        V3F target_R = acceleration_cmd / c_d;
+        target_R = -clip(target_R, -max_tilt, max_tilt);
+        float b_x_c_dot = Kp_roll * (R(0, 2) - target_R[0]);
+        float b_y_c_dot = Kp_pitch * (R(1, 2) - target_R[1]);
+        pqrCmd[0] = (1 / R(2, 2)) * (-R(1, 0) * b_x_c_dot + R(0, 0) * b_y_c_dot);
+        pqrCmd[1] = (1 / R(2, 2)) * (-R(1, 1) * b_x_c_dot + R(0, 1) * b_y_c_dot);
+        pqrCmd[2] = 0;
+    }
+    else
+    {
+        cout << "negative thrust command" << endl;
+        pqrCmd = { 0, 0, 0 };
     }
     return pqrCmd;
 }

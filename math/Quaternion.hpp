@@ -466,8 +466,8 @@ namespace SLR{
       Quaternion Interpolate_SLERP(const Quaternion& q1, float t)
       {
             t = CONSTRAIN(t, 0, 1);
-            V4D b0(_q);
-            V4D b1(q1.AlignSigns(*this)._q);
+            V4D b0({ _q[0], _q[1], _q[2], _q[3] });
+            V4D b1({ q1.AlignSigns(*this)._q[0], q1.AlignSigns(*this)._q[1], q1.AlignSigns(*this)._q[2], q1.AlignSigns(*this)._q[3] });
 
         // Compute the cosine of the angle between the two vectors.
             float dot = (float)b0.dot(b1);

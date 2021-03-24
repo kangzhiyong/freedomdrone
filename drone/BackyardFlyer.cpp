@@ -16,6 +16,15 @@ void BackyardFlyer::local_position_callback()
     {
         if (abs(abs(local_position()[2]) - abs(target_position[2])) < 0.1)
         {
+            if (!m_bControlStatus)
+            {
+                std::this_thread::sleep_for(std::chrono::seconds(5));
+                cout << "cmd offboard on" << endl;
+                getConnection()->make_command_flight_mode(FlightMode::Offboard);
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+                m_bControlStatus = true;
+            }
+
             calculate_box();
             waypoint_transition();
         }
@@ -80,19 +89,19 @@ void BackyardFlyer::calculate_box()
 {
     cout << "calculate_box" << endl;
     //V4F cp = local_position();
-    //all_waypoints.push(cp + V3F({ 10.0, 0.0, 0 }));
-    //all_waypoints.push(cp + V3F({ 10.0, 10.0, 0 }));
-    //all_waypoints.push(cp + V3F({ 0.0, 10.0, 0 }));
-    //all_waypoints.push(cp + V3F({ 0.0, 0.0, 0 }));
-    const float radius = 10.0f;
-    const float step = 0.01f;
-    for (float angle = 0.0f; angle <= 2.0f * M_PI; angle += step) {
-        float x = radius * cosf(angle);
-        float y = radius * sinf(angle);
+    all_waypoints.push(/*cp + */V4F({ 10.0, 0.0, -10, 0 }));
+    all_waypoints.push(/*cp + */V4F({ 10.0, 10.0, -10, 0 }));
+    all_waypoints.push(/*cp + */V4F({ 0.0, 10.0, -10, 0 }));
+    all_waypoints.push(/*cp + */V4F({ 0.0, 0.0, -10, 0 }));
+    //const float radius = 10.0f;
+    //const float step = 0.01f;
+    //for (float angle = 0.0f; angle <= 2.0f * M_PI; angle += step) {
+    //    float x = radius * cosf(angle);
+    //    float y = radius * sinf(angle);
 
-        V4F pos({ x, y, -10.0f, 90.0f });
-        all_waypoints.push(pos);
-    }
+    //    V4F pos({ x, y, -3, 90.0f });
+    //    all_waypoints.push(pos);
+    //}
 }
 
 void BackyardFlyer::arming_transition()
@@ -106,10 +115,10 @@ void BackyardFlyer::arming_transition()
 void BackyardFlyer::takeoff_transition()
 {
     cout << "takeoff transition\r\n" << endl;
-    local_position().print();
-    float target_altitude = local_position()[2] + 10.0;
+    float target_altitude = TAKEOFF_ALTITUDE;
     target_position[2] = target_altitude;
-    takeoff(/*target_altitude*/);
+    getConnection()->msg_param_set(TAKEOFF_ALT_PARAM, -TAKEOFF_ALTITUDE);
+    takeoff();
     flight_state = States::TAKEOFF;
 }
 

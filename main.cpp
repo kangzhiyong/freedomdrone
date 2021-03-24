@@ -11,7 +11,7 @@
 
 int main()
 {
-    MavlinkConnection conn("UDP", "192.168.137.128", REMOTE_PORT_ONBOARD, LOCAL_PORT_ONBOARD, true, true);
+    MavlinkConnection conn("UDP", "192.168.137.130", REMOTE_PORT_ONBOARD, LOCAL_PORT_ONBOARD, true, true);
     ControlsFlyer drone(&conn);
     drone.start_drone();
     return 0;

@@ -9,9 +9,8 @@ using  namespace::std;
 #include "NonlinearController.hpp"
 #include "BaseQuadEstimator.hpp"
 #include "SearchAlgorithm.hpp"
-#include "Trajector.h"
+#include "Trajectory.h"
 
-#define TAKEOFF_ALTITUDE -10
 #define RATE_100_HZ 100
 #define PREDICT_RATE RATE_100_HZ // this is slower than the IMU update rate of 500Hz
 
@@ -32,11 +31,11 @@ protected:
     vector<float> yaw_trajectory;
     vector<float> time_trajectory;
     V3F local_acceleration_target;
-    float yaw_target;
+    float yaw_cmd;
     float thrust_cmd;
     V3F body_rate_target;
     int waypoint_number;
-    time_t _start_time;
+    float _start_time{ 0 };
     bool in_planning{ false };
 public:
     ControlsFlyer(MavlinkConnection *conn);
